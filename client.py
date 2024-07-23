@@ -130,31 +130,6 @@ class d4pClient:
         else:
             return WebClient.search(self, data)
 
-    def get_description(self, identifier: Union[str, int]):
-        """Get the description of a PE or workflow by its name or ID"""
-        pe_obj = self.get_PE(identifier)
-        if pe_obj:
-            return pe_obj.__doc__ if pe_obj.__doc__ else "No description available."
-
-        workflow_obj = self.get_Workflow(identifier)
-        if workflow_obj:
-            return workflow_obj.__doc__ if workflow_obj.__doc__ else "No description available."
-
-        return None
-
-    def update_description(self, identifier: Union[str, int], description: str):
-        """Update the description of a PE or workflow by its name or ID"""
-        pe_obj = self.get_PE(identifier)
-        if pe_obj:
-            pe_obj.__doc__ = description
-            return WebClient.update_PE_description(self, identifier, description)
-
-        workflow_obj = self.get_Workflow(identifier)
-        if workflow_obj:
-            workflow_obj.__doc__ = description
-            return WebClient.update_Workflow_description(self, identifier, description)
-
-        return False
 
     def remove_PE(self, pe: Union[str, int]):
         """Remove PE from Registry"""
