@@ -1,5 +1,5 @@
 ![Laminar Logo](logo.webp)
-# Client Instructions 
+# Laminar Client Instructions 
 
 The following instructions will allow you to run the client application to run dispel4py workflows 
 
