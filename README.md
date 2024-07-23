@@ -4,7 +4,7 @@ The following instructions will allow you to run the client application to run d
 
 Clone repository 
 ```
-git clone https://github.com/Laminar-2/dispel4py-client.git
+git clone https://github.com/StreamingFlow/dispel4py-client.git
 ```
 Then enter directory by 
 ```
