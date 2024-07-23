@@ -192,40 +192,23 @@ class LaminarCLI(cmd.Cmd):
         print("Removes a workflow by its name or ID")
         print("Usage: remove_workflow [workflow_identifier]")
 
-    def do_get_description(self, arg):
+    def do_describe(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
         parser.add_argument("identifier")
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
-            obj = client.get_PE(args["identifier"])
-            if obj is None:
-                obj = client.get_Workflow(args["identifier"])
-            client.describe(obj)
-        except argparse.ArgumentError as e:
-            print(e.message.replace("laminar.py", "get_description"))
-
-    def help_get_description(self):
-        print("Gets the description of a PE or workflow by its name or ID")
-        print("Usage: get_description [identifier]")
-
-    def do_update_description(self, arg):
-        parser = CustomArgumentParser(exit_on_error=False)
-        parser.add_argument("identifier")
-        parser.add_argument("description", nargs='+')
-        try:
-            args = vars(parser.parse_args(shlex.split(arg)))
-            description = ' '.join(args["description"])
-            success = client.update_description(args["identifier"], description)
-            if success:
-                print(f"Updated description for '{args['identifier']}': {description}")
+            obj = client.get_PE(args["identifier"]) or client.get_Workflow(args["identifier"])
+            if obj:
+                client.describe(obj)
             else:
-                print(f"Failed to update description for '{args['identifier']}'")
+                print(f"No description found for '{args['identifier']}'")
         except argparse.ArgumentError as e:
-            print(e.message.replace("laminar.py", "update_description"))
+            print(e.message.replace("laminar.py", "describe"))
 
-    def help_update_description(self):
-        print("Updates the description of a PE or workflow by its name or ID")
-        print("Usage: update_description [identifier] [description]")
+
+    def help_describe(self):
+        print("It provides the information on PEs or workflow by its name")
+        print("Usage: describe [identifier]")
 
 
 def parseArgs(arg: str):

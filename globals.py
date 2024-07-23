@@ -56,6 +56,9 @@ URL_LOGIN_USER: str =  BASE_URL + "/auth/login"
 
 URL_SEARCH: str = BASE_URL_REGISTER + "/search/{}/type/{}"
 
+
+
+
 PE_TYPES = (BasePE,IterativePE,ProducerPE,ConsumerPE,SimpleFunctionPE,CompositePE,GenericPE)
 
 headers = {

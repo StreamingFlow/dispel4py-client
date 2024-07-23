@@ -315,6 +315,46 @@ class WebClient:
             return True
         return {}
 
+    def get_PE(self, identifier: Union[int, str]):
+        verify_login()
+
+        if isinstance(identifier, str):
+            print("entro aqui PE -str %s" %identifier)
+            url = URL_GET_PE_NAME.format(globals.CLIENT_AUTH_ID) + identifier
+        elif isinstance(identifier, int):
+            print("entro aqui PE -int %s" %identifier)
+            url = URL_GET_PE_ID.format(globals.CLIENT_AUTH_ID) + str(identifier)
+
+        response = req.get(url=url)
+        response = json.loads(response.text)
+
+        if 'ApiError' in response.keys():
+            logger.error(response['ApiError']['message'])
+            return None
+        else:
+            pe_code = response["peCode"]
+            return pickle.loads(codecs.decode(pe_code.encode(), "base64"))
+
+    def get_Workflow(self, identifier: Union[int, str]):
+        verify_login()
+
+        if isinstance(identifier, str):
+            print("entro aqui WF-str %s" %identifier)
+            url = URL_GET_WORKFLOW_NAME.format(globals.CLIENT_AUTH_ID) + identifier
+        elif isinstance(identifier, int):
+            print("entro aqui wf-int %s" %identifier)
+            url = URL_GET_WORKFLOW_ID.format(globals.CLIENT_AUTH_ID) + str(identifier)
+
+        response = req.get(url=url)
+        response = json.loads(response.text)
+
+        if 'ApiError' in response.keys():
+            logger.error(response['ApiError']['message'])
+            return None
+        else:
+            workflow_code = response["workflowCode"]
+            return pickle.loads(codecs.decode(workflow_code.encode(), "base64"))
+
     def get_PE(self, pe: Union[int, str]):
         verify_login()
         if isinstance(pe, str):
@@ -333,6 +373,8 @@ class WebClient:
             peCode = response["peCode"]
             unpickled_result = pickle.loads(codecs.decode(peCode.encode(), "base64"))
             return unpickled_result
+
+    
 
     def get_Workflow(self, workflow: Union[int, str]):
         verify_login()
@@ -424,3 +466,4 @@ class WebClient:
         response = req.get(url=url)
         response = json.loads(response.text)
         return get_objects(response)
+
