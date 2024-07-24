@@ -417,10 +417,11 @@ class WebClient:
         verify_login()
         if isinstance(pe, str):
             url = URL_REMOVE_PE_NAME.format(globals.CLIENT_AUTH_ID) + pe
-        if isinstance(pe, int):
+        elif isinstance(pe, int):
             url = URL_REMOVE_PE_ID.format(globals.CLIENT_AUTH_ID) + str(pe)
         response = req.delete(url=url)
         response = json.loads(response.text)
+        print("5.-------- responsePE remove %s ------------" %response)
         if response == 1:
             logger.info("Successfully removed PE: " + str(pe))
         else:
@@ -430,10 +431,12 @@ class WebClient:
         verify_login()
         if isinstance(workflow, str):
             url = URL_REMOVE_WORKFLOW_NAME.format(globals.CLIENT_AUTH_ID) + workflow
-        if isinstance(workflow, int):
+        elif isinstance(workflow, int):
             url = URL_REMOVE_WORKFLOW_ID.format(globals.CLIENT_AUTH_ID) + str(workflow)
+        print("4.-------- URL %s ------------" %url)
         response = req.delete(url=url)
         response = json.loads(response.text)
+        print("5.-------- response %s ------------" %response)
         if response == 1:
             logger.info("Successfully removed Workflow: " + str(workflow))
         else:
