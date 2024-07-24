@@ -319,10 +319,8 @@ class WebClient:
         verify_login()
 
         if isinstance(identifier, str):
-            print("entro aqui PE -str %s" %identifier)
             url = URL_GET_PE_NAME.format(globals.CLIENT_AUTH_ID) + identifier
         elif isinstance(identifier, int):
-            print("entro aqui PE -int %s" %identifier)
             url = URL_GET_PE_ID.format(globals.CLIENT_AUTH_ID) + str(identifier)
 
         response = req.get(url=url)
@@ -342,7 +340,6 @@ class WebClient:
             print("entro aqui WF-str %s" %identifier)
             url = URL_GET_WORKFLOW_NAME.format(globals.CLIENT_AUTH_ID) + identifier
         elif isinstance(identifier, int):
-            print("entro aqui wf-int %s" %identifier)
             url = URL_GET_WORKFLOW_ID.format(globals.CLIENT_AUTH_ID) + str(identifier)
 
         response = req.get(url=url)
@@ -421,7 +418,7 @@ class WebClient:
             url = URL_REMOVE_PE_ID.format(globals.CLIENT_AUTH_ID) + str(pe)
         response = req.delete(url=url)
         response = json.loads(response.text)
-        print("5.-------- responsePE remove %s ------------" %response)
+        print("-------- responsePE remove %s ------------" %response)
         if response == 1:
             logger.info("Successfully removed PE: " + str(pe))
         else:
@@ -433,10 +430,9 @@ class WebClient:
             url = URL_REMOVE_WORKFLOW_NAME.format(globals.CLIENT_AUTH_ID) + workflow
         elif isinstance(workflow, int):
             url = URL_REMOVE_WORKFLOW_ID.format(globals.CLIENT_AUTH_ID) + str(workflow)
-        print("4.-------- URL %s ------------" %url)
         response = req.delete(url=url)
         response = json.loads(response.text)
-        print("5.-------- response %s ------------" %response)
+        print("-------- response %s ------------" %response)
         if response == 1:
             logger.info("Successfully removed Workflow: " + str(workflow))
         else:
