@@ -16,6 +16,10 @@ from dispel4py.base import GenericPE, WorkflowGraph
 
 client = d4pClient()
 
+def type_checker(value):
+    if value.isdigit():
+        return int(value)
+    return value
 
 class CustomArgumentParser(argparse.ArgumentParser):
     def __init__(self, exit_on_error=True):
@@ -42,8 +46,11 @@ class LaminarCLI(cmd.Cmd):
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
             feedback = client.search_Registry(args["search_term"], args["search_type"], args["query_type"])
+            print(feedback)
         except argparse.ArgumentError as e:
             print(e.message.replace("laminar.py", "search"))
+        except Exception as e:
+            print(f"An error occurred: {e}")
 
     def help_search(self):
         print("Searches the registry for workflows and processing elements matching the search term")
@@ -51,7 +58,7 @@ class LaminarCLI(cmd.Cmd):
 
     def do_run(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
-        parser.add_argument("identifier")
+        parser.add_argument("identifier", type=type_checker)
         parser.add_argument("--rawinput", action="store_true")
         parser.add_argument("-v", "--verbose", action="store_true")
         parser.add_argument("-i", "--input", dest="input", required=False)
@@ -90,6 +97,8 @@ class LaminarCLI(cmd.Cmd):
                     print(f"No workflow is registered with name {args['identifier']}")
         except argparse.ArgumentError as e:
             print(e.message.replace("laminar.py", "run"))
+        except Exception as e:
+            print(f"An error occurred: {e}")
 
     def help_run(self):
         print("Runs a workflow in the registry based on the provided name or ID")
@@ -145,8 +154,12 @@ class LaminarCLI(cmd.Cmd):
                 print(f"Could not find file at {args['filepath']}")
             except SyntaxError:
                 print(f"Target file has invalid python syntax")
+            except Exception as e:
+                print(f"An error occurred: {e}")
         except argparse.ArgumentError as e:
             print(e.message.replace("laminar.py", "register"))
+        except Exception as e:
+            print(f"An error occurred: {e}")
 
     def help_register(self):
         print("Registers all workflows and PEs instantiated within a given file input")
@@ -158,22 +171,34 @@ class LaminarCLI(cmd.Cmd):
         print("Exits the Laminar CLI")
 
     def do_list(self, arg):
-        registry = client.get_Registry()
-        if registry:
-            for item in registry:
-                print(item)
+        try:
+            registry = client.get_Registry()
+            if registry:
+                for item in registry:
+                    print(item)
+        except Exception as e:
+            print(f"An error occurred: {e}")
 
     def help_list(self):
         print("Lists all registered PEs and workflows")
 
     def do_remove_pe(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
-        parser.add_argument("pe_identifier")
+        parser.add_argument("pe_identifier", type=type_checker)
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
-            client.remove_PE(args["pe_identifier"])
+            response = client.remove_PE(args["pe_identifier"])
+            if 'ApiError' in response:
+                print(f"Error: {response['ApiError']['message']}")
+            else:
+                print("Processing Element removed successfully")
         except argparse.ArgumentError as e:
             print(e.message.replace("laminar.py", "remove_pe"))
+        except TypeError:
+            # Specific catch for the 'NoneType' error that shouldn't be printed
+            pass
+        except Exception as e:
+            print(f"An error occurred: {e}")
 
     def help_remove_pe(self):
         print("Removes a PE by its name or ID")
@@ -181,12 +206,21 @@ class LaminarCLI(cmd.Cmd):
 
     def do_remove_workflow(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
-        parser.add_argument("workflow_identifier")
+        parser.add_argument("workflow_identifier", type=type_checker)
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
-            client.remove_Workflow(args["workflow_identifier"])
+            response = client.remove_Workflow(args["workflow_identifier"])
+            if 'ApiError' in response:
+                print(f"Error: {response['ApiError']['message']}")
+            else:
+                print("Workflow removed successfully")
         except argparse.ArgumentError as e:
             print(e.message.replace("laminar.py", "remove_workflow"))
+        except TypeError:
+            # Specific catch for the 'NoneType' error that shouldn't be printed
+            pass
+        except Exception as e:
+            print(f"An error occurred: {e}")
 
     def help_remove_workflow(self):
         print("Removes a workflow by its name or ID")
@@ -194,7 +228,7 @@ class LaminarCLI(cmd.Cmd):
 
     def do_describe(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
-        parser.add_argument("identifier")
+        parser.add_argument("identifier", type=type_checker)
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
             obj = client.get_PE(args["identifier"]) or client.get_Workflow(args["identifier"])
@@ -204,7 +238,8 @@ class LaminarCLI(cmd.Cmd):
                 print(f"No description found for '{args['identifier']}'")
         except argparse.ArgumentError as e:
             print(e.message.replace("laminar.py", "describe"))
-
+        except Exception as e:
+            print(f"An error occurred: {e}")
 
     def help_describe(self):
         print("It provides the information on PEs or workflow by its name")
