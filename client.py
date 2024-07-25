@@ -147,3 +147,6 @@ class d4pClient:
         """Retrieve Registry"""
         return WebClient.get_Registry(self)
 
+    def update_workflow_description(self, workflow: Union[str, int], new_description):
+        return WebClient.update_workflow_description(self, workflow, new_description)
+

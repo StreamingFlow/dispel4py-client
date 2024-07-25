@@ -337,7 +337,6 @@ class WebClient:
         verify_login()
 
         if isinstance(identifier, str):
-            print("entro aqui WF-str %s" %identifier)
             url = URL_GET_WORKFLOW_NAME.format(globals.CLIENT_AUTH_ID) + identifier
         elif isinstance(identifier, int):
             url = URL_GET_WORKFLOW_ID.format(globals.CLIENT_AUTH_ID) + str(identifier)
@@ -418,7 +417,6 @@ class WebClient:
             url = URL_REMOVE_PE_ID.format(globals.CLIENT_AUTH_ID) + str(pe)
         response = req.delete(url=url)
         response = json.loads(response.text)
-        print("-------- responsePE remove %s ------------" %response)
         if response == 1:
             logger.info("Successfully removed PE: " + str(pe))
         else:
@@ -432,7 +430,6 @@ class WebClient:
             url = URL_REMOVE_WORKFLOW_ID.format(globals.CLIENT_AUTH_ID) + str(workflow)
         response = req.delete(url=url)
         response = json.loads(response.text)
-        print("-------- response %s ------------" %response)
         if response == 1:
             logger.info("Successfully removed Workflow: " + str(workflow))
         else:
@@ -465,4 +462,15 @@ class WebClient:
         response = req.get(url=url)
         response = json.loads(response.text)
         return get_objects(response)
+
+
+    def update_workflow_description(self, workflow, new_description):
+        verify_login()
+        url = URL_UPDATE_WORKFLOW_DESC_ID.format(globals.CLIENT_AUTH_ID, workflow)
+        response = req.put(url=url, json={"description": new_description}, headers=headers)
+        if response.status_code == 200:
+            response ="Succesfully updated the description of workflow ID: " + str(workflow)
+            return response
+        else:
+            raise Exception(f"Failed to update workflow description: {response.text}")
 

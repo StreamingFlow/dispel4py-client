@@ -246,6 +246,24 @@ class LaminarCLI(cmd.Cmd):
         print("Usage: describe [identifier]")
 
 
+    def do_update_description(self, arg):
+        parser = CustomArgumentParser(exit_on_error=False)
+        parser.add_argument("workflow_id", type=type_checker)
+        parser.add_argument("new_description", type=str)
+        try:
+            args = vars(parser.parse_args(shlex.split(arg)))
+            feedback = client.update_workflow_description(args["workflow_id"], args["new_description"])
+            print(feedback)
+        except argparse.ArgumentError as e:
+            print(e.message.replace("laminar.py", "update_description"))
+        except Exception as e:
+            print(f"An error occurred: {e}")
+
+    def help_update_description(self):
+        print("Updates the description of a workflow")
+        print("Usage: update_description [workflow_id] [new_description]")
+
+
 def parseArgs(arg: str):
     return arg.split()
 
