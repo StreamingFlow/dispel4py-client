@@ -12,7 +12,7 @@ import importlib.util
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # gets the libraries to write less garbage to the terminal
 from client import d4pClient, Process
-from dispel4py.base import GenericPE, IterativePE, ProducerPE, ConsumerPE
+from dispel4py.base import GenericPE, IterativePE, ProducerPE, ConsumerPE, WorkflowGraph
 
 client = d4pClient()
 
