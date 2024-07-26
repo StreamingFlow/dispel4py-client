@@ -167,7 +167,14 @@ class ExecutionData:
         imports = ""
         if workflow_code is not None:
             for pe in workflow_code.get_contained_objects():
-                imports = imports + "," + create_import_string(inspect.getsource(pe.__class__))
+                pe_class = pe.__class__
+                try:
+                    pe_source_code = inspect.getsource(pe_class)
+                    imports = imports + "," + create_import_string(pe_source_code)
+                    print(pe_source_code)
+                except OSError as e:
+                    pass
+                    #print(f"Error getting source for {pe_class.__name__}: {e}")
         self.workflow_id = workflow_id
         self.workflow_name = workflow_name
         self.input = get_payload(input)
