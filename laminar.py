@@ -103,7 +103,7 @@ class LaminarCLI(cmd.Cmd):
     def help_run(self):
         print("Runs a workflow in the registry based on the provided name or ID")
 
-    def do_register(self, arg):
+    def do_register_workflow(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
         parser.add_argument("filepath")
         try:
@@ -157,12 +157,13 @@ class LaminarCLI(cmd.Cmd):
             except Exception as e:
                 print(f"An error occurred: {e}")
         except argparse.ArgumentError as e:
-            print(e.message.replace("laminar.py", "register"))
+            print(e.message.replace("laminar.py", "register_workflow"))
         except Exception as e:
             print(f"An error occurred: {e}")
 
-    def help_register(self):
+    def help_register_workflow(self):
         print("Registers all workflows and PEs instantiated within a given file input")
+        print("Usage: register_workflow [file.py]")
 
     def do_quit(self, arg):
         sys.exit(0)
@@ -246,7 +247,7 @@ class LaminarCLI(cmd.Cmd):
         print("Usage: describe [identifier]")
 
 
-    def do_update_description(self, arg):
+    def do_update_workflow_description(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
         parser.add_argument("workflow_id", type=type_checker)
         parser.add_argument("new_description", type=str)
@@ -255,13 +256,30 @@ class LaminarCLI(cmd.Cmd):
             feedback = client.update_workflow_description(args["workflow_id"], args["new_description"])
             print(feedback)
         except argparse.ArgumentError as e:
-            print(e.message.replace("laminar.py", "update_description"))
+            print(e.message.replace("laminar.py", "update_wf_description"))
         except Exception as e:
             print(f"An error occurred: {e}")
 
-    def help_update_description(self):
-        print("Updates the description of a workflow")
+    def help_update_workflow_description(self):
+        print("Updates the description of a workflow by Id")
         print("Usage: update_description [workflow_id] [new_description]")
+
+    def do_update_pe_description(self, arg):
+        parser = CustomArgumentParser(exit_on_error=False)
+        parser.add_argument("pe_id", type=type_checker)
+        parser.add_argument("new_description", type=str)
+        try:
+            args = vars(parser.parse_args(shlex.split(arg)))
+            feedback = client.update_pe_description(args["pe_id"], args["new_description"])
+            print(feedback)
+        except argparse.ArgumentError as e:
+            print(e.message.replace("laminar.py", "update_pe_description"))
+        except Exception as e:
+            print(f"An error occurred: {e}")
+
+    def help_update_pe_description(self):
+        print("Updates the description of a PE by Id")
+        print("Usage: update_description [pe_id] [new_description]")
 
 
 def parseArgs(arg: str):

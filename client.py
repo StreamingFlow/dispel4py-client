@@ -150,3 +150,5 @@ class d4pClient:
     def update_workflow_description(self, workflow: Union[str, int], new_description):
         return WebClient.update_workflow_description(self, workflow, new_description)
 
+    def update_pe_description(self, pe: Union[str, int], new_description):
+        return WebClient.update_pe_description(self, pe, new_description)

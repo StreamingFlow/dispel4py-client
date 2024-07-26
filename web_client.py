@@ -474,3 +474,13 @@ class WebClient:
         else:
             raise Exception(f"Failed to update workflow description: {response.text}")
 
+    def update_pe_description(self, pe, new_description):
+        verify_login()
+        url = URL_UPDATE_PE_DESC_ID.format(globals.CLIENT_AUTH_ID, pe)
+        response = req.put(url=url, json={"description": new_description}, headers=headers)
+        if response.status_code == 200:
+            response ="Succesfully updated the description of pe ID: " + str(pe)
+            return response
+        else:
+            raise Exception(f"Failed to update pe description: {response.text}")
+
