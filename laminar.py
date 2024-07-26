@@ -12,7 +12,7 @@ import importlib.util
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # gets the libraries to write less garbage to the terminal
 from client import d4pClient, Process
-from dispel4py.base import GenericPE, WorkflowGraph
+from dispel4py.base import GenericPE, IterativePE, ProducerPE, ConsumerPE
 
 client = d4pClient()
 
@@ -164,6 +164,51 @@ class LaminarCLI(cmd.Cmd):
     def help_register_workflow(self):
         print("Registers all workflows and PEs instantiated within a given file input")
         print("Usage: register_workflow [file.py]")
+
+
+    def do_register_pe(self, arg):
+        parser = CustomArgumentParser(exit_on_error=False)
+        parser.add_argument("filepath")
+    
+        try:
+            args = vars(parser.parse_args(shlex.split(arg)))
+            spec = importlib.util.spec_from_file_location("__main__", args["filepath"])
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            pes = {}
+            for var in dir(mod):
+                attr = getattr(mod, var)
+                # Check if the attribute is a class and is a subclass of the PE types
+                if isinstance(attr, type) and issubclass(attr, (GenericPE, IterativePE, ProducerPE, ConsumerPE)) and attr not in (GenericPE, IterativePE, ProducerPE, ConsumerPE):
+                    pes[var] = attr
+            if len(pes) == 0:
+                print("Could not find any PEs")
+                return
+        
+            for key in pes:
+                print(f"• {key} - {pes[key].__name__}", end=" ")
+                pe_instance = pes[key]()
+                docstring = pes[key].__doc__
+                try:
+           
+                    r = client.register_PE(pe_instance, docstring)
+                    if r is None:
+                        print("(Exists)")
+                    else:
+                        print(f"(ID {r})")
+                except Exception as e:
+                    print(f"An error occurred during PE registration: {e}")
+        except argparse.ArgumentError as e:
+            print(e.message.replace("laminar.py", "register_pe"))
+        except Exception as e:
+            print(f"An error occurred: {e}")
+           
+
+
+    def help_register_pe(self):
+        print("Registers all PEs instantiated within a given file input")
+        print("Usage: register_pe [file.py]")
+
 
     def do_quit(self, arg):
         sys.exit(0)
