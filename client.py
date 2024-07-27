@@ -45,7 +45,6 @@ class d4pClient:
         data = WorkflowRegistrationData(workflow=workflow, entry_point=workflow_name, description=description)
         return WebClient.register_Workflow(self, data)
 
-
     def run(self, workflow: Union[str, int, WorkflowGraph], input=None, process=Process.SIMPLE, resources: list[str] = [], verbose=True):
         """Execute a Workflow with the client service"""
         workflow_id = None
@@ -59,12 +58,6 @@ class d4pClient:
         elif isinstance(workflow, WorkflowGraph):  # Graph
             workflow_code = workflow
 
-            # No need to fetch PEs from registry as they are already provided
-        #if workflow_code is not None:
-        #    for pe in workflow_code.get_contained_objects():
-        #        print(f"Using provided PE instance: {pe}")
-
-
         data = ExecutionData(
             workflow_id=workflow_id,
             workflow_name=workflow_name,
@@ -73,9 +66,8 @@ class d4pClient:
             resources=resources,
             process=process
         )
-        
-        return WebClient.run(self, data, verbose)
 
+        return WebClient.run(self, data, verbose)
 
     def run_multiprocess(self, workflow: Union[str, int, WorkflowGraph], input=None, resources: list[str] = [], verbose=True):
         """Alternative for client.run(process=Process.MULTI)"""

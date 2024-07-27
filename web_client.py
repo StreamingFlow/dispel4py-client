@@ -171,7 +171,7 @@ class ExecutionData:
                 try:
                     pe_source_code = inspect.getsource(pe_class)
                     imports = imports + "," + create_import_string(pe_source_code)
-                    print(pe_source_code)
+                    #print(pe_source_code)
                 except OSError as e:
                     pass
                     #print(f"Error getting source for {pe_class.__name__}: {e}")
