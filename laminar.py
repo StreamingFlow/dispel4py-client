@@ -162,7 +162,7 @@ class LaminarCLI(cmd.Cmd):
             print(f"An error occurred: {e}")
 
     def help_register_workflow(self):
-        print("Registers all workflows and PEs instantiated within a given file input")
+        print("Registers all workflows and PEs instantiated within a given file input.\n Remember to include all the imports necessary for those PEs within the file.")
         print("Usage: register_workflow [file.py]")
 
 
@@ -206,7 +206,7 @@ class LaminarCLI(cmd.Cmd):
 
 
     def help_register_pe(self):
-        print("Registers all PEs instantiated within a given file input")
+        print("Registers all PEs instantiated within a given file input.\n Remember to include all the imports necessary for those PEs within the file.")
         print("Usage: register_pe [file.py]")
 
 
