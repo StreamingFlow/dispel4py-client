@@ -287,41 +287,41 @@ class WebClient:
         if not response.ok:
             print(f"Error connecting to server: [{response.status_code}] {response.reason}")
             return False
-        parts = []
-        for line in response.iter_lines():
-                line = line.decode('utf-8')
-                if line:
-                    if line[:5] == "data:":
-                        data = json.loads(line[5:])
-                        if "response" in data.keys() and verbose:
-                            print(str(data["response"]), end="")
-                        elif "result" in data.keys():
-                            if len(parts) > 0:
-                                return parts
-                            return data["result"]
-                        elif "part-result" in data.keys():
-                            parts.append(data["part-result"])
-                        elif "resources" in data.keys():
-                            resources: list[str] = data["resources"]
-                            print("Requested resources: " + str(resources))
-                            if len(resources) == 0:
-                                continue
-                            multipart_files: list = []
-                            for resource in resources:
-                                multipart_files.append(("files", open(resource, 'rb')))
-                            url=URL_RESOURCE.format(globals.CLIENT_AUTH_ID)
-                            file_response = req.put(url=URL_RESOURCE.format(globals.CLIENT_AUTH_ID), files=multipart_files)
-                            print(f"File response: {file_response.status_code} {file_response.reason}")
-                            for _, file in multipart_files:
-                                file.close()
-                        elif "error" in data.keys():
-                            print(str("Error: " + str(data["error"])))
+        try:   
+            parts = []
+            for line in response.iter_lines():
+                    line = line.decode('utf-8')
+                    if line:
+                        if line[:5] == "data:":
+                            data = json.loads(line[5:])
+                            if "response" in data.keys() and verbose:
+                                print(str(data["response"]), end="")
+                            elif "result" in data.keys():
+                                if len(parts) > 0:
+                                    return parts
+                                return data["result"]
+                            elif "part-result" in data.keys():
+                                parts.append(data["part-result"])
+                            elif "resources" in data.keys():
+                                resources: list[str] = data["resources"]
+                                print("Requested resources: " + str(resources))
+                                if len(resources) == 0:
+                                    continue
+                                multipart_files: list = []
+                                for resource in resources:
+                                    multipart_files.append(("files", open(resource, 'rb')))
+                                url=URL_RESOURCE.format(globals.CLIENT_AUTH_ID)
+                                file_response = req.put(url=URL_RESOURCE.format(globals.CLIENT_AUTH_ID), files=multipart_files)
+                                print(f"File response: {file_response.status_code} {file_response.reason}")
+                                for _, file in multipart_files:
+                                    file.close()
+                            elif "error" in data.keys():
+                                print(str("Error: " + str(data["error"])))
             
-        #try:
             
-        #except Exception as e:
-        #    print("Error: " + str(e))
-        #    return True
+        except Exception as e:
+            print("Error: " + str(e))
+            return True
         return {}
 
     def get_PE(self, identifier: Union[int, str]):
