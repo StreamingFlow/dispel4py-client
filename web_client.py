@@ -218,7 +218,6 @@ class WebClient:
     def register_User(self, user_data: AuthenticationData):
         data = json.dumps(user_data.to_dict())
         response = req.post(URL_REGISTER_USER, data=data, headers=headers)
-        print("----- RESPONSE %s" % response)
         response = json.loads(response.text)
         if 'ApiError' in response.keys():
             logger.error(response['ApiError']['message'])
@@ -288,9 +287,8 @@ class WebClient:
         if not response.ok:
             print(f"Error connecting to server: [{response.status_code}] {response.reason}")
             return False
-        try:
-            parts = []
-            for line in response.iter_lines():
+        parts = []
+        for line in response.iter_lines():
                 line = line.decode('utf-8')
                 if line:
                     if line[:5] == "data:":
@@ -311,15 +309,19 @@ class WebClient:
                             multipart_files: list = []
                             for resource in resources:
                                 multipart_files.append(("files", open(resource, 'rb')))
+                            url=URL_RESOURCE.format(globals.CLIENT_AUTH_ID)
                             file_response = req.put(url=URL_RESOURCE.format(globals.CLIENT_AUTH_ID), files=multipart_files)
-                            print(file_response)
+                            print(f"File response: {file_response.status_code} {file_response.reason}")
                             for _, file in multipart_files:
                                 file.close()
                         elif "error" in data.keys():
                             print(str("Error: " + str(data["error"])))
-        except Exception as e:
-            print("Error: " + str(e))
-            return True
+            
+        #try:
+            
+        #except Exception as e:
+        #    print("Error: " + str(e))
+        #    return True
         return {}
 
     def get_PE(self, identifier: Union[int, str]):
