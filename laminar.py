@@ -252,11 +252,19 @@ class LaminarCLI(cmd.Cmd):
                 if args["pe_identifier"] is None:
                     print("Error: Missing processing element identifier. Use --all to remove all processing elements.")
                     return
-                response = client.remove_PE(args["pe_identifier"])
-                if 'ApiError' in response:
-                    print(f"Error: {response['ApiError']['message']}")
-                else:
-                    print("Processing Element removed successfully")
+                try:
+                    response = client.remove_PE(args["pe_identifier"])
+                    if 'ApiError' in response:
+                        print(f"Error: {response['ApiError']['message']}.")
+                    else:
+                        print("Processing Element removed successfully")
+                except Exception as e:
+                    print(f"An error occurred while removing the PE: {e}")
+                    if "NoneType" in str(e):
+                        print("Problably you are trying to remove a workflow instead of a processing element. Use remove_workflow <id> instead.")
+                    else:
+                        print("Probably the processing element is being used by a workflow. Try to remove the workflow first. Or the <id> does not exist.")
+
         except argparse.ArgumentError as e:
             print(e.message.replace("laminar.py", "remove_pe"))
         except TypeError:

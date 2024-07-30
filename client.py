@@ -165,9 +165,9 @@ class d4pClient:
                             self.remove_Workflow(workflow_id)
                             print("Removed wf %s" %workflow_id)
                         except:
-                            pass
+                            print("The workflow %s couldnt be removed" %workflow_id)
                 if type == "workflow":
-                    return "All Workflows removed successfully"
+                    return "Finished removing Workflows"
             if type == "all" or type == "pe":    
                 # Remove all PEs
                 (workflow_ids, pe_ids) = WebClient.get_ids(self)
@@ -177,11 +177,11 @@ class d4pClient:
                             self.remove_PE(pe_id)
                             print("Removed PE %s" %pe_id)
                         except:
-                            pass
+                            print("The PE %s couldnt be removed. Problably it is been used by another workflow." %pe_id)
                 if type == "pe":
-                    return "All Processing Elements removed successfully"
+                    return "Finished removing PEs"
                 else:
-                    return "All Workflows and Processing Elements removed successfully"
+                    return "Finished removing  Workflows and PEs"
         except Exception as e:
             self.logger.error(f"Error occurred while removing all workflows and/or PEs: {e}")
             return {"ApiError": {"message": str(e)}}
