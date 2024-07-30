@@ -493,3 +493,19 @@ class WebClient:
         else:
             raise Exception(f"Failed to update pe description: {response.text}")
 
+    def get_ids(self):
+        verify_login()
+        url = URL_REGISTRY_ALL.format(globals.CLIENT_AUTH_ID)
+        response = req.get(url=url)
+        results = json.loads(response.text)
+        workflow_list=[]
+        pe_list=[]
+        if len(results) > 0: 
+            for index, result in enumerate(results, start=1):
+                if 'workflowName' in result.keys():
+                    workflow_list.append(result['workflowId'])
+                else:
+                    pe_list.append(result['peId'])
+
+        return (workflow_list, pe_list)
+

@@ -327,6 +327,29 @@ class LaminarCLI(cmd.Cmd):
         print("Usage: update_description [pe_id] [new_description]")
 
 
+    def do_remove_all(self, arg):
+        confirmation = input("Are you sure you want to remove all workflows and processing elements? [Y/N]: ")
+        if confirmation.lower() == 'y':
+            try:
+                response = client.remove_all()
+                if response is None:
+                    print("No response from server.")
+                elif 'ApiError' in response:
+                    print(f"Error: {response['ApiError']['message']}")
+                else:
+                    print(response)
+            except Exception as e:
+                print(f"An error occurred: {e}")
+        else:
+            print("Operation cancelled by user.")
+
+
+
+    def help_remove_all(self):
+        print("Removes all workflows and Pocessing Elements registered by the user")
+        print("Usage: remove_all")
+
+
 def parseArgs(arg: str):
     return arg.split()
 

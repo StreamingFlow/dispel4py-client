@@ -152,3 +152,30 @@ class d4pClient:
 
     def update_pe_description(self, pe: Union[str, int], new_description):
         return WebClient.update_pe_description(self, pe, new_description)
+
+    def remove_all(self):
+        """Remove all Workflows and PEs from Registry"""
+        try:
+            # Remove all WFs
+            (workflow_ids, pe_ids) = WebClient.get_ids(self)
+            if len(workflow_ids)>0:
+                for workflow_id in workflow_ids:
+                    try:
+                        self.remove_Workflow(workflow_id)
+                        print("Removed wf %s" %workflow_id)
+                    except:
+                        pass
+                
+            # Remove all PEs
+            (workflow_ids, pe_ids) = WebClient.get_ids(self)
+            if len(pe_ids) > 0:
+                for pe_id in pe_ids:
+                    try:
+                        self.remove_PE(pe_id)
+                        print("Removed PE %s" %pe_id)
+                    except:
+                        pass
+            return "All Workflows and Processing Elements removed successfully"
+        except Exception as e:
+            self.logger.error(f"Error occurred while removing all workflows and PEs: {e}")
+            return {"ApiError": {"message": str(e)}}
