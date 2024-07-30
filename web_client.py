@@ -110,9 +110,11 @@ class PERegistrationData:
             pe_name = pe.__class__.__name__
         try:
             pe_source_code = inspect.getsource(pe.__class__)
-            pe_process_source_code = inspect.getsource(pe._process)
         except OSError:
             pe_source_code = "Source code not available"
+        try:
+            pe_process_source_code = inspect.getsource(pe._process)
+        except OSError:
             pe_process_source_code = "Source code not available"
         self.pe_name = pe_name
         self.pe_code = get_payload(pe)
@@ -124,6 +126,7 @@ class PERegistrationData:
         self.pe_imports = create_import_string(pe_source_code)
         self.code_embedding = np.array_str(encode(pe_process_source_code, 2).cpu().numpy())
         self.desc_embedding = np.array_str(encode(self.description, 1).cpu().numpy())
+      
 
     def to_dict(self):
         return {
