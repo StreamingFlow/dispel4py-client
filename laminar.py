@@ -261,9 +261,9 @@ class LaminarCLI(cmd.Cmd):
                 except Exception as e:
                     print(f"An error occurred while removing the PE: {e}")
                     if "NoneType" in str(e):
-                        print("Problably you are trying to remove a workflow instead of a processing element. Use remove_workflow <id> instead.")
+                        print("Problably you are trying to remove a workflow instead of a processing element. Use remove_workflow <id> instead. Or the PE <id> does not exit.")
                     else:
-                        print("Probably the processing element is being used by a workflow. Try to remove the workflow first. Or the <id> does not exist.")
+                        print("Probably the processing element is being used by a workflow. Try to remove the workflow first.")
 
         except argparse.ArgumentError as e:
             print(e.message.replace("laminar.py", "remove_pe"))
