@@ -21,16 +21,19 @@ class IsPrime(IterativePE):
         IterativePE.__init__(self)
     def _process(self, num):
         # this PE consumes one input and produces one output
-        print("before checking data - %s - is prime or not\n" % num, end="")
+        #print("before checking data - %s - is prime or not\n" % num, end="")
         if all(num % i != 0 for i in range(2, num)):
             return num
 
 class PrintPrime(ConsumerPE):
     def __init__(self):
         ConsumerPE.__init__(self)
+        self.prime=[]
     def _process(self, num):
         # this PE consumes one input
         print("the num %s is prime\n" % num, end="")
+        self.prime.append(num)
+    
 
 
 producer = NumberProducer()
@@ -48,13 +51,14 @@ client.login("rosa", "1234") # Provide login details here
 #SIMPLE 
 #simple_process(graph, {producer: 100})
 #client.run(graph,input=100)
+#client.run(graph,input=100)
 
 #MULTI 
 #multi_process(graph, {producer: 100}, edict({'num':5, 'iter': 5,'simple': False}))
-#client.run_multiprocess(graph,input=100)
+client.run_multiprocess(graph,input=100)
 
 #REDIS 
 #dyn_process(graph,{producer: 100}, edict({'num':5,'iter':5, 'simple':False, 'redis_ip':'localhost', 'redis_port':'6379'}))
-client.run_dynamic(graph,input=100)
+#client.run_dynamic(graph,input=100)
 #print(c)
 
