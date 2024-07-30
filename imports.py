@@ -1,10 +1,8 @@
-class ReadSensorDataPE(ProducerPE):
+class PrintPrime(ConsumerPE):
     def __init__(self):
-        ProducerPE.__init__(self)
-
-    def _process(self, inputs):
-        file = inputs['input']
-        with open(file, 'r') as f:
-            data = json.load(f)  # Load the entire JSON file
-            for record in data:
-                self.write('output', {'timestamp': record['timestamp'], 'temperature': float(record['temperature'])})
+        ConsumerPE.__init__(self)
+        self.prime=[]
+    def _process(self, num):
+        # this PE consumes one input
+        print("the num %s is prime\n" % num, end="")
+        self.prime.append(num)
