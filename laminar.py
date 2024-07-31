@@ -111,13 +111,14 @@ class LaminarCLI(cmd.Cmd):
             try:
                 spec = importlib.util.spec_from_file_location("__main__", args["filepath"])
                 mod = importlib.util.module_from_spec(spec)
+                sys.modules["module.name"] = mod  # Ensure module is in sys.modules
                 spec.loader.exec_module(mod)
                 pes = {}
                 workflows = {}
                 for var in dir(mod):
                     attr = getattr(mod, var)
-                    if isinstance(attr, GenericPE):
-                        pes.update({var: attr})
+                    if isinstance(attr, type) and issubclass(attr, (GenericPE, IterativePE, ProducerPE, ConsumerPE)) and attr not in (GenericPE, IterativePE, ProducerPE, ConsumerPE):
+                        pes[var] = attr
                     if isinstance(attr, WorkflowGraph):
                         workflows.update({var: attr})
                 if len(pes) == 0 and len(workflows) == 0:
@@ -128,7 +129,9 @@ class LaminarCLI(cmd.Cmd):
                 for key in pes:
                     print(f"• {key} - {type(pes[key]).__name__}", end=" ")
                     docstring = pes[key].__doc__
-                    r = client.register_PE(pes[key], docstring)
+                    pe_class = pes[key]
+                    pe_instance = pe_class()
+                    r = client.register_PE(pe_instance, docstring)
                     if r is None:
                         print("(Exists)")
                     else:
@@ -161,6 +164,7 @@ class LaminarCLI(cmd.Cmd):
         except Exception as e:
             print(f"An error occurred: {e}")
 
+
     def help_register_workflow(self):
         print("Registers all workflows and PEs instantiated within a given file input.\n Remember to include all the imports necessary for those PEs within the file.")
         print("Usage: register_workflow [file.py]")
@@ -189,8 +193,10 @@ class LaminarCLI(cmd.Cmd):
                 print(f"• {key} - {pes[key].__name__}", end=" ")
                 pe_instance = pes[key]()
                 docstring = pes[key].__doc__
+                pe_class = pes[key]
+                pe_instance = pe_class()
+                   
                 try:
-           
                     r = client.register_PE(pe_instance, docstring)
                     if r is None:
                         print("(Exists)")
@@ -415,8 +421,10 @@ if client.get_login() is not None:
     print(f"Logged in as {client.get_login()}")
 else:
     while client.get_login() is None:
-        username = input("Username: ")
-        password = pwinput.pwinput("Password: ")
+        username = "rosa"
+        password = "1234"
+        #username = input("Username: ")
+        #password = pwinput.pwinput("Password: ")
         client.login(username, password)
         if client.get_login() is None:
             print("Invalid login")
