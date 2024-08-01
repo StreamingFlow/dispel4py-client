@@ -495,10 +495,13 @@ class WebClient:
 
     def search_similarity(self, search_payload: SearchData, query_type):
         search_dict = search_payload.to_dict()
-        url = URL_PE_ALL.format(globals.CLIENT_AUTH_ID)
+        if search_dict["searchType"] == "pe":
+            url = URL_PE_ALL.format(globals.CLIENT_AUTH_ID)
+        elif search_dict["searchType"] == "workflow":
+            url = URL_WORKFLOW_ALL.format(globals.CLIENT_AUTH_ID)
         response = req.get(url=url)
         response = json.loads(response.text)
-        return similarity_search(search_dict['search'], response, query_type)
+        return similarity_search(search_dict['search'], response, query_type, search_dict["searchType"])
 
     def get_Registry(self):
         verify_login()

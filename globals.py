@@ -30,6 +30,8 @@ URL_REMOVE_PE_ID: str = BASE_URL_REGISTER + "/pe/remove/id/"
 
 URL_PE_ALL: str = BASE_URL_REGISTER + "/pe/all"
 
+URL_WORKFLOW_ALL: str = BASE_URL_REGISTER + "/workflow/all"
+
 URL_REGISTER_WORKFLOW: str = BASE_URL_REGISTER + "/workflow/add"
 
 URL_GET_WORKFLOW_NAME: str = BASE_URL_REGISTER + "/workflow/name/"
