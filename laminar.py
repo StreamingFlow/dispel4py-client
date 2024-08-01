@@ -38,9 +38,41 @@ class LaminarCLI(cmd.Cmd):
         self.prompt = "(laminar) "
         self.intro = """Welcome to the Laminar CLI"""
 
-    def do_search(self, arg):
+    def do_literal_search(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
         parser.add_argument("search_type", choices=["workflow", "pe", "both"], default="both")
+        parser.add_argument("search_term")
+        try:
+            args = vars(parser.parse_args(shlex.split(arg)))
+            feedback = client.search_Registry_Literal(args["search_term"], args["search_type"])
+            print(feedback)
+        except argparse.ArgumentError as e:
+            print(e.message.replace("laminar.py", "literal_search"))
+        except Exception as e:
+            print(f"An error occurred: {e}")
+
+    def help_literal_search(self):
+        print("Searches the registry for workflows and processing elements matching the search term in the name or description.")
+        print()
+        print("Arguments:")
+        print("  search_type   Type of items to search for. Choices are:")
+        print("                - 'workflow': Search only for workflows")
+        print("                - 'pe': Search only for processing elements (PEs)")
+        print("                - 'both': Search for both workflows and PEs (default)")
+        print("  search_term   The term to search for in the registry.")
+        print()
+        print("Usage:")
+        print("  literal_search [workflow|pe] [string]")
+        print()
+        print("Examples:")
+        print("  literal_search workflow my_workflow")
+        print("  literal_search pe my_processing_element")
+        print("  literal_search both some_term")
+
+
+    def do_semantic_search(self, arg):
+        parser = CustomArgumentParser(exit_on_error=False)
+        parser.add_argument("search_type", choices=["workflow", "pe"], default="pe")
         parser.add_argument("search_term")
         parser.add_argument("--query_type", choices=["text", "code"], default="text")
         try:
@@ -48,13 +80,31 @@ class LaminarCLI(cmd.Cmd):
             feedback = client.search_Registry(args["search_term"], args["search_type"], args["query_type"])
             print(feedback)
         except argparse.ArgumentError as e:
-            print(e.message.replace("laminar.py", "search"))
+            print(e.message.replace("laminar.py", "semantic_search"))
         except Exception as e:
             print(f"An error occurred: {e}")
 
-    def help_search(self):
-        print("Searches the registry for workflows and processing elements matching the search term")
-        print("Usage: search [workflow|pe|both] [string] [--query_type text|code]")
+    def help_semantic_search(self):
+        print("Searches the registry for workflows and processing elements matching the search term.")
+        print()
+        print("Arguments:")
+        print("  search_type   Type of items to search for. Choices are:")
+        print("                - 'workflow': Search only for workflows")
+        print("                - 'pe': Search only for processing elements (PEs)")
+        print("  search_term   The term to search for in the registry.")
+        print()
+        print("Options:")
+        print("  --query_type  The type of search to perform. Choices are:")
+        print("                - 'text': Perform a text-based search (default)")
+        print("                - 'code': Perform a code-based search")
+        print()
+        print("Usage:")
+        print("  search [workflow|pe] [string] [--query_type text|code]")
+        print()
+        print("Examples:")
+        print("  search workflow some_term --query_type text")
+        print("  search pe my_processing_element --query_type code")
+        print("  search pe my_processing_element --query_type text")
 
     def do_run(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
@@ -111,15 +161,17 @@ class LaminarCLI(cmd.Cmd):
             try:
                 spec = importlib.util.spec_from_file_location("__main__", args["filepath"])
                 mod = importlib.util.module_from_spec(spec)
+                sys.modules["module.name"] = mod  # Ensure module is in sys.modules
                 spec.loader.exec_module(mod)
                 pes = {}
                 workflows = {}
                 for var in dir(mod):
                     attr = getattr(mod, var)
-                    if isinstance(attr, GenericPE):
-                        pes.update({var: attr})
+                    if isinstance(attr, type) and issubclass(attr, (GenericPE, IterativePE, ProducerPE, ConsumerPE)) and attr not in (GenericPE, IterativePE, ProducerPE, ConsumerPE):
+                        pes[var] = attr
                     if isinstance(attr, WorkflowGraph):
                         workflows.update({var: attr})
+
                 if len(pes) == 0 and len(workflows) == 0:
                     print("Could not find any PEs or Workflows")
                     return
@@ -128,7 +180,9 @@ class LaminarCLI(cmd.Cmd):
                 for key in pes:
                     print(f"• {key} - {type(pes[key]).__name__}", end=" ")
                     docstring = pes[key].__doc__
-                    r = client.register_PE(pes[key], docstring)
+                    pe_class = pes[key]
+                    pe_instance = pe_class()
+                    r = client.register_PE(pe_instance, docstring)
                     if r is None:
                         print("(Exists)")
                     else:
@@ -138,6 +192,8 @@ class LaminarCLI(cmd.Cmd):
                 for key in workflows:
                     print(f"• {key} - {type(workflows[key]).__name__}", end=" ")
                     docstring = workflows[key].__doc__
+                    if "A graph representing the workflow and related methods" in docstring:
+                        docstring=None
                     r = client.register_Workflow(workflows[key], key, docstring)
                     if r is None:
                         print("(Exists)")
@@ -160,6 +216,7 @@ class LaminarCLI(cmd.Cmd):
             print(e.message.replace("laminar.py", "register_workflow"))
         except Exception as e:
             print(f"An error occurred: {e}")
+
 
     def help_register_workflow(self):
         print("Registers all workflows and PEs instantiated within a given file input.\n Remember to include all the imports necessary for those PEs within the file.")
@@ -189,8 +246,10 @@ class LaminarCLI(cmd.Cmd):
                 print(f"• {key} - {pes[key].__name__}", end=" ")
                 pe_instance = pes[key]()
                 docstring = pes[key].__doc__
+                pe_class = pes[key]
+                pe_instance = pe_class()
+                   
                 try:
-           
                     r = client.register_PE(pe_instance, docstring)
                     if r is None:
                         print("(Exists)")
@@ -415,8 +474,10 @@ if client.get_login() is not None:
     print(f"Logged in as {client.get_login()}")
 else:
     while client.get_login() is None:
-        username = input("Username: ")
-        password = pwinput.pwinput("Password: ")
+        username = "rosa"
+        password = "1234"
+        #username = input("Username: ")
+        #password = pwinput.pwinput("Password: ")
         client.login(username, password)
         if client.get_login() is None:
             print("Invalid login")

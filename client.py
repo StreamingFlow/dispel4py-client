@@ -120,15 +120,20 @@ class d4pClient:
 
 
     def search_Registry(self, search: str, search_type: _TYPES = "both", query_type: _QUERY_TYPES = "text"):
-        """Search registry for workflow"""
+        """Semantic Search registry for workflow"""
         options = get_args(_TYPES)
         assert search_type in options, f"'{search_type}' is not in {options}"
         data = SearchData(search=search, search_type=search_type)
-        logger.info(f"Searched for '{search}'")
-        if search_type == "pe":
-            return WebClient.search_similarity(self, data, query_type)
-        else:
-            return WebClient.search(self, data)
+        logger.info(f"Semantic Searched for '{search}'")
+        return WebClient.search_similarity(self, data, query_type)
+    
+    def search_Registry_Literal(self, search: str, search_type: _TYPES = "both"):
+        """Literal Search registry for workflow and pes"""
+        options = get_args(_TYPES)
+        assert search_type in options, f"'{search_type}' is not in {options}"
+        data = SearchData(search=search, search_type=search_type)
+        logger.info(f"Literal Searched for '{search}'")
+        return WebClient.search(self, data)
 
 
     def remove_PE(self, pe: Union[str, int]):

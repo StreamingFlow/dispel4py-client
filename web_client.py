@@ -15,6 +15,7 @@ from enum import Enum
 import os
 import numpy as np
 import inspect
+import importlib.util
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(format='%(message)s', level=logging.FATAL)
@@ -106,27 +107,39 @@ class Process(Enum):
 
 class PERegistrationData:
     def __init__(self, *, pe: type, pe_name: str = None, pe_code: any = None, description: str = None):
-        if pe is not None:
-            pe_name = pe.__class__.__name__
+        pe_class = pe.__class__
+
         try:
-            pe_source_code = inspect.getsource(pe.__class__)
-        except OSError:
+            pe_source_code = inspect.getsource(pe_class)
+        except OSError as e:
             pe_source_code = "Source code not available"
+            #print(f"An error occurred: could not find class definition for {pe_class}. Error: {str(e)}")
+            #print("Debugging info: Is the class defined dynamically or imported from elsewhere?")
+        except TypeError as e:
+            pe_source_code = "Source code not available"
+            #print(f"An error occurred: {str(e)}")
+            #print("Debugging info: The class might be a built-in or a C extension.")
+
+        if pe is not None:
+            pe_name = pe_class.__name__
         try:
             pe_process_source_code = inspect.getsource(pe._process)
         except OSError:
             pe_process_source_code = "Source code not available"
+
         self.pe_name = pe_name
         self.pe_code = get_payload(pe)
         if description:
             self.description = description
         else:
-            self.description = generate_summary(pe_process_source_code)
+            if pe_source_code!= "Source code not available" :
+                self.description = generate_summary(pe_source_code).replace(" class ", " pe ")
+            else:
+                self.description = generate_summary(pe_process_source_code)
         self.pe_source_code = pe_source_code
         self.pe_imports = create_import_string(pe_source_code)
         self.code_embedding = np.array_str(encode(pe_process_source_code, 2).cpu().numpy())
         self.desc_embedding = np.array_str(encode(self.description, 1).cpu().numpy())
-      
 
     def to_dict(self):
         return {
@@ -142,24 +155,43 @@ class PERegistrationData:
     def __str__(self):
         return "PERegistrationData(" + json.dumps(self.to_dict(), indent=4) + ")"
 
+
 class WorkflowRegistrationData:
     def __init__(self, *, workflow: any, workflow_name: str = None, workflow_code: str = None, workflow_pes = None, entry_point: str = None, description: str = None):
         if workflow is not None:
             workflow_name = workflow.__class__.__name__
             workflow_code = get_payload(workflow)
         workflow_pes = workflow.get_contained_objects()
+        workflow_source_code = "class " + entry_point + "():\n"
+
+        for pe in workflow_pes:
+            #try:
+            #    pe_code = inspect.getsource(pe.__class__)
+            #except:
+            #    pe_code = inspect.getsource(pe._process)
+            pe_code = inspect.getsource(pe._process)
+            pe_code = pe_code.split("\n", 2)[2]
+            workflow_source_code = workflow_source_code + pe_code
+            workflow_source_code = workflow_source_code +"\n"
+        if description:
+            self.description = description
+        else:
+            summary=generate_summary(workflow_source_code)
+            self.description = summary.replace(" class ", " workflow ")
+
         self.workflow_name = workflow_name
         self.workflow_code = workflow_code
         self.entry_point = entry_point
-        self.description = description
         self.workflow_pes = workflow_pes
+        self.desc_embedding = np.array_str(encode(self.description, 1).cpu().numpy())
 
     def to_dict(self):
         return {
             "workflowName": self.workflow_name,
             "workflowCode": self.workflow_code,
             "entryPoint": self.entry_point,
-            "description": self.description
+            "description": self.description,
+            "descEmbedding": self.desc_embedding
         }
 
     def __str__(self):
@@ -463,10 +495,13 @@ class WebClient:
 
     def search_similarity(self, search_payload: SearchData, query_type):
         search_dict = search_payload.to_dict()
-        url = URL_PE_ALL.format(globals.CLIENT_AUTH_ID)
+        if search_dict["searchType"] == "pe":
+            url = URL_PE_ALL.format(globals.CLIENT_AUTH_ID)
+        elif search_dict["searchType"] == "workflow":
+            url = URL_WORKFLOW_ALL.format(globals.CLIENT_AUTH_ID)
         response = req.get(url=url)
         response = json.loads(response.text)
-        return similarity_search(search_dict['search'], response, query_type)
+        return similarity_search(search_dict['search'], response, query_type, search_dict["searchType"])
 
     def get_Registry(self):
         verify_login()

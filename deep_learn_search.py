@@ -16,6 +16,10 @@ from transformers import RobertaTokenizer, T5ForConditionalGeneration
 from transformers import logging
 logging.disable_default_handler()
 
+import os
+os.environ["TOKENIZERS_PARALLELISM"] = "false"  # Disable parallelism to avoid warnings
+
+
 model_text_to_code = pipeline(
     model="Lazyhope/RepoSim",
     trust_remote_code=True,
@@ -55,8 +59,8 @@ def generate_summary(text):
 
 
 # SEARCH
-def similarity_search(user_query, all_pes, type):
-    print(f"Performing similarity search with query type: {type}")
+def similarity_search(user_query, all_pes, type, search_type):
+    print(f"Performing similarity search on {search_type}, with query type: {type}")
 
     # format all PEs response
     all_pes_df = pd.json_normalize(all_pes)
@@ -65,8 +69,10 @@ def similarity_search(user_query, all_pes, type):
         print("Encoding query as text...")
         # query embedding
         user_query_docs_emb = encode(user_query, 1)
+        
 
         user_query_emb = user_query_docs_emb.cpu().numpy()
+        
 
         embed_type = 'descEmbedding'
     else:
@@ -93,11 +99,18 @@ def similarity_search(user_query, all_pes, type):
     # Retrieve the top 5 most similar documents
     top_5_similar_docs = sorted_df.head(5)
 
-    selected_columns = ['peId', 'peName', 'description', 'cosine_similarity']
-    print(top_5_similar_docs[selected_columns])
 
-    # Retrieve code column
-    obj_list = top_5_similar_docs["peCode"].apply(lambda x: pickle.loads(codecs.decode(x.encode(), "base64"))).tolist()
+    if search_type == "pe":
+        selected_columns = ['peId', 'peName', 'description', 'cosine_similarity']
+        print(top_5_similar_docs[selected_columns])
 
+        # Retrieve code column
+        obj_list = top_5_similar_docs["peCode"].apply(lambda x: pickle.loads(codecs.decode(x.encode(), "base64"))).tolist()
+
+    else:
+        selected_columns = ['workflowId', 'workflowName', 'description', 'cosine_similarity']
+        print(top_5_similar_docs[selected_columns])
+        # Retrieve code column
+        obj_list = top_5_similar_docs["workflowCode"].apply(lambda x: pickle.loads(codecs.decode(x.encode(), "base64"))).tolist()
     return obj_list
-
+    
