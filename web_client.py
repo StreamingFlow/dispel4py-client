@@ -493,7 +493,7 @@ class WebClient:
         logger.error(response.reason)
         return None
 
-    def search_similarity(self, search_payload: SearchData, query_type):
+    def search_similarity(self, search_payload: SearchData, query_type, embedding_type):
         search_dict = search_payload.to_dict()
         if search_dict["searchType"] == "pe":
             url = URL_PE_ALL.format(globals.CLIENT_AUTH_ID)
@@ -501,7 +501,7 @@ class WebClient:
             url = URL_WORKFLOW_ALL.format(globals.CLIENT_AUTH_ID)
         response = req.get(url=url)
         response = json.loads(response.text)
-        return similarity_search(search_dict['search'], response, query_type, search_dict["searchType"])
+        return similarity_search(search_dict['search'], response, query_type, search_dict["searchType"], embedding_type)
 
     def get_Registry(self):
         verify_login()

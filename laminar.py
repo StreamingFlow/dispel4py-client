@@ -75,9 +75,11 @@ class LaminarCLI(cmd.Cmd):
         parser.add_argument("search_type", choices=["workflow", "pe"], default="pe")
         parser.add_argument("search_term")
         parser.add_argument("--query_type", choices=["text", "code"], default="text")
+        parser.add_argument("--embedding_type", choices=["llm", "ast"], default="llm")
+
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
-            feedback = client.search_Registry(args["search_term"], args["search_type"], args["query_type"])
+            feedback = client.search_Registry(args["search_term"], args["search_type"], args["query_type"], args["embedding_type"])
             print(feedback)
         except argparse.ArgumentError as e:
             print(e.message.replace("laminar.py", "semantic_search"))
@@ -97,14 +99,17 @@ class LaminarCLI(cmd.Cmd):
         print("  --query_type  The type of search to perform. Choices are:")
         print("                - 'text': Perform a text-based search (default)")
         print("                - 'code': Perform a code-based search")
+        print("  --embedding_type  The type of embedding to use. Choices are:")
+        print("                - 'llm': Perform a search based on LLM-generated embeddings (default)")
+        print("                - 'ast': Perform a search based on AST features")
         print()
         print("Usage:")
-        print("  search [workflow|pe] [string] [--query_type text|code]")
+        print("  semantic_search [workflow|pe] [search_term] [--query_type text|code] [--embedding_type llm|ast]")
         print()
         print("Examples:")
-        print("  search workflow some_term --query_type text")
-        print("  search pe my_processing_element --query_type code")
-        print("  search pe my_processing_element --query_type text")
+        print("  semantic_search workflow some_term --query_type text --embedding_type llm")
+        print("  semantic_search pe my_processing_element --query_type code --embedding_type ast")
+        print("  semantic_search pe my_processing_element --query_type text --embedding_type llm")
 
     def do_run(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)

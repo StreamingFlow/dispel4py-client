@@ -10,6 +10,7 @@ import os
 
 _TYPES = Literal["pe", "workflow", "both"]
 _QUERY_TYPES = Literal["text", "code"]
+_E_TYPES = Literal["llm", "ast"]
 
 class d4pClient:
 
@@ -119,13 +120,13 @@ class d4pClient:
             assert isinstance(obj, type), "Requires an object of type WorkflowGraph or PE"
 
 
-    def search_Registry(self, search: str, search_type: _TYPES = "both", query_type: _QUERY_TYPES = "text"):
+    def search_Registry(self, search: str, search_type: _TYPES = "pe", query_type: _QUERY_TYPES = "text", embedding_type: _E_TYPES = "llm" ):
         """Semantic Search registry for workflow"""
         options = get_args(_TYPES)
         assert search_type in options, f"'{search_type}' is not in {options}"
         data = SearchData(search=search, search_type=search_type)
         logger.info(f"Semantic Searched for '{search}'")
-        return WebClient.search_similarity(self, data, query_type)
+        return WebClient.search_similarity(self, data, query_type, embedding_type)
     
     def search_Registry_Literal(self, search: str, search_type: _TYPES = "both"):
         """Literal Search registry for workflow and pes"""

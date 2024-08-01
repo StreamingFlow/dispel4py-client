@@ -59,7 +59,7 @@ def generate_summary(text):
 
 
 # SEARCH
-def similarity_search(user_query, all_pes, type, search_type):
+def similarity_search(user_query, all_pes, type, search_type, embedding_type):
     print(f"Performing similarity search on {search_type}, with query type: {type}")
 
     # format all PEs response
@@ -76,13 +76,16 @@ def similarity_search(user_query, all_pes, type, search_type):
 
         embed_type = 'descEmbedding'
     else:
-        print("Encoding query as code...")
-        # query embedding
-        user_query_docs_emb = encode(user_query, 2)
 
-        user_query_emb = user_query_docs_emb.cpu().numpy()
+        if embedding_type == "llm":
+            print("Encoding query as code...")
+            # query embedding
+            user_query_docs_emb = encode(user_query, 2)
+            user_query_emb = user_query_docs_emb.cpu().numpy()
+            embed_type = 'codeEmbedding'
 
-        embed_type = 'codeEmbedding'
+        else: 
+            print("To Implement AST")
 
     # Compute cosine similarity
     all_pes_df[embed_type] = all_pes_df[embed_type].apply(lambda x: np.array(list(map(float, x[1:-1].split()))))
