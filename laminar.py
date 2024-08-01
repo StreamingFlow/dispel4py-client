@@ -407,13 +407,13 @@ class LaminarCLI(cmd.Cmd):
             feedback = client.update_workflow_description(args["workflow_id"], args["new_description"])
             print(feedback)
         except argparse.ArgumentError as e:
-            print(e.message.replace("laminar.py", "update_wf_description"))
+            print(e.message.replace("laminar.py", "update_workflow_description"))
         except Exception as e:
             print(f"An error occurred: {e}")
 
     def help_update_workflow_description(self):
         print("Updates the description of a workflow by Id")
-        print("Usage: update_description [workflow_id] [new_description]")
+        print("Usage: update_workflow_description [workflow_id] [new_description]")
 
     def do_update_pe_description(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
@@ -430,7 +430,7 @@ class LaminarCLI(cmd.Cmd):
 
     def help_update_pe_description(self):
         print("Updates the description of a PE by Id")
-        print("Usage: update_description [pe_id] [new_description]")
+        print("Usage: update_pe_description [pe_id] [new_description]")
 
 
     def do_remove_all(self, arg):

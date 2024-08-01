@@ -513,8 +513,9 @@ class WebClient:
 
     def update_workflow_description(self, workflow, new_description):
         verify_login()
+        new_embedding=np.array_str(encode(new_description, 1).cpu().numpy())
         url = URL_UPDATE_WORKFLOW_DESC_ID.format(globals.CLIENT_AUTH_ID, workflow)
-        response = req.put(url=url, json={"description": new_description}, headers=headers)
+        response = req.put(url=url, json={"description": new_description, "descEmbedding":new_embedding}, headers=headers)
         if response.status_code == 200:
             response ="Succesfully updated the description of workflow ID: " + str(workflow)
             return response
@@ -523,8 +524,9 @@ class WebClient:
 
     def update_pe_description(self, pe, new_description):
         verify_login()
+        new_embedding=np.array_str(encode(new_description, 1).cpu().numpy())
         url = URL_UPDATE_PE_DESC_ID.format(globals.CLIENT_AUTH_ID, pe)
-        response = req.put(url=url, json={"description": new_description}, headers=headers)
+        response = req.put(url=url, json={"description": new_description, "descEmbedding":new_embedding}, headers=headers)
         if response.status_code == 200:
             response ="Succesfully updated the description of pe ID: " + str(pe)
             return response
