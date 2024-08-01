@@ -16,6 +16,10 @@ from transformers import RobertaTokenizer, T5ForConditionalGeneration
 from transformers import logging
 logging.disable_default_handler()
 
+import os
+os.environ["TOKENIZERS_PARALLELISM"] = "false"  # Disable parallelism to avoid warnings
+
+
 model_text_to_code = pipeline(
     model="Lazyhope/RepoSim",
     trust_remote_code=True,

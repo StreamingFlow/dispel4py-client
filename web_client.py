@@ -162,18 +162,36 @@ class WorkflowRegistrationData:
             workflow_name = workflow.__class__.__name__
             workflow_code = get_payload(workflow)
         workflow_pes = workflow.get_contained_objects()
+        workflow_source_code = "class " + entry_point + "():\n"
+
+        for pe in workflow_pes:
+            #try:
+            #    pe_code = inspect.getsource(pe.__class__)
+            #except:
+            #    pe_code = inspect.getsource(pe._process)
+            pe_code = inspect.getsource(pe._process)
+            pe_code = pe_code.split("\n", 2)[2]
+            workflow_source_code = workflow_source_code + pe_code
+            workflow_source_code = workflow_source_code +"\n"
+        if description:
+            self.description = description
+        else:
+            summary=generate_summary(workflow_source_code)
+            self.description = summary.replace(" class ", " workflow ")
+
         self.workflow_name = workflow_name
         self.workflow_code = workflow_code
         self.entry_point = entry_point
-        self.description = description
         self.workflow_pes = workflow_pes
+        self.desc_embedding = np.array_str(encode(self.description, 1).cpu().numpy())
 
     def to_dict(self):
         return {
             "workflowName": self.workflow_name,
             "workflowCode": self.workflow_code,
             "entryPoint": self.entry_point,
-            "description": self.description
+            "description": self.description,
+            "descEmbedding": self.desc_embedding
         }
 
     def __str__(self):

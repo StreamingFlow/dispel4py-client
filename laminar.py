@@ -121,6 +121,7 @@ class LaminarCLI(cmd.Cmd):
                         pes[var] = attr
                     if isinstance(attr, WorkflowGraph):
                         workflows.update({var: attr})
+
                 if len(pes) == 0 and len(workflows) == 0:
                     print("Could not find any PEs or Workflows")
                     return
@@ -141,6 +142,8 @@ class LaminarCLI(cmd.Cmd):
                 for key in workflows:
                     print(f"• {key} - {type(workflows[key]).__name__}", end=" ")
                     docstring = workflows[key].__doc__
+                    if "A graph representing the workflow and related methods" in docstring:
+                        docstring=None
                     r = client.register_Workflow(workflows[key], key, docstring)
                     if r is None:
                         print("(Exists)")
