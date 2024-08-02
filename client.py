@@ -41,9 +41,9 @@ class d4pClient:
         data = PERegistrationData(pe=pe, description=description)
         return WebClient.register_PE(self, data)
 
-    def register_Workflow(self, workflow: WorkflowGraph, workflow_name: str, description: str = None):
+    def register_Workflow(self, workflow: WorkflowGraph, workflow_name: str, description: str = None, module= None):
         """Register a Workflow with the client service"""
-        data = WorkflowRegistrationData(workflow=workflow, entry_point=workflow_name, description=description)
+        data = WorkflowRegistrationData(workflow=workflow, entry_point=workflow_name, description=description, module=module)
         return WebClient.register_Workflow(self, data)
 
     def run(self, workflow: Union[str, int, WorkflowGraph], input=None, process=Process.SIMPLE, resources: list[str] = [], verbose=True):

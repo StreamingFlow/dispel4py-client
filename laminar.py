@@ -37,6 +37,8 @@ class LaminarCLI(cmd.Cmd):
         super().__init__()
         self.prompt = "(laminar) "
         self.intro = """Welcome to the Laminar CLI"""
+        self.loaded_modules = {}  # Initialize the loaded_modules dictionary
+
 
     def do_literal_search(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
@@ -164,10 +166,18 @@ class LaminarCLI(cmd.Cmd):
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
             try:
-                spec = importlib.util.spec_from_file_location("__main__", args["filepath"])
+                #spec = importlib.util.spec_from_file_location("__main__", args["filepath"])
+                #mod = importlib.util.module_from_spec(spec)
+                #sys.modules["module.name"] = mod  # Ensure module is in sys.modules
+                #spec.loader.exec_module(mod)
+
+                spec = importlib.util.spec_from_file_location("module_name", args["filepath"])
                 mod = importlib.util.module_from_spec(spec)
-                sys.modules["module.name"] = mod  # Ensure module is in sys.modules
+                sys.modules["module_name"] = mod  # Ensure module is in sys.modules
                 spec.loader.exec_module(mod)
+                self.loaded_modules["module_name"] = mod  # Store the loaded module
+
+
                 pes = {}
                 workflows = {}
                 for var in dir(mod):
@@ -199,7 +209,7 @@ class LaminarCLI(cmd.Cmd):
                     docstring = workflows[key].__doc__
                     if "A graph representing the workflow and related methods" in docstring:
                         docstring=None
-                    r = client.register_Workflow(workflows[key], key, docstring)
+                    r = client.register_Workflow(workflows[key], key, docstring, mod)
                     if r is None:
                         print("(Exists)")
                     else:
@@ -234,8 +244,9 @@ class LaminarCLI(cmd.Cmd):
     
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
-            spec = importlib.util.spec_from_file_location("__main__", args["filepath"])
+            spec = importlib.util.spec_from_file_location("dynamic_module", args["filepath"])
             mod = importlib.util.module_from_spec(spec)
+            sys.modules["dynamic_module"] = mod  # Ensure module is in sys.modules
             spec.loader.exec_module(mod)
             pes = {}
             for var in dir(mod):
