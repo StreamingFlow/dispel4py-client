@@ -244,10 +244,11 @@ class LaminarCLI(cmd.Cmd):
     
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
-            spec = importlib.util.spec_from_file_location("dynamic_module", args["filepath"])
+            spec = importlib.util.spec_from_file_location("module_name", args["filepath"])
             mod = importlib.util.module_from_spec(spec)
-            sys.modules["dynamic_module"] = mod  # Ensure module is in sys.modules
+            sys.modules["module_name"] = mod  # Ensure module is in sys.modules
             spec.loader.exec_module(mod)
+            self.loaded_modules["module_name"] = mod  # Store the loaded module
             pes = {}
             for var in dir(mod):
                 attr = getattr(mod, var)
