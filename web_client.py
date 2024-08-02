@@ -16,6 +16,8 @@ import os
 import numpy as np
 import inspect
 import importlib.util
+import ConvertPy
+from Aroma.similar import setup_features, compare_similar
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(format='%(message)s', level=logging.FATAL)
@@ -140,6 +142,24 @@ class PERegistrationData:
         self.pe_imports = create_import_string(pe_source_code)
         self.code_embedding = np.array_str(encode(pe_process_source_code, 2).cpu().numpy())
         self.desc_embedding = np.array_str(encode(self.description, 1).cpu().numpy())
+        # convert to json style file for AST similarity
+        
+        # Ensure valid Python code is passed to AST parser
+        code_to_use = pe_source_code if pe_source_code != "Source code not available" else pe_process_source_code
+        if code_to_use != "Source code not available":
+            
+            # Ensure code starts at the correct indentation level
+            lines = code_to_use.splitlines()
+            min_indent = min(len(line) - len(line.lstrip()) for line in lines if line.strip())
+            adjusted_lines = [line[min_indent:] for line in lines]
+            adjusted_code = "\n".join(adjusted_lines)
+            convertToAST = ConvertPy.ConvertPyToAST(adjusted_code, False)
+        else:
+            convertToAST = ConvertPy.ConvertPyToAST(code_to_use, False)
+
+        # featurisation allows for storing the relevant features for the similarity analysis
+        featurisedAST = setup_features([convertToAST.result], "./Aroma")
+        self.astEmbedding = str(json.dumps(featurisedAST))
 
     def to_dict(self):
         return {
@@ -149,7 +169,8 @@ class PERegistrationData:
             "description": self.description,
             "peImports": self.pe_imports,
             "codeEmbedding": self.code_embedding,
-            "descEmbedding": self.desc_embedding
+            "descEmbedding": self.desc_embedding,
+            "astEmbedding" : self.astEmbedding
         }
 
     def __str__(self):
@@ -157,7 +178,7 @@ class PERegistrationData:
 
 
 class WorkflowRegistrationData:
-    def __init__(self, *, workflow: any, workflow_name: str = None, workflow_code: str = None, workflow_pes = None, entry_point: str = None, description: str = None):
+    def __init__(self, *, workflow: any, workflow_name: str = None, workflow_code: str = None, workflow_pes = None, entry_point: str = None, description: str = None, module = None):
         if workflow is not None:
             workflow_name = workflow.__class__.__name__
             workflow_code = get_payload(workflow)
@@ -184,6 +205,13 @@ class WorkflowRegistrationData:
         self.entry_point = entry_point
         self.workflow_pes = workflow_pes
         self.desc_embedding = np.array_str(encode(self.description, 1).cpu().numpy())
+ 
+        if module:
+            self.module_source_code = inspect.getsource(module)
+        else:
+            self.module_source_code = ""
+
+    
 
     def to_dict(self):
         return {
@@ -191,7 +219,8 @@ class WorkflowRegistrationData:
             "workflowCode": self.workflow_code,
             "entryPoint": self.entry_point,
             "description": self.description,
-            "descEmbedding": self.desc_embedding
+            "descEmbedding": self.desc_embedding,
+            "moduleSourceCode": self.module_source_code
         }
 
     def __str__(self):
@@ -359,41 +388,7 @@ class WebClient:
             return True
         return {}
 
-    def get_PE(self, identifier: Union[int, str]):
-        verify_login()
-
-        if isinstance(identifier, str):
-            url = URL_GET_PE_NAME.format(globals.CLIENT_AUTH_ID) + identifier
-        elif isinstance(identifier, int):
-            url = URL_GET_PE_ID.format(globals.CLIENT_AUTH_ID) + str(identifier)
-
-        response = req.get(url=url)
-        response = json.loads(response.text)
-
-        if 'ApiError' in response.keys():
-            logger.error(response['ApiError']['message'])
-            return None
-        else:
-            pe_code = response["peCode"]
-            return pickle.loads(codecs.decode(pe_code.encode(), "base64"))
-
-    def get_Workflow(self, identifier: Union[int, str]):
-        verify_login()
-
-        if isinstance(identifier, str):
-            url = URL_GET_WORKFLOW_NAME.format(globals.CLIENT_AUTH_ID) + identifier
-        elif isinstance(identifier, int):
-            url = URL_GET_WORKFLOW_ID.format(globals.CLIENT_AUTH_ID) + str(identifier)
-
-        response = req.get(url=url)
-        response = json.loads(response.text)
-
-        if 'ApiError' in response.keys():
-            logger.error(response['ApiError']['message'])
-            return None
-        else:
-            workflow_code = response["workflowCode"]
-            return pickle.loads(codecs.decode(workflow_code.encode(), "base64"))
+    
 
     def get_PE(self, pe: Union[int, str]):
         verify_login()
@@ -493,7 +488,7 @@ class WebClient:
         logger.error(response.reason)
         return None
 
-    def search_similarity(self, search_payload: SearchData, query_type):
+    def search_similarity(self, search_payload: SearchData, query_type, embedding_type):
         search_dict = search_payload.to_dict()
         if search_dict["searchType"] == "pe":
             url = URL_PE_ALL.format(globals.CLIENT_AUTH_ID)
@@ -501,7 +496,7 @@ class WebClient:
             url = URL_WORKFLOW_ALL.format(globals.CLIENT_AUTH_ID)
         response = req.get(url=url)
         response = json.loads(response.text)
-        return similarity_search(search_dict['search'], response, query_type, search_dict["searchType"])
+        return similarity_search(search_dict['search'], response, query_type, search_dict["searchType"], embedding_type)
 
     def get_Registry(self):
         verify_login()

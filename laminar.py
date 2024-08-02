@@ -37,6 +37,8 @@ class LaminarCLI(cmd.Cmd):
         super().__init__()
         self.prompt = "(laminar) "
         self.intro = """Welcome to the Laminar CLI"""
+        self.loaded_modules = {}  # Initialize the loaded_modules dictionary
+
 
     def do_literal_search(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
@@ -75,9 +77,11 @@ class LaminarCLI(cmd.Cmd):
         parser.add_argument("search_type", choices=["workflow", "pe"], default="pe")
         parser.add_argument("search_term")
         parser.add_argument("--query_type", choices=["text", "code"], default="text")
+        parser.add_argument("--embedding_type", choices=["llm", "ast"], default="llm")
+
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
-            feedback = client.search_Registry(args["search_term"], args["search_type"], args["query_type"])
+            feedback = client.search_Registry(args["search_term"], args["search_type"], args["query_type"], args["embedding_type"])
             print(feedback)
         except argparse.ArgumentError as e:
             print(e.message.replace("laminar.py", "semantic_search"))
@@ -97,14 +101,17 @@ class LaminarCLI(cmd.Cmd):
         print("  --query_type  The type of search to perform. Choices are:")
         print("                - 'text': Perform a text-based search (default)")
         print("                - 'code': Perform a code-based search")
+        print("  --embedding_type  The type of embedding to use. Choices are:")
+        print("                - 'llm': Perform a search based on LLM-generated embeddings (default)")
+        print("                - 'ast': Perform a search based on AST features")
         print()
         print("Usage:")
-        print("  search [workflow|pe] [string] [--query_type text|code]")
+        print("  semantic_search [workflow|pe] [search_term] [--query_type text|code] [--embedding_type llm|ast]")
         print()
         print("Examples:")
-        print("  search workflow some_term --query_type text")
-        print("  search pe my_processing_element --query_type code")
-        print("  search pe my_processing_element --query_type text")
+        print("  semantic_search workflow some_term --query_type text --embedding_type llm")
+        print("  semantic_search pe my_processing_element --query_type code --embedding_type ast")
+        print("  semantic_search pe my_processing_element --query_type text --embedding_type llm")
 
     def do_run(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
@@ -159,10 +166,18 @@ class LaminarCLI(cmd.Cmd):
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
             try:
-                spec = importlib.util.spec_from_file_location("__main__", args["filepath"])
+                #spec = importlib.util.spec_from_file_location("__main__", args["filepath"])
+                #mod = importlib.util.module_from_spec(spec)
+                #sys.modules["module.name"] = mod  # Ensure module is in sys.modules
+                #spec.loader.exec_module(mod)
+
+                spec = importlib.util.spec_from_file_location("module_name", args["filepath"])
                 mod = importlib.util.module_from_spec(spec)
-                sys.modules["module.name"] = mod  # Ensure module is in sys.modules
+                sys.modules["module_name"] = mod  # Ensure module is in sys.modules
                 spec.loader.exec_module(mod)
+                self.loaded_modules["module_name"] = mod  # Store the loaded module
+
+
                 pes = {}
                 workflows = {}
                 for var in dir(mod):
@@ -194,7 +209,7 @@ class LaminarCLI(cmd.Cmd):
                     docstring = workflows[key].__doc__
                     if "A graph representing the workflow and related methods" in docstring:
                         docstring=None
-                    r = client.register_Workflow(workflows[key], key, docstring)
+                    r = client.register_Workflow(workflows[key], key, docstring, mod)
                     if r is None:
                         print("(Exists)")
                     else:
@@ -229,8 +244,9 @@ class LaminarCLI(cmd.Cmd):
     
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
-            spec = importlib.util.spec_from_file_location("__main__", args["filepath"])
+            spec = importlib.util.spec_from_file_location("dynamic_module", args["filepath"])
             mod = importlib.util.module_from_spec(spec)
+            sys.modules["dynamic_module"] = mod  # Ensure module is in sys.modules
             spec.loader.exec_module(mod)
             pes = {}
             for var in dir(mod):
