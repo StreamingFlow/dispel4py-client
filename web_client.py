@@ -185,6 +185,7 @@ class WorkflowRegistrationData:
         workflow_pes = workflow.get_contained_objects()
         workflow_source_code = "class " + entry_point + "():\n"
 
+
         for pe in workflow_pes:
             #try:
             #    pe_code = inspect.getsource(pe.__class__)
@@ -490,13 +491,87 @@ class WebClient:
 
     def search_similarity(self, search_payload: SearchData, query_type, embedding_type):
         search_dict = search_payload.to_dict()
-        if search_dict["searchType"] == "pe":
-            url = URL_PE_ALL.format(globals.CLIENT_AUTH_ID)
-        elif search_dict["searchType"] == "workflow":
+        
+        if search_dict["searchType"] == "workflow" and query_type == "text":
             url = URL_WORKFLOW_ALL.format(globals.CLIENT_AUTH_ID)
+        else:
+            url = URL_PE_ALL.format(globals.CLIENT_AUTH_ID)
         response = req.get(url=url)
         response = json.loads(response.text)
-        return similarity_search(search_dict['search'], response, query_type, search_dict["searchType"], embedding_type)
+        if embedding_type == "llm":
+            return similarity_search(search_dict['search'], response, query_type, search_dict["searchType"], embedding_type)
+        else:
+            ## this for embedding_type == "ast" 
+            astEmbeddings = []
+            # puts all of the pe embeddings into a list
+            for pe in response:
+                # concat instead of appending
+                jsonData = None
+                jsonData = json.loads(pe['astEmbedding'])
+                # adds the pe name and id to each function
+                for func in jsonData:
+                    func['peId'] = pe['peId']
+                    func['peName'] = pe['peName']
+                astEmbeddings += jsonData
+
+            convertToAST = ConvertPy.ConvertPyToAST(search_payload.search, False)
+            setup_features([astEmbeddings], "./Aroma")
+            similarPEs = []
+            for converted in convertToAST.result:
+                similarPEs += compare_similar(astEmbeddings, [converted], "./Aroma")
+
+            if search_dict["searchType"] == "pe":
+                #print("result AST AROMA IS:\n")
+                #print(similarPEs)
+                return similarPEs
+                
+            else: 
+                
+                ## this for embedding_type == "llm and search_dict["searchType"] == "workflow"
+                
+                url = URL_GET_WORKFLOW_BY_PE.format(globals.CLIENT_AUTH_ID)
+
+
+                
+                objectList = []
+                index = 0
+                # recall that dictionaries are order post python 3.7
+                discoveredWorkflows = []
+                workflowPositions = {} # used to find the index by workflow
+        
+                for pe in similarPEs:
+                    
+                  
+                    response = req.get(url=url + str(pe[0]))
+                    response = json.loads(response.text)
+
+                  
+                    for result in response:
+                        if not result[0] in workflowPositions:
+                            workflowPositions[result[0]] = index
+                            discoveredWorkflows.append([result[0], result[1], result[2], result[3], index, 1])
+                            index += 1
+                        else:
+                            discoveredWorkflows[workflowPositions[result[0]]][5] += 1
+
+
+                # sort by number of occurences, break ties by position
+                
+                discoveredWorkflows = sorted(discoveredWorkflows, key=lambda x: (-x[5], x[4]))
+                #print("discoveredWorkflows %s" %discoveredWorkflows)
+                resultPos = 0
+                for workflow in discoveredWorkflows:
+
+                    print("Result " + str(resultPos) + ": " + "ID: " + str(workflow[0]) + "\n" + "Workflow Name: " + workflow[1] + "\n" + "Description: " + workflow[2] + "\n")
+
+                    objectList.append(pickle.loads(codecs.decode(workflow[3].encode(), "base64")))
+                       
+
+                    resultPos += 1
+
+
+                return objectList
+
 
     def get_Registry(self):
         verify_login()

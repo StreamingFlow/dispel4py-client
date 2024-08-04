@@ -48,6 +48,8 @@ URL_REMOVE_WORKFLOW_ID: str = BASE_URL_REGISTER + "/workflow/remove/id/"
 
 URL_LINK_PE_TO_WORKFLOW: str = BASE_URL_REGISTER + "/workflow/{}/pe/{}"
 
+URL_GET_WORKFLOW_BY_PE: str = BASE_URL_REGISTER + "/workflow/byPeID/"
+
 URL_EXECUTE: str = BASE_URL + "/execution/{}/run"
 
 URL_RESOURCE: str = BASE_URL + "/execution/{}/resource"

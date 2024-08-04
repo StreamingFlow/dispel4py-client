@@ -86,6 +86,9 @@ def similarity_search(user_query, all_pes, type, search_type, embedding_type):
 
         else: 
             print("To Implement AST")
+            all_pes_df["astEmbedding"]
+
+            
 
     # Compute cosine similarity
     all_pes_df[embed_type] = all_pes_df[embed_type].apply(lambda x: np.array(list(map(float, x[1:-1].split()))))

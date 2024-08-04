@@ -8,6 +8,7 @@ import ast
 from typing import IO
 import pwinput
 import importlib.util
+import time  
 
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # gets the libraries to write less garbage to the terminal
@@ -38,6 +39,8 @@ class LaminarCLI(cmd.Cmd):
         self.prompt = "(laminar) "
         self.intro = """Welcome to the Laminar CLI"""
         self.loaded_modules = {}  # Initialize the loaded_modules dictionary
+        self.module_counter = 0  # Initialize a counter for module names
+
 
 
     def do_literal_search(self, arg):
@@ -166,16 +169,15 @@ class LaminarCLI(cmd.Cmd):
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
             try:
-                #spec = importlib.util.spec_from_file_location("__main__", args["filepath"])
-                #mod = importlib.util.module_from_spec(spec)
-                #sys.modules["module.name"] = mod  # Ensure module is in sys.modules
-                #spec.loader.exec_module(mod)
+                unique_module_name = f"module_name_{int(time.time())}_{self.module_counter}"
+                self.module_counter += 1
 
-                spec = importlib.util.spec_from_file_location("module_name", args["filepath"])
+                spec = importlib.util.spec_from_file_location(unique_module_name, args["filepath"])
                 mod = importlib.util.module_from_spec(spec)
-                sys.modules["module_name"] = mod  # Ensure module is in sys.modules
+                sys.modules[unique_module_name] = mod  # Ensure module is in sys.modules
                 spec.loader.exec_module(mod)
-                self.loaded_modules["module_name"] = mod  # Store the loaded module
+                self.loaded_modules[unique_module_name] = mod  # Store the loaded module
+
 
 
                 pes = {}
@@ -244,11 +246,15 @@ class LaminarCLI(cmd.Cmd):
     
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
-            spec = importlib.util.spec_from_file_location("module_name", args["filepath"])
+            unique_module_name = f"module_name_{int(time.time())}_{self.module_counter}"
+            self.module_counter += 1
+
+            spec = importlib.util.spec_from_file_location(unique_module_name, args["filepath"])
             mod = importlib.util.module_from_spec(spec)
-            sys.modules["module_name"] = mod  # Ensure module is in sys.modules
+            sys.modules[unique_module_name] = mod  # Ensure module is in sys.modules
             spec.loader.exec_module(mod)
-            self.loaded_modules["module_name"] = mod  # Store the loaded module
+            self.loaded_modules[unique_module_name] = mod  # Store the loaded module
+
             pes = {}
             for var in dir(mod):
                 attr = getattr(mod, var)
