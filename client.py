@@ -12,6 +12,9 @@ _TYPES = Literal["pe", "workflow", "both"]
 _QUERY_TYPES = Literal["text", "code"]
 _E_TYPES = Literal["llm", "ast"]
 
+#valid semantic_search combinations
+_valid_combinations = { "text": ["llm"], "code": ["llm", "ast"]}
+
 class d4pClient:
 
     """Class to interact with registry and server services"""
@@ -120,13 +123,26 @@ class d4pClient:
             assert isinstance(obj, type), "Requires an object of type WorkflowGraph or PE"
 
 
+    
+
     def search_Registry(self, search: str, search_type: _TYPES = "pe", query_type: _QUERY_TYPES = "text", embedding_type: _E_TYPES = "llm" ):
-        """Semantic Search registry for workflow"""
+        """Semantic Search registry for workflows and pes"""
+
+        # Check if the combination of query_type and embedding_type is valid
+        if embedding_type not in _valid_combinations.get(query_type, []):
+            raise ValueError(f"Invalid combination: query_type '{query_type}' is only compatible with embedding_type {_valid_combinations[query_type]}")
+
+        # Validate the search_type
         options = get_args(_TYPES)
         assert search_type in options, f"'{search_type}' is not in {options}"
+
+        # Create the search data
         data = SearchData(search=search, search_type=search_type)
         logger.info(f"Semantic Searched for '{search}'")
+
+        # Perform the search
         return WebClient.search_similarity(self, data, query_type, embedding_type)
+
     
     def search_Registry_Literal(self, search: str, search_type: _TYPES = "both"):
         """Literal Search registry for workflow and pes"""
