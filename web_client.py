@@ -88,6 +88,30 @@ def get_objects(results):
         objectList.append(obj)
     return objectList
 
+def format_ast_pe_results(similarPEs, response):
+        formatted_pes = []
+        for pe in similarPEs:
+            peId = pe[0]
+            peName = pe[1]
+            score = pe[2]
+            pruned_score = pe[3]
+            similar_func = pe[4].split("\n")[0]
+            pe_details = next(item for item in response if item["peId"] == peId)
+            description = pe_details.get('description', None)
+            peCode = pe_details.get('peCode', None)
+            formatted_pes.append({
+                "peId": peId,
+                "peName": peName,
+                "score": score,
+                "pruned_score": pruned_score,
+                "description": description,
+                "peCode": peCode,
+                "simlarFunc": similar_func
+            })
+        return formatted_pes
+
+
+
 class AuthenticationData:
     def __init__(self, *, user_name: str, user_password: str):
         self.user_name = user_name
@@ -134,7 +158,7 @@ class PERegistrationData:
         if description:
             self.description = description
         else:
-            if pe_source_code!= "Source code not available" :
+            if pe_source_code != "Source code not available":
                 self.description = generate_summary(pe_source_code).replace(" class ", " pe ")
             else:
                 self.description = generate_summary(pe_process_source_code)
@@ -170,7 +194,7 @@ class PERegistrationData:
             "peImports": self.pe_imports,
             "codeEmbedding": self.code_embedding,
             "descEmbedding": self.desc_embedding,
-            "astEmbedding" : self.astEmbedding
+            "astEmbedding": self.astEmbedding
         }
 
     def __str__(self):
@@ -178,13 +202,12 @@ class PERegistrationData:
 
 
 class WorkflowRegistrationData:
-    def __init__(self, *, workflow: any, workflow_name: str = None, workflow_code: str = None, workflow_pes = None, entry_point: str = None, description: str = None, module = None, module_name = None):
+    def __init__(self, *, workflow: any, workflow_name: str = None, workflow_code: str = None, workflow_pes=None, entry_point: str = None, description: str = None, module=None, module_name=None):
         if workflow is not None:
             workflow_name = workflow.__class__.__name__
             workflow_code = get_payload(workflow)
         workflow_pes = workflow.get_contained_objects()
         workflow_source_code = "class " + entry_point + "():\n"
-
 
         for pe in workflow_pes:
             #try:
@@ -194,11 +217,11 @@ class WorkflowRegistrationData:
             pe_code = inspect.getsource(pe._process)
             pe_code = pe_code.split("\n", 2)[2]
             workflow_source_code = workflow_source_code + pe_code
-            workflow_source_code = workflow_source_code +"\n"
+            workflow_source_code = workflow_source_code + "\n"
         if description:
             self.description = description
         else:
-            summary=generate_summary(workflow_source_code)
+            summary = generate_summary(workflow_source_code)
             self.description = summary.replace(" class ", " workflow ")
 
         self.workflow_name = workflow_name
@@ -206,7 +229,7 @@ class WorkflowRegistrationData:
         self.entry_point = entry_point
         self.workflow_pes = workflow_pes
         self.desc_embedding = np.array_str(encode(self.description, 1).cpu().numpy())
- 
+
         if module:
             self.module_source_code = inspect.getsource(module)
         else:
@@ -217,7 +240,6 @@ class WorkflowRegistrationData:
         else:
             self.module_name = ""
 
-
     def to_dict(self):
         return {
             "workflowName": self.workflow_name,
@@ -226,7 +248,7 @@ class WorkflowRegistrationData:
             "description": self.description,
             "descEmbedding": self.desc_embedding,
             "moduleSourceCode": self.module_source_code,
-            "moduleName" : self.module_name
+            "moduleName": self.module_name
         }
 
     def __str__(self):
@@ -282,8 +304,8 @@ class SearchData:
         return "SearchData(" + json.dumps(self.to_dict(), indent=4) + ")"
 
 class WebClient:
-    def __init__():
-        None
+    def __init__(self):
+        pass
 
     def register_User(self, user_data: AuthenticationData):
         data = json.dumps(user_data.to_dict())
@@ -360,41 +382,37 @@ class WebClient:
         try:   
             parts = []
             for line in response.iter_lines():
-                    line = line.decode('utf-8')
-                    if line:
-                        if line[:5] == "data:":
-                            data = json.loads(line[5:])
-                            if "response" in data.keys() and verbose:
-                                print(str(data["response"]), end="")
-                            elif "result" in data.keys():
-                                if len(parts) > 0:
-                                    return parts
-                                return data["result"]
-                            elif "part-result" in data.keys():
-                                parts.append(data["part-result"])
-                            elif "resources" in data.keys():
-                                resources: list[str] = data["resources"]
-                                print("Requested resources: " + str(resources))
-                                if len(resources) == 0:
-                                    continue
-                                multipart_files: list = []
-                                for resource in resources:
-                                    multipart_files.append(("files", open(resource, 'rb')))
-                                url=URL_RESOURCE.format(globals.CLIENT_AUTH_ID)
-                                file_response = req.put(url=URL_RESOURCE.format(globals.CLIENT_AUTH_ID), files=multipart_files)
-                                print(f"File response: {file_response.status_code} {file_response.reason}")
-                                for _, file in multipart_files:
-                                    file.close()
-                            elif "error" in data.keys():
-                                print(str("Error: " + str(data["error"])))
-            
-            
+                line = line.decode('utf-8')
+                if line:
+                    if line[:5] == "data:":
+                        data = json.loads(line[5:])
+                        if "response" in data.keys() and verbose:
+                            print(str(data["response"]), end="")
+                        elif "result" in data.keys():
+                            if len(parts) > 0:
+                                return parts
+                            return data["result"]
+                        elif "part-result" in data.keys():
+                            parts.append(data["part-result"])
+                        elif "resources" in data.keys():
+                            resources: list[str] = data["resources"]
+                            print("Requested resources: " + str(resources))
+                            if len(resources) == 0:
+                                continue
+                            multipart_files: list = []
+                            for resource in resources:
+                                multipart_files.append(("files", open(resource, 'rb')))
+                            url = URL_RESOURCE.format(globals.CLIENT_AUTH_ID)
+                            file_response = req.put(url=URL_RESOURCE.format(globals.CLIENT_AUTH_ID), files=multipart_files)
+                            print(f"File response: {file_response.status_code} {file_response.reason}")
+                            for _, file in multipart_files:
+                                file.close()
+                        elif "error" in data.keys():
+                            print(str("Error: " + str(data["error"])))
         except Exception as e:
             print("Error: " + str(e))
             return True
         return {}
-
-    
 
     def get_PE(self, pe: Union[int, str]):
         verify_login()
@@ -414,8 +432,6 @@ class WebClient:
             peCode = response["peCode"]
             unpickled_result = pickle.loads(codecs.decode(peCode.encode(), "base64"))
             return unpickled_result
-
-    
 
     def get_Workflow(self, workflow: Union[int, str]):
         verify_login()
@@ -494,7 +510,6 @@ class WebClient:
         logger.error(response.reason)
         return None
 
-
     def get_Workflows(self):
         """Retrieve all workflows from the registry"""
         verify_login()
@@ -509,6 +524,7 @@ class WebClient:
         logger.error(response.reason)
         return None
 
+
     def search_similarity(self, search_payload: SearchData, query_type, embedding_type):
         search_dict = search_payload.to_dict()
         
@@ -518,6 +534,8 @@ class WebClient:
             url = URL_PE_ALL.format(globals.CLIENT_AUTH_ID)
         response = req.get(url=url)
         response = json.loads(response.text)
+
+
         if embedding_type == "llm":
             return similarity_search(search_dict['search'], response, query_type, search_dict["searchType"], embedding_type)
         else:
@@ -536,14 +554,31 @@ class WebClient:
 
             convertToAST = ConvertPy.ConvertPyToAST(search_payload.search, False)
             setup_features([astEmbeddings], "./Aroma")
+
             similarPEs = []
             for converted in convertToAST.result:
                 similarPEs += compare_similar(astEmbeddings, [converted], "./Aroma")
 
             if search_dict["searchType"] == "pe":
-                #print("result AST AROMA IS:\n")
-                #print(similarPEs)
-                return similarPEs
+                
+                formatted_pes = format_ast_pe_results(similarPEs, response)
+
+                # Convert to DataFrame
+                formatted_pes_df = pd.DataFrame(formatted_pes)
+
+                # Sort the DataFrame based on the score
+                sorted_df = formatted_pes_df.sort_values(by="score", ascending=False)
+
+                # Retrieve the top 5 most similar documents
+                top_5_similar_docs = sorted_df.head(5)
+
+                selected_columns = ['peId', 'peName', 'description', 'score', 'simlarFunc']
+                print(top_5_similar_docs[selected_columns])
+
+                # Retrieve code column
+                obj_list = top_5_similar_docs["peCode"].apply(lambda x: pickle.loads(codecs.decode(x.encode(), "base64"))).tolist()
+                return obj_list
+                
                 
             else: 
                 
@@ -575,7 +610,7 @@ class WebClient:
                             discoveredWorkflows[workflowPositions[result[0]]][5] += 1
 
 
-                # sort by number of occurences, break ties by position
+                # sort by number of occurrences, break ties by position
                 
                 discoveredWorkflows = sorted(discoveredWorkflows, key=lambda x: (-x[5], x[4]))
                 #print("discoveredWorkflows %s" %discoveredWorkflows)
@@ -591,7 +626,8 @@ class WebClient:
 
 
                 return objectList
-
+    
+    
 
     def get_Registry(self):
         verify_login()
@@ -600,25 +636,24 @@ class WebClient:
         response = json.loads(response.text)
         return get_objects(response)
 
-
     def update_workflow_description(self, workflow, new_description):
         verify_login()
-        new_embedding=np.array_str(encode(new_description, 1).cpu().numpy())
+        new_embedding = np.array_str(encode(new_description, 1).cpu().numpy())
         url = URL_UPDATE_WORKFLOW_DESC_ID.format(globals.CLIENT_AUTH_ID, workflow)
-        response = req.put(url=url, json={"description": new_description, "descEmbedding":new_embedding}, headers=headers)
+        response = req.put(url=url, json={"description": new_description, "descEmbedding": new_embedding}, headers=headers)
         if response.status_code == 200:
-            response ="Succesfully updated the description of workflow ID: " + str(workflow)
+            response = "Successfully updated the description of workflow ID: " + str(workflow)
             return response
         else:
             raise Exception(f"Failed to update workflow description: {response.text}")
 
     def update_pe_description(self, pe, new_description):
         verify_login()
-        new_embedding=np.array_str(encode(new_description, 1).cpu().numpy())
+        new_embedding = np.array_str(encode(new_description, 1).cpu().numpy())
         url = URL_UPDATE_PE_DESC_ID.format(globals.CLIENT_AUTH_ID, pe)
-        response = req.put(url=url, json={"description": new_description, "descEmbedding":new_embedding}, headers=headers)
+        response = req.put(url=url, json={"description": new_description, "descEmbedding": new_embedding}, headers=headers)
         if response.status_code == 200:
-            response ="Succesfully updated the description of pe ID: " + str(pe)
+            response = "Successfully updated the description of pe ID: " + str(pe)
             return response
         else:
             raise Exception(f"Failed to update pe description: {response.text}")
@@ -628,9 +663,9 @@ class WebClient:
         url = URL_REGISTRY_ALL.format(globals.CLIENT_AUTH_ID)
         response = req.get(url=url)
         results = json.loads(response.text)
-        workflow_list=[]
-        pe_list=[]
-        if len(results) > 0: 
+        workflow_list = []
+        pe_list = []
+        if len(results) > 0:
             for index, result in enumerate(results, start=1):
                 if 'workflowName' in result.keys():
                     workflow_list.append(result['workflowId'])
@@ -638,4 +673,3 @@ class WebClient:
                     pe_list.append(result['peId'])
 
         return (workflow_list, pe_list)
-
