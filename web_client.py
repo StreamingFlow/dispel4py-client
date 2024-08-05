@@ -110,6 +110,26 @@ def format_ast_pe_results(similarPEs, response):
             })
         return formatted_pes
 
+def format_ast_workflow_results(similarWorkflows):
+    formatted_workflows = []
+    formatted_workflows = []
+    for wf in similarWorkflows:
+        wfId = wf[0]
+        wfName = wf[1]
+        description = wf[2]
+        workflowCode = wf[3]
+        occurrences = wf[5]
+
+        formatted_workflows.append({
+            "workflowId": wfId,
+            "workflowName": wfName,
+            "description": description,
+            "workflowCode": workflowCode,
+            "occurrences": occurrences
+        })
+    return formatted_workflows
+
+
 
 
 class AuthenticationData:
@@ -587,7 +607,6 @@ class WebClient:
                 url = URL_GET_WORKFLOW_BY_PE.format(globals.CLIENT_AUTH_ID)
 
 
-                
                 objectList = []
                 index = 0
                 # recall that dictionaries are order post python 3.7
@@ -609,24 +628,27 @@ class WebClient:
                         else:
                             discoveredWorkflows[workflowPositions[result[0]]][5] += 1
 
+                 # sort by number of occurrences, break ties by position
+                #discoveredWorkflows = sorted(discoveredWorkflows, key=lambda x: (-x[5], x[4]))
+            
+                formatted_workflows = format_ast_workflow_results(discoveredWorkflows)
+                # Convert to DataFrame
+                formatted_workflows_df = pd.DataFrame(formatted_workflows)
 
-                # sort by number of occurrences, break ties by position
-                
-                discoveredWorkflows = sorted(discoveredWorkflows, key=lambda x: (-x[5], x[4]))
-                #print("discoveredWorkflows %s" %discoveredWorkflows)
-                resultPos = 0
-                for workflow in discoveredWorkflows:
+                # Sort the DataFrame based on the score
+                sorted_workflows_df = formatted_workflows_df.sort_values(by="occurrences", ascending=False)
 
-                    print("Result " + str(resultPos) + ": " + "ID: " + str(workflow[0]) + "\n" + "Workflow Name: " + workflow[1] + "\n" + "Description: " + workflow[2] + "\n")
+                # Retrieve the top 5 most similar documents
+                top_5_similar_workflows = sorted_workflows_df.head(5)
 
-                    objectList.append(pickle.loads(codecs.decode(workflow[3].encode(), "base64")))
-                       
+                selected_columns = ['workflowId', 'workflowName', 'description', 'occurrences']
+                print(top_5_similar_workflows[selected_columns])
 
-                    resultPos += 1
+                # Retrieve code column
+                obj_list = top_5_similar_workflows["workflowCode"].apply(lambda x: pickle.loads(codecs.decode(x.encode(), "base64"))).tolist()
+                return obj_list           
 
-
-                return objectList
-    
+        
     
 
     def get_Registry(self):
