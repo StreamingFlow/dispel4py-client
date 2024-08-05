@@ -125,6 +125,8 @@ class LaminarCLI(cmd.Cmd):
         print("                - 'llm': Perform a search based on LLM-generated embeddings (default)")
         print("                - 'ast': Perform a search based on AST features")
         print()
+        print("Important: --embedding_type <ast> is only possible for query_type <code>. ")
+        print()
         print("Usage:")
         print("  semantic_search [workflow|pe] [search_term] [--query_type text|code] [--embedding_type llm|ast]")
         print()
