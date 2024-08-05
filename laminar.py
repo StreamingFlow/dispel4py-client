@@ -40,7 +40,24 @@ class LaminarCLI(cmd.Cmd):
         self.intro = """Welcome to the Laminar CLI"""
         self.loaded_modules = {}  # Initialize the loaded_modules dictionary
         self.module_counter = 0  # Initialize a counter for module names
+        self.load_modules_on_startup()
 
+
+    def load_modules_on_startup(self):
+    # Load modules from the registry
+        workflows = client.get_Workflows()
+        for workflow in workflows:
+            module_source_code = workflow['moduleSourceCode']
+            if module_source_code:
+                if  workflow['moduleName']:
+                    module_name = workflow['moduleName']
+                else:
+                    module_name = "tmp"
+                spec = importlib.util.spec_from_loader(module_name, loader=None)
+                mod = importlib.util.module_from_spec(spec)
+                exec(module_source_code, mod.__dict__)
+                sys.modules[module_name] = mod
+                self.loaded_modules[module_name] = mod
 
 
     def do_literal_search(self, arg):
@@ -211,7 +228,7 @@ class LaminarCLI(cmd.Cmd):
                     docstring = workflows[key].__doc__
                     if "A graph representing the workflow and related methods" in docstring:
                         docstring=None
-                    r = client.register_Workflow(workflows[key], key, docstring, mod)
+                    r = client.register_Workflow(workflows[key], key, docstring, mod, unique_module_name)
                     if r is None:
                         print("(Exists)")
                     else:

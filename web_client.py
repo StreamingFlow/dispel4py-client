@@ -178,7 +178,7 @@ class PERegistrationData:
 
 
 class WorkflowRegistrationData:
-    def __init__(self, *, workflow: any, workflow_name: str = None, workflow_code: str = None, workflow_pes = None, entry_point: str = None, description: str = None, module = None):
+    def __init__(self, *, workflow: any, workflow_name: str = None, workflow_code: str = None, workflow_pes = None, entry_point: str = None, description: str = None, module = None, module_name = None):
         if workflow is not None:
             workflow_name = workflow.__class__.__name__
             workflow_code = get_payload(workflow)
@@ -212,7 +212,11 @@ class WorkflowRegistrationData:
         else:
             self.module_source_code = ""
 
-    
+        if module_name:
+            self.module_name = module_name
+        else:
+            self.module_name = ""
+
 
     def to_dict(self):
         return {
@@ -221,7 +225,8 @@ class WorkflowRegistrationData:
             "entryPoint": self.entry_point,
             "description": self.description,
             "descEmbedding": self.desc_embedding,
-            "moduleSourceCode": self.module_source_code
+            "moduleSourceCode": self.module_source_code,
+            "moduleName" : self.module_name
         }
 
     def __str__(self):
@@ -484,6 +489,21 @@ class WebClient:
             if response.text:
                 response = json.loads(response.text)
                 return get_objects(response)
+            else:
+                return []
+        logger.error(response.reason)
+        return None
+
+
+    def get_Workflows(self):
+        """Retrieve all workflows from the registry"""
+        verify_login()
+        url = URL_WORKFLOW_ALL.format(globals.CLIENT_AUTH_ID)
+        response = req.get(url=url)
+        if response.ok:
+            if response.text:
+                response = json.loads(response.text)
+                return response
             else:
                 return []
         logger.error(response.reason)

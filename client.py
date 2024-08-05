@@ -41,9 +41,9 @@ class d4pClient:
         data = PERegistrationData(pe=pe, description=description)
         return WebClient.register_PE(self, data)
 
-    def register_Workflow(self, workflow: WorkflowGraph, workflow_name: str, description: str = None, module= None):
+    def register_Workflow(self, workflow: WorkflowGraph, workflow_name: str, description: str = None, module= None, module_name = None):
         """Register a Workflow with the client service"""
-        data = WorkflowRegistrationData(workflow=workflow, entry_point=workflow_name, description=description, module=module)
+        data = WorkflowRegistrationData(workflow=workflow, entry_point=workflow_name, description=description, module=module, module_name = module_name)
         return WebClient.register_Workflow(self, data)
 
     def run(self, workflow: Union[str, int, WorkflowGraph], input=None, process=Process.SIMPLE, resources: list[str] = [], verbose=True):
@@ -148,6 +148,10 @@ class d4pClient:
     def get_PEs_By_Workflow(self, workflow: Union[str, int]):
         """Retrieve PEs in Workflow"""
         return WebClient.get_PEs_By_Workflow(self, workflow)
+    
+    def get_Workflows(self):
+        """Retrieve all Workflow"""
+        return WebClient.get_Workflows(self)
 
     def get_Registry(self):
         """Retrieve Registry"""
