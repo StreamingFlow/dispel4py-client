@@ -87,8 +87,8 @@ class LaminarCLI(cmd.Cmd):
         print("  literal_search [workflow|pe] [string]")
         print()
         print("Examples:")
-        print("  literal_search workflow my_workflow")
-        print("  literal_search pe my_processing_element")
+        print("  literal_search workflow some_term")
+        print("  literal_search pe some_term")
         print("  literal_search both some_term")
 
 
@@ -96,12 +96,10 @@ class LaminarCLI(cmd.Cmd):
         parser = CustomArgumentParser(exit_on_error=False)
         parser.add_argument("search_type", choices=["workflow", "pe"], default="pe")
         parser.add_argument("search_term")
-        parser.add_argument("--query_type", choices=["text", "code"], default="text")
-        parser.add_argument("--embedding_type", choices=["llm", "ast"], default="llm")
 
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
-            feedback = client.search_Registry(args["search_term"], args["search_type"], args["query_type"], args["embedding_type"])
+            feedback = client.search_Registry_Semantic(args["search_term"], args["search_type"])
             print(feedback)
         except argparse.ArgumentError as e:
             print(e.message.replace("laminar.py", "semantic_search"))
@@ -109,7 +107,7 @@ class LaminarCLI(cmd.Cmd):
             print(f"An error occurred: {e}")
 
     def help_semantic_search(self):
-        print("Searches the registry for workflows and processing elements matching the search term.")
+        print("Searches the registry for workflows and processing elements matching semantically the search term.")
         print()
         print("Arguments:")
         print("  search_type   Type of items to search for. Choices are:")
@@ -117,23 +115,52 @@ class LaminarCLI(cmd.Cmd):
         print("                - 'pe': Search only for processing elements (PEs)")
         print("  search_term   The term to search for in the registry.")
         print()
-        print("Options:")
-        print("  --query_type  The type of search to perform. Choices are:")
-        print("                - 'text': Perform a text-based search (default)")
-        print("                - 'code': Perform a code-based search")
-        print("  --embedding_type  The type of embedding to use. Choices are:")
-        print("                - 'llm': Perform a search based on LLM-generated embeddings (default)")
-        print("                - 'ast': Perform a search based on AST features")
-        print()
-        print("Important: --embedding_type <ast> is only possible for query_type <code>. ")
-        print()
         print("Usage:")
-        print("  semantic_search [workflow|pe] [search_term] [--query_type text|code] [--embedding_type llm|ast]")
+        print("  semantic_search [workflow|pe] [search_term] ")
         print()
         print("Examples:")
-        print("  semantic_search workflow some_term --query_type text --embedding_type llm")
-        print("  semantic_search pe my_processing_element --query_type code --embedding_type ast")
-        print("  semantic_search pe my_processing_element --query_type text --embedding_type llm")
+        print("  semantic_search workflow some_term ")
+        print("  semantic_search pe some_term ")
+
+
+    def do_code_recommendation(self, arg):
+        parser = CustomArgumentParser(exit_on_error=False)
+        parser.add_argument("search_type", choices=["workflow", "pe"], default="pe")
+        parser.add_argument("code_snippet")
+        parser.add_argument("--embedding_type", choices=["llm", "ast"], default="ast")
+
+        try:
+            args = vars(parser.parse_args(shlex.split(arg)))
+            feedback = client.code_Recommendation(args["code_snippet"], args["search_type"], args["embedding_type"])
+            print(feedback)
+        except argparse.ArgumentError as e:
+            print(e.message.replace("laminar.py", "code_recommendation"))
+        except Exception as e:
+            print(f"An error occurred: {e}")
+
+    def help_code_recommendation(self):
+        print("Provides code recommdations from registered workflows and processing elements matching the code snippet.")
+        print()
+        print("Arguments:")
+        print("  search_type   Type of items to search for. Choices are:")
+        print("                - 'workflow': Search only for workflows")
+        print("                - 'pe': Search only for processing elements (PEs)")
+        print("  code_snippet   The code_snippet to get recommendations from the registry.")
+        print()
+        print("Options:")
+        print("  --embedding_type  The type of embedding to use. Choices are:")
+        print("                - 'ast': Perform a search based on AST features (ast)")
+        print("                - 'llm': Perform a search based on LLM-generated embeddings")
+        print()
+        print("Note: code recommdations for workflows only possible with 'ast' embedding_type ")
+        print()
+        print("Usage:")
+        print("  semantic_search [workflow|pe] [code_snippet] [--embedding_type llm|ast]")
+        print()
+        print("Examples:")
+        print("  code_recommendation pe code_snippet --embedding_type ast")
+        print("  code_recommendation pe code_snippett --embedding_type llm")
+        print("  code_recommendation workfkow code_snippet --embedding_type ast")
 
     def do_run(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
@@ -340,7 +367,7 @@ class LaminarCLI(cmd.Cmd):
                 confirmation = input("Are you sure you want to remove all processing elements? [Y/N]: ")
                 if confirmation.lower() == 'y':
                     type_remove = "pe"
-                    response = client.remove_all(type=type_remove)
+                    response = client.remove_All(type=type_remove)
                     if response is None:
                         print("No response from server.")
                     elif 'ApiError' in response:
@@ -388,7 +415,7 @@ class LaminarCLI(cmd.Cmd):
                 confirmation = input("Are you sure you want to remove all workflows? [Y/N]: ")
                 if confirmation.lower() == 'y':
                     type_remove = "workflow"
-                    response = client.remove_all(type_remove)
+                    response = client.remove_All(type_remove)
                     if response is None:
                         print("No response from server.")
                     elif 'ApiError' in response:
@@ -446,7 +473,7 @@ class LaminarCLI(cmd.Cmd):
         parser.add_argument("new_description", type=str)
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
-            feedback = client.update_workflow_description(args["workflow_id"], args["new_description"])
+            feedback = client.update_Workflow_Description(args["workflow_id"], args["new_description"])
             print(feedback)
         except argparse.ArgumentError as e:
             print(e.message.replace("laminar.py", "update_workflow_description"))
@@ -463,7 +490,7 @@ class LaminarCLI(cmd.Cmd):
         parser.add_argument("new_description", type=str)
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
-            feedback = client.update_pe_description(args["pe_id"], args["new_description"])
+            feedback = client.update_PE_Description(args["pe_id"], args["new_description"])
             print(feedback)
         except argparse.ArgumentError as e:
             print(e.message.replace("laminar.py", "update_pe_description"))
@@ -479,7 +506,7 @@ class LaminarCLI(cmd.Cmd):
         confirmation = input("Are you sure you want to remove all workflows and processing elements? [Y/N]: ")
         if confirmation.lower() == 'y':
             try:
-                response = client.remove_all()
+                response = client.remove_All()
                 if response is None:
                     print("No response from server.")
                 elif 'ApiError' in response:
@@ -516,10 +543,8 @@ if client.get_login() is not None:
     print(f"Logged in as {client.get_login()}")
 else:
     while client.get_login() is None:
-        username = "rosa"
-        password = "1234"
-        #username = input("Username: ")
-        #password = pwinput.pwinput("Password: ")
+        username = input("Username: ")
+        password = pwinput.pwinput("Password: ")
         client.login(username, password)
         if client.get_login() is None:
             print("Invalid login")

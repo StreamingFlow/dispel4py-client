@@ -125,13 +125,30 @@ class d4pClient:
 
     
 
-    def search_Registry(self, search: str, search_type: _TYPES = "pe", query_type: _QUERY_TYPES = "text", embedding_type: _E_TYPES = "llm" ):
+    def search_Registry_Semantic(self, search: str, search_type: _TYPES = "pe"):
         """Semantic Search registry for workflows and pes"""
 
-        # Check if the combination of query_type and embedding_type is valid
-        if embedding_type not in _valid_combinations.get(query_type, []):
-            raise ValueError(f"Invalid combination: query_type '{query_type}' is only compatible with embedding_type {_valid_combinations[query_type]}")
+        query_type="text"
+        embedding_type="llm"
+        # Validate the search_type
+        
+        # Create the search data
+        data = SearchData(search=search, search_type=search_type)
+        logger.info(f"Semantic Searched for '{search}'")
 
+        # Perform the search
+        return WebClient.search_similarity(self, data, query_type, embedding_type)
+
+
+
+    def code_Recommendation(self, search: str, search_type: _TYPES = "pe", embedding_type: _E_TYPES = "ast" ):
+        """Semantic Search registry for workflows and pes"""
+
+        if search_type == "workflow" and embedding_type == "llm":
+            raise ValueError(f"Invalid combination: search_type '{search_type}' is only compatible with embedding_type ast ")
+
+
+        query_type="code"
         # Validate the search_type
         options = get_args(_TYPES)
         assert search_type in options, f"'{search_type}' is not in {options}"
@@ -173,13 +190,13 @@ class d4pClient:
         """Retrieve Registry"""
         return WebClient.get_Registry(self)
 
-    def update_workflow_description(self, workflow: Union[str, int], new_description):
+    def update_Workflow_Description(self, workflow: Union[str, int], new_description):
         return WebClient.update_workflow_description(self, workflow, new_description)
 
-    def update_pe_description(self, pe: Union[str, int], new_description):
+    def update_PE_Description(self, pe: Union[str, int], new_description):
         return WebClient.update_pe_description(self, pe, new_description)
 
-    def remove_all(self, type: str = "all"):
+    def remove_All(self, type: str = "all"):
         """Remove all Workflows and PEs from Registry"""
         try:
             if type == "all" or type == "workflow":
