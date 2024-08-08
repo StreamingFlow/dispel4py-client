@@ -559,7 +559,7 @@ class WebClient:
         if embedding_type == "llm":
             return similarity_search(search_dict['search'], response, query_type, search_dict["searchType"], embedding_type)
         else:
-            ## this for embedding_type == "ast" 
+            ## this for embedding_type == "spt" 
             astEmbeddings = []
             # puts all of the pe embeddings into a list
             for pe in response:
@@ -602,7 +602,7 @@ class WebClient:
                 
             else: 
                 
-                ## this for embedding_type == "llm and search_dict["searchType"] == "workflow"
+                ## this for embedding_type == "spt and search_dict["searchType"] == "workflow"
                 
                 url = URL_GET_WORKFLOW_BY_PE.format(globals.CLIENT_AUTH_ID)
 

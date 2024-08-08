@@ -127,7 +127,7 @@ class LaminarCLI(cmd.Cmd):
         parser = CustomArgumentParser(exit_on_error=False)
         parser.add_argument("search_type", choices=["workflow", "pe"], default="pe")
         parser.add_argument("code_snippet")
-        parser.add_argument("--embedding_type", choices=["llm", "ast"], default="ast")
+        parser.add_argument("--embedding_type", choices=["llm", "spt"], default="spt")
 
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
@@ -149,18 +149,18 @@ class LaminarCLI(cmd.Cmd):
         print()
         print("Options:")
         print("  --embedding_type  The type of embedding to use. Choices are:")
-        print("                - 'ast': Perform a search based on AST features (ast)")
+        print("                - 'spt': Perform a search based on SPT features")
         print("                - 'llm': Perform a search based on LLM-generated embeddings")
         print()
-        print("Note: code recommdations for workflows only possible with 'ast' embedding_type ")
+        print("Note: code recommdations for workflows only possible with 'spt' embedding_type ")
         print()
         print("Usage:")
-        print("  semantic_search [workflow|pe] [code_snippet] [--embedding_type llm|ast]")
+        print("  semantic_search [workflow|pe] [code_snippet] [--embedding_type llm|spt]")
         print()
         print("Examples:")
-        print("  code_recommendation pe code_snippet --embedding_type ast")
+        print("  code_recommendation pe code_snippet --embedding_type spt")
+        print("  code_recommendation workfkow code_snippet --embedding_type spt")
         print("  code_recommendation pe code_snippett --embedding_type llm")
-        print("  code_recommendation workfkow code_snippet --embedding_type ast")
 
     def do_run(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)

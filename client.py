@@ -10,10 +10,10 @@ import os
 
 _TYPES = Literal["pe", "workflow", "both"]
 _QUERY_TYPES = Literal["text", "code"]
-_E_TYPES = Literal["llm", "ast"]
+_E_TYPES = Literal["llm", "spt"]
 
 #valid semantic_search combinations
-_valid_combinations = { "text": ["llm"], "code": ["llm", "ast"]}
+_valid_combinations = { "text": ["llm"], "code": ["llm", "spt"]}
 
 class d4pClient:
 
@@ -141,11 +141,11 @@ class d4pClient:
 
 
 
-    def code_Recommendation(self, search: str, search_type: _TYPES = "pe", embedding_type: _E_TYPES = "ast" ):
+    def code_Recommendation(self, search: str, search_type: _TYPES = "pe", embedding_type: _E_TYPES = "spt" ):
         """Semantic Search registry for workflows and pes"""
 
         if search_type == "workflow" and embedding_type == "llm":
-            raise ValueError(f"Invalid combination: search_type '{search_type}' is only compatible with embedding_type ast ")
+            raise ValueError(f"Invalid combination: search_type '{search_type}' is only compatible with embedding_type spt ")
 
 
         query_type="code"
