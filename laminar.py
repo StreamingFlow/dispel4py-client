@@ -84,7 +84,7 @@ class LaminarCLI(cmd.Cmd):
         print("  search_term   The term to search for in the registry.")
         print()
         print("Usage:")
-        print("  literal_search [workflow|pe] [string]")
+        print("  literal_search [workflow|pe|both] [string]")
         print()
         print("Examples:")
         print("  literal_search workflow some_term")
@@ -207,7 +207,27 @@ class LaminarCLI(cmd.Cmd):
             print(f"An error occurred: {e}")
 
     def help_run(self):
-        print("Runs a workflow in the registry based on the provided name or ID")
+        print("""
+        Runs a workflow in the registry based on the provided name or ID.
+
+        Usage:
+            run identifier [options]
+
+        Options:
+            identifier               Name or ID of the workflow to run
+            --rawinput               Treat input as a raw string instead of evaluating it
+            -v, --verbose            Enable verbose output
+            -i, --input <data>       Input data for the workflow
+            -r, --resource <resource> Specify resources required by the workflow (can be used multiple times)
+            --multi                  Run the workflow in parallel using multiprocessing
+            --dynamic                Run the workflow in parallel using Redis
+
+        Examples:
+            run my_workflow -i '[{"input" : "1,2,3"}]' 
+            run my_workflow -i 100 --dynamic -v
+            run 123 --input "[{"input" : "1,2,3"}]" --multi --verbose
+            run my_workflow --dynamic --resource file1.txt --resource file2.txt
+        """)
 
     def do_register_workflow(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
