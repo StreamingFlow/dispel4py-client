@@ -7,13 +7,15 @@ from typing_extensions import Literal, get_args
 from web_client import WebClient
 from typing import Union
 import os
+import codecs
+import cloudpickle as pickle
 
 _TYPES = Literal["pe", "workflow", "both"]
 _QUERY_TYPES = Literal["text", "code"]
-_E_TYPES = Literal["llm", "ast"]
+_E_TYPES = Literal["llm", "spt"]
 
 #valid semantic_search combinations
-_valid_combinations = { "text": ["llm"], "code": ["llm", "ast"]}
+_valid_combinations = { "text": ["llm"], "code": ["llm", "spt"]}
 
 class d4pClient:
 
@@ -83,25 +85,32 @@ class d4pClient:
 
     def get_PE(self, pe: Union[str, int], describe: bool = False):
         """Retrieve PE from registry"""
-        pe_obj = WebClient.get_PE(self, pe)
-        if describe and pe_obj:
-            WebClient.describe(pe_obj)
-        return pe_obj
+        data = WebClient.get_PE(self, pe)
+        if data:
+            pe_obj=data[0]
+            pe_sc= data[1]
+            if describe and pe_obj:
+                WebClient.describe(pe_obj)
+        return data
 
     def get_Workflow(self, workflow: Union[str, int], describe: bool = False):
         """Retrieve Workflow from registry"""
-        workflow_obj = WebClient.get_Workflow(self, workflow)
-        if describe and workflow_obj:
-            WebClient.describe(self, workflow)
-        return workflow_obj
+        data = WebClient.get_Workflow(self, workflow)
+        if data:
+            workflow_obj=data[0]
+            if describe and workflow_obj:
+                WebClient.describe(self, workflow)
+        return data
 
-    def describe(self, obj: any):
+    def describe(self, obj: any, sc, include_source_code: bool = False):
         """Describe PE or Workflow object
 
         Parameters
         ----------
         obj: WorkflowGraph or PE
         Object to describe
+        include_source_code: bool
+        Whether to include the source code in the description (default: False)
         """
 
         if isinstance(obj, WorkflowGraph):
@@ -109,6 +118,9 @@ class d4pClient:
             print("PEs in Workflow:", workflow_pes)
             descr = obj.__doc__ if obj.__doc__ else "No description available."
             print(descr)
+            if include_source_code:
+                print("\n Workflow Source Code:\n")
+                print(sc)
 
         elif isinstance(obj, PE_TYPES):
             print("PE name:", getattr(obj, "name"))
@@ -118,10 +130,12 @@ class d4pClient:
                     continue
 
                 print("{}: {} ".format(item, amount))
+            if include_source_code:
+                print("\nPE Source Code:\n")
+                print(sc)
 
         else:
             assert isinstance(obj, type), "Requires an object of type WorkflowGraph or PE"
-
 
     
 
@@ -141,11 +155,11 @@ class d4pClient:
 
 
 
-    def code_Recommendation(self, search: str, search_type: _TYPES = "pe", embedding_type: _E_TYPES = "ast" ):
+    def code_Recommendation(self, search: str, search_type: _TYPES = "pe", embedding_type: _E_TYPES = "spt" ):
         """Semantic Search registry for workflows and pes"""
 
         if search_type == "workflow" and embedding_type == "llm":
-            raise ValueError(f"Invalid combination: search_type '{search_type}' is only compatible with embedding_type ast ")
+            raise ValueError(f"Invalid combination: search_type '{search_type}' is only compatible with embedding_type spt ")
 
 
         query_type="code"
