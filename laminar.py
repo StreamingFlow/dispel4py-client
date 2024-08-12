@@ -470,11 +470,15 @@ class LaminarCLI(cmd.Cmd):
     def do_describe(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
         parser.add_argument("identifier", type=type_checker)
+        parser.add_argument("--source_code", "-sc", action="store_true", help="Include the source code in the description")
+    
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
-            obj = client.get_PE(args["identifier"]) or client.get_Workflow(args["identifier"])
-            if obj:
-                client.describe(obj)
+            data = client.get_PE(args["identifier"]) or client.get_Workflow(args["identifier"])
+            if data:
+                obj=data[0]
+                sc=data[1]
+                client.describe(obj, sc, include_source_code=args["source_code"])
             else:
                 print(f"No description found for '{args['identifier']}'")
         except argparse.ArgumentError as e:
@@ -484,7 +488,7 @@ class LaminarCLI(cmd.Cmd):
 
     def help_describe(self):
         print("It provides the information on PEs or workflow by its name")
-        print("Usage: describe [identifier]")
+        print("Usage: describe [identifier] [--source_code | -sc]")
 
 
     def do_update_workflow_description(self, arg):

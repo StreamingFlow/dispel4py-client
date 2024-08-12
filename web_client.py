@@ -450,8 +450,9 @@ class WebClient:
         else:
             logger.info("Successfully retrieved PE " + response["peName"])
             peCode = response["peCode"]
+            sourceCode = response["sourceCode"]
             unpickled_result = pickle.loads(codecs.decode(peCode.encode(), "base64"))
-            return unpickled_result
+            return [unpickled_result, sourceCode]
 
     def get_Workflow(self, workflow: Union[int, str]):
         verify_login()
@@ -467,8 +468,10 @@ class WebClient:
         else:
             logger.info("Successfully retrieved Workflow " + response["entryPoint"])
             workflowCode = response["workflowCode"]
+            moduleSourceCode = response["moduleSourceCode"]
             unpickled_result: WorkflowGraph = pickle.loads(codecs.decode(workflowCode.encode(), "base64"))
-            return unpickled_result
+            return [unpickled_result, moduleSourceCode]
+
 
     def get_PEs_By_Workflow(self, workflow: Union[int, str]):
         verify_login()
