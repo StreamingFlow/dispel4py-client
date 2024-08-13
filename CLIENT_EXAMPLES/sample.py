@@ -1,11 +1,7 @@
 from dispel4py.base import ProducerPE, IterativePE, ConsumerPE
 from dispel4py.workflow_graph import WorkflowGraph
 import random
-from easydict import EasyDict as edict
 from client import d4pClient,Process
-from dispel4py.new.dynamic_redis import process as dyn_process
-from dispel4py.new.simple_process import process as simple_process
-from dispel4py.new.multi_process import process as multi_process
 
 class NumberProducer(ProducerPE):
     def __init__(self):
@@ -45,29 +41,40 @@ graph.connect(isprime, 'output', printprime, 'input')
 client = d4pClient()
 
 #Create User and Login 
-print("\n Create User and Login \n")
-client.register("root","root")
+#print("\n Create User and Login \n")
+#client.register("root","root")
+
 client.login("root","root")
 
-print("\n Register Graph \n")
-client.register_Workflow(graph,"graph_sample")
+#print("\n Register Graph \n")
+#client.register_Workflow(graph,"graph_sample")
 
-#print("\n Text to Code Search \n")
-#client.search_Registry("prime","pe","text")
 
-#print("\n Code to Text Search \n")
-#client.search_Registry("random.randint(1, 1000)","pe","code")
+print("\n Literal to Search on PEs \n")
+results=client.search_Registry_Literal("prime","pe")
+for r in results:
+    print(r)
 
-#SIMPLE 
-#simple_process(graph, {producer: 100})
-client.run(graph,input=100)
 
-#MULTI 
-#multi_process(graph, {producer: 100}, edict({'num':5, 'iter': 5,'simple': False}))
-#client.run_multiprocess(graph,input=100)
+print("\n Text to Code Search on PEs\n")
+results=client.search_Registry_Semantic("checks prime numbers","pe")
+for r in results:
+    print(r)
 
-#REDIS 
-#dyn_process(graph,{producer: 100}, edict({'num':5,'iter':5, 'simple':False, 'redis_ip':'localhost', 'redis_port':'6379'}))
-#client.run_dynamic(graph,input=100)
-#print(c)
+print("\n Code to Text Search (Code Recommendation) on PEs \n")
+results=client.code_Recommendation("random.randint(1, 1000)","pe")
+for r in results:
+    print(r)
 
+#SIMPLE (Sequential)
+print("\n Running the Workflow Sequentially\n")
+r=client.run(graph,input=100)
+print(r)
+
+#MULTI
+print("\n Running the Workflow in Parallel - Multi mapping\n")
+client.run_multiprocess(graph,input=100)
+
+#DYNAMIC (Redis)
+print("\n Running the Workflow Dynamically - Redis mapping\n")
+client.run_dynamic(graph,input=100)
