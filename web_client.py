@@ -230,11 +230,11 @@ class WorkflowRegistrationData:
         workflow_source_code = "class " + entry_point + "():\n"
 
         for pe in workflow_pes:
-            #try:
-            #    pe_code = inspect.getsource(pe.__class__)
-            #except:
-            #    pe_code = inspect.getsource(pe._process)
-            pe_code = inspect.getsource(pe._process)
+            try:
+                pe_code = inspect.getsource(pe.__class__)
+            except:
+                pe_code = inspect.getsource(pe._process)
+            #pe_code = inspect.getsource(pe._process)
             pe_code = pe_code.split("\n", 2)[2]
             workflow_source_code = workflow_source_code + pe_code
             workflow_source_code = workflow_source_code + "\n"
