@@ -45,9 +45,9 @@ Launch the CLI application. You will be prompted to enter your username and pass
 python laminar.py
 ```
 
-## How to use the Client Functions
+## How to use the laminar Client Functions
 
-You can also interact with the Laminar framework by using the client functions directly in your Python scripts or Jupyter notebooks. More information about cliente functions is available [here](https://github.com/StreamingFlow/dispel4py-client/wiki#using-client-functions-in-notebooks-and-scripts-clientpy).
+You can also interact with the Laminar framework by using the laminar client functions directly in your Python scripts or Jupyter notebooks. More information about cliente functions is available [here](https://github.com/StreamingFlow/dispel4py-client/wiki#using-client-functions-in-notebooks-and-scripts-clientpy).
 
 ## User Manual
 
