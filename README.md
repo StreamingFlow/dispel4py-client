@@ -35,12 +35,21 @@ python <file>
 
 ## How to use the laminar CLI
 
-Run the CLI application
+Start by registering a new user. You will be prompted to enter a username and password. This step only needs to be completed once for each user.
+```
+python register.py
+```
+
+Launch the CLI application. You will be prompted to enter your username and password. If you haven’t registered yet, please complete the registration step above first. More information about the CLI is available [here](https://github.com/StreamingFlow/dispel4py-client/wiki#cli-options-laminarpy).
 ```
 python laminar.py
 ```
-## User Manual
 
+## How to use the Client Functions
+
+You can also interact with the Laminar framework by using the client functions directly in your Python scripts or Jupyter notebooks. More information about cliente functions is available [here](https://github.com/StreamingFlow/dispel4py-client/wiki#using-client-functions-in-notebooks-and-scripts-clientpy).
+
+## User Manual
 
 For detailed instructions on installation, configuration, and usage, please refer to the comprehensive **User Manual** available in the [wiki](https://github.com/StreamingFlow/dispel4py-client/wiki) of this repository. The manual covers everything you need to get started with the Laminar framework, including step-by-step guides for installing components, running workflows, and managing Processing Elements (PEs). It also provides in-depth explanations of the Command Line Interface (CLI) as well as the client functions to be used in scripts or jupyter notebooks.
 
