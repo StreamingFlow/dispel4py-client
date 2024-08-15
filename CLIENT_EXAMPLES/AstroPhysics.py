@@ -102,7 +102,7 @@ class InternalExtinction(IterativePE):
         except:
             print('KIG%s: failed to calculate internal extinction' % count)
 
-graph = WorkflowGraph()
+astro_graph = WorkflowGraph()
 read = ReadRaDec()
 read.name = 'read'
 votab = GetVOTable()
@@ -110,9 +110,9 @@ filt = FilterColumns()
 filt.columns = ['MType', 'logR25']
 intext = InternalExtinction()
 
-graph.connect(read, 'output', votab, 'input')
-graph.connect(votab, 'output', filt, 'input')
-graph.connect(filt, 'output', intext, 'input')
+astro_graph.connect(read, 'output', votab, 'input')
+astro_graph.connect(votab, 'output', filt, 'input')
+astro_graph.connect(filt, 'output', intext, 'input')
 
 
 client = d4pClient()
