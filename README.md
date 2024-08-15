@@ -39,12 +39,12 @@ Enter target server URL into config.ini
 
 ## Run test client
 
-In the [CLIENT_EXAMPLES](https://github.com/StreamingFlow/dispel4py-client/tree/main/CLIENT_EXAMPLES) directory, we have five dispel4py workflows in which wehave already included few client function that you can use to test Laminar framework using the client functions: [AstroPhysics.py](https://github.com/StreamingFlow/dispel4py-client/blob/main/CLIENT_EXAMPLES/AstroPhysics.py),[WordCount.py](https://github.com/StreamingFlow/dispel4py-client/blob/main/CLIENT_EXAMPLES/WordCount.py),[IsPrime.py](https://github.com/StreamingFlow/dispel4py-client/blob/main/CLIENT_EXAMPLES/IsPrime.py) and [sample.py](https://github.com/StreamingFlow/dispel4py-client/blob/main/CLIENT_EXAMPLES/sample.py)  
+In the [CLIENT_EXAMPLES](https://github.com/StreamingFlow/dispel4py-client/tree/main/CLIENT_EXAMPLES) directory, we have five dispel4py workflows in which wehave already included few client function that you can use to test Laminar framework using the client functions: [AstroPhysics.py](https://github.com/StreamingFlow/dispel4py-client/blob/main/CLIENT_EXAMPLES/AstroPhysics.py),[WordCount.py](https://github.com/StreamingFlow/dispel4py-client/blob/main/CLIENT_EXAMPLES/WordCount.py),[IsPrime.py](https://github.com/StreamingFlow/dispel4py-client/blob/main/CLIENT_EXAMPLES/IsPrime.py),[SensorIoT.py]((https://github.com/StreamingFlow/dispel4py-client/blob/main/CLIENT_EXAMPLES/SensorIoT.py) and [sample.py](https://github.com/StreamingFlow/dispel4py-client/blob/main/CLIENT_EXAMPLES/sample.py)  
 
 Furthermore, in the [CLIENT_EXAMPLES](https://github.com/StreamingFlow/dispel4py-client/tree/main/CLIENT_EXAMPLES) directory, we have other workflows without client functions that you could use with the CLI.
 
 
-More dispel4py workflows are available [here](https://github.com/StreamingFlow/d4py_workflows). 
+More dispel4py workflows are available [here](https://github.com/StreamingFlow/d4py_workflows), which you could adapt for running them with client functions.
 ```
 cp CLIENT_EXAMPLES\<file> .
 python <file>
@@ -67,6 +67,7 @@ Once you are logged in the laminar, you could use  [CLIENT_EXAMPLES](https://git
 ```
 (laminar) register_workflow CLIENT_EXAMPLES/wordcount_wf.py
 (laminar) register_workflow CLIENT_EXAMPLES/sensor_wf.py
+(laminar) register_workflow CLIENT_EXAMPLES/isprime_wf.py
 (laminar) register_pe CLIENT_EXAMPLES/isprimePE.py.py
 ```
 
