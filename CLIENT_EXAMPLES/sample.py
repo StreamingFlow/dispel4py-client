@@ -68,15 +68,18 @@ results=client.code_Recommendation("random.randint(1, 1000)","pe")
 for r in results:
     print(r)
 
-#SIMPLE (Sequential)
+
+# Run the workflow serverless
+
+##SIMPLE (Sequential)
 print("\n Running the Workflow Sequentially\n")
 r=client.run(graph,input=100)
 print(r)
 
-#MULTI
+##MULTI
 print("\n Running the Workflow in Parallel - Multi mapping\n")
 client.run_multiprocess(graph,input=100)
 
-#DYNAMIC (Redis)
+##DYNAMIC (Redis)
 print("\n Running the Workflow Dynamically - Redis mapping\n")
 client.run_dynamic(graph,input=100)

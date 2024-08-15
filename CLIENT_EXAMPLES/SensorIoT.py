@@ -82,19 +82,28 @@ sensorWorkflow.connect(anomaly_detection, 'output', alerting, 'input')
 sensorWorkflow.connect(alerting, 'output', aggregate_data, 'input')
 
 client = d4pClient()
-client.login("rosa", "1234") # Provide login details here
+
+#Create User 
+#print("\n Create User and Login \n")
+#client.register("root","root")
+
+#Login
+client.login("root","root")
 
 input=[{'input' : "sensor_data_1000.json"}]
 resources=["sensor_data_1000.json"]
 
-#SIMPLE 
+
+# Run the workflow serverless
+
+##SIMPLE 
 a=client.run(graph,input=input, resources=resources, verbose=True)
 print(a)
 
-#MULTI
+##MULTI
 #b=client.run_multiprocess(graph,input=input, resources=resources,  verbose=True)
 #print(b)
 
-#REDIS 
+##REDIS 
 #client.run_dynamic(graph,input=input, resources=resources,  verbose=True)
 #print(c)
