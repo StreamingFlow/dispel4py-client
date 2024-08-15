@@ -44,17 +44,24 @@ graph = WorkflowGraph()
 graph.connect(producer, 'output', isprime, 'input')
 graph.connect(isprime, 'output', printprime, 'input')
 
-
 client = d4pClient()
-client.login("rosa", "1234") # Provide login details here
 
-#SIMPLE 
+#Create User 
+#print("\n Create User and Login \n")
+#client.register("root","root")
+
+#Login
+client.login("root","root")
+
+# Run the workflow serverless
+
+##SIMPLE 
 #client.run(graph,input=100)
 
-#MULTI 
+##MULTI 
 client.run_multiprocess(graph,input=100)
 
-#REDIS 
+##REDIS 
 #client.run_dynamic(graph,input=100)
 #print(c)
 

@@ -117,16 +117,27 @@ graph.connect(filt, 'output', intext, 'input')
 
 client = d4pClient()
 
-#SIMPLE 
-#simple_process(graph, {read: [{"input" : "coordinates.txt"}]})
-#client.run(graph,input=[{"input" : "resources/coordinates.txt"}],resources=True)
+#Create User 
+#print("\n Create User and Login \n")
+#client.register("root","root")
 
-#MULTI 
-#multi_process(graph, {read:[{"input" : "resources/coordinates.txt"}]}, edict({'num':5, 'iter': 5,'simple': False}))
-#client.run(graph,input=[{"input" : "resources/coordinates.txt"}],process=Process.MULTI,args=edict({'num':5, 'iter': 5,'simple': False}),resources=True)
+#Login
+client.login("root","root")
 
-#REDIS 
-#read.name = 'producer'
-#dyn_process(graph, {'producer': [{"input" : "resources/coordinates.txt"} ]}, edict({'num':5,'iter':10, 'simple':False, 'redis_ip':'localhost', 'redis_port':'6379'}))
 
-#client.run(graph,input=[{"input" : "resources/coordinates.txt"} ], args=edict({'num':5,'simple':False,'redis_ip':'localhost','redis_port':'6379'}),process=Process.DYNAMIC,resources=True)
+# Run the workflow serverless
+
+input=[{'input' : "coordinates.txt"}]
+resources=["coordinates.txt"]
+
+##SIMPLE 
+a=client.run(graph,input=input, resources=resources, verbose=True)
+print(a)
+
+##MULTI
+#b=client.run_multiprocess(graph,input=input, resources=resources,  verbose=True)
+#print(b)
+
+##REDIS 
+#client.run_dynamic(graph,input=input, resources=resources,  verbose=True)
+#print(c)

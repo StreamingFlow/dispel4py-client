@@ -59,20 +59,28 @@ graph.connect(words, 'output', count, 'input')
 
 
 client = d4pClient()
-client.login("rosa", "1234") # Provide login details here
+
+#Create User 
+#print("\n Create User and Login \n")
+#client.register("root","root")
+
+#Login
+client.login("root","root")
 
 input=[{'input' : "Hello Hello algo mas World World"}]
 
 
-#SIMPLE 
+# Run the workflow serverless
+
+##SIMPLE 
 a=client.run(graph,input=input, verbose=True)
 print(a)
 
-#MULTI 
+##MULTI 
 #b=client.run_multiprocess(graph,input=input, verbose=True)
 #print(b)
 
 
-#REDIS 
+##REDIS 
 #client.run_dynamic(graph,input=input, verbose=True)
 #print(c)
