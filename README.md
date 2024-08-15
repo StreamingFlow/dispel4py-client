@@ -37,7 +37,7 @@ pip install -r requirements_client.txt
 ```
 Enter target server URL into config.ini
 
-## Run test client
+## How to use the laminar Client Functions
 
 In the [CLIENT_EXAMPLES](https://github.com/StreamingFlow/dispel4py-client/tree/main/CLIENT_EXAMPLES) directory, we provide five dispel4py workflows that already include client functions. You can use these examples to test the Laminar framework with the client functions. The available workflows are:
 
@@ -98,10 +98,6 @@ Once logged into Laminar, you can use the workflows or Processing Elements (PEs)
 ```
 
 If you're looking for more dispel4py workflows, additional examples are available [here](https://github.com/StreamingFlow/d4py_workflows).
-
-## How to use the laminar Client Functions
-
-You can also interact with the Laminar framework by using the laminar client functions directly in your Python scripts or Jupyter notebooks. More information about cliente functions is available [here](https://github.com/StreamingFlow/dispel4py-client/wiki#using-client-functions-in-notebooks-and-scripts-clientpy).
 
 ## User Manual
 
