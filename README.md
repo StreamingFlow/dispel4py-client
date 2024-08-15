@@ -37,7 +37,14 @@ pip install -r requirements_client.txt
 ```
 Enter target server URL into config.ini
 
-## Run test client 
+## Run test client
+
+In the [CLIENT_EXAMPLES](https://github.com/StreamingFlow/dispel4py-client/tree/main/CLIENT_EXAMPLES) directory, we have five dispel4py workflows in which wehave already included few client function that you can use to test Laminar framework using the client functions: [AstroPhysics.py](https://github.com/StreamingFlow/dispel4py-client/blob/main/CLIENT_EXAMPLES/AstroPhysics.py),[WordCount.py](https://github.com/StreamingFlow/dispel4py-client/blob/main/CLIENT_EXAMPLES/WordCount.py),[IsPrime.py](https://github.com/StreamingFlow/dispel4py-client/blob/main/CLIENT_EXAMPLES/IsPrime.py) and [sample.py](https://github.com/StreamingFlow/dispel4py-client/blob/main/CLIENT_EXAMPLES/sample.py)  
+
+Furthermore, in the [CLIENT_EXAMPLES](https://github.com/StreamingFlow/dispel4py-client/tree/main/CLIENT_EXAMPLES) directory, we have other workflows without client functions that you could use with the CLI.
+
+
+More dispel4py workflows are available [here](https://github.com/StreamingFlow/d4py_workflows). 
 ```
 cp CLIENT_EXAMPLES\<file> .
 python <file>
@@ -53,6 +60,14 @@ python register.py
 Launch the CLI application. You will be prompted to enter your username and password. If you haven’t registered yet, please complete the registration step above first. More information about the CLI is available [here](https://github.com/StreamingFlow/dispel4py-client/wiki#cli-options-laminarpy).
 ```
 python laminar.py
+```
+
+Once you are logged in the laminar, you could use  [CLIENT_EXAMPLES](https://github.com/StreamingFlow/dispel4py-client/tree/main/CLIENT_EXAMPLES) workflows (without client functions) or PEs to register them:
+
+```
+(laminar) register_workflow CLIENT_EXAMPLES/wordcount_wf.py
+(laminar) register_workflow CLIENT_EXAMPLES/sensor_wf.py
+(laminar) register_pe CLIENT_EXAMPLES/isprimePE.py.py
 ```
 
 ## How to use the laminar Client Functions
