@@ -1,3 +1,5 @@
+#Example of a IsPrime workflow running it with client functions
+
 from dispel4py.base import IterativePE, ConsumerPE, ProducerPE
 from dispel4py.workflow_graph import WorkflowGraph
 import numpy as np
@@ -78,3 +80,21 @@ sensorWorkflow.connect(read, 'output', normalize_data, 'input')
 sensorWorkflow.connect(normalize_data, 'output', anomaly_detection, 'input')
 sensorWorkflow.connect(anomaly_detection, 'output', alerting, 'input')
 sensorWorkflow.connect(alerting, 'output', aggregate_data, 'input')
+
+client = d4pClient()
+client.login("rosa", "1234") # Provide login details here
+
+input=[{'input' : "sensor_data_1000.json"}]
+resources=["sensor_data_1000.json"]
+
+#SIMPLE 
+a=client.run(graph,input=input, resources=resources, verbose=True)
+print(a)
+
+#MULTI
+#b=client.run_multiprocess(graph,input=input, resources=resources,  verbose=True)
+#print(b)
+
+#REDIS 
+#client.run_dynamic(graph,input=input, resources=resources,  verbose=True)
+#print(c)
