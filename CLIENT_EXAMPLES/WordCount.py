@@ -73,14 +73,14 @@ input=[{'input' : "Hello Hello algo mas World World"}]
 # Run the workflow serverless
 
 ##SIMPLE 
-a=client.run(graph,input=input, verbose=True)
+a=client.run(wc_graph,input=input, verbose=True)
 print(a)
 
 ##MULTI 
-#b=client.run_multiprocess(graph,input=input, verbose=True)
+#b=client.run_multiprocess(wc_graph,input=input, verbose=True)
 #print(b)
 
 
 ##REDIS 
-#client.run_dynamic(graph,input=input, verbose=True)
+#client.run_dynamic(wc_graph,input=input, verbose=True)
 #print(c)
