@@ -1,4 +1,14 @@
 ![Laminar Logo](logo.webp)
+
+# Introduction
+
+The Laminar Client is the primary interface for interacting with the Laminar framework, allowing users to manage and execute [dispel4py](https://github.com/StreamingFlow/d4py) workflows seamlessly. This component acts as the entry point for users, providing both a Command Line Interface (CLI) and direct client functions that can be used within Python scripts or Jupyter notebooks.
+
+By leveraging the Laminar Client, users can register dispel4py workflows and Processing Elements (PEs), initiate and monitor workflow executions, and interact with other core components of the Laminar framework, such as the [Laminar Server](https://github.com/StreamingFlow/dispel4py-server) and [Laminar Execution Engine](https://github.com/StreamingFlow/dispel4py-execution). The client communicates with the Laminar Server to route requests and handle operations on behalf of the user, ensuring that workflows are executed efficiently and accurately.
+
+Whether you are using the CLI for quick interactions or embedding client functions into your scripts for more complex tasks, the Laminar Client is designed to provide a flexible and user-friendly experience, making it an essential tool for working with the Laminar framework.
+
+
 # Laminar Client Instructions 
 
 The following instructions will allow you to run the client application to run dispel4py workflows 
