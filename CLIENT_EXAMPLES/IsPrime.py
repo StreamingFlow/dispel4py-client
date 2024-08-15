@@ -1,11 +1,11 @@
+#Example of sensor IoT workflow running with Laminar Client functions
+
+
 from dispel4py.base import ProducerPE, IterativePE, ConsumerPE
 from dispel4py.workflow_graph import WorkflowGraph
 import random
 from easydict import EasyDict as edict
 from client import d4pClient,Process
-from dispel4py.new.dynamic_redis import process as dyn_process
-from dispel4py.new.simple_process import process as simple_process
-from dispel4py.new.multi_process import process as multi_process
 
 class NumberProducer(ProducerPE):
     def __init__(self):
@@ -49,16 +49,12 @@ client = d4pClient()
 client.login("rosa", "1234") # Provide login details here
 
 #SIMPLE 
-#simple_process(graph, {producer: 100})
-#client.run(graph,input=100)
 #client.run(graph,input=100)
 
 #MULTI 
-#multi_process(graph, {producer: 100}, edict({'num':5, 'iter': 5,'simple': False}))
 client.run_multiprocess(graph,input=100)
 
 #REDIS 
-#dyn_process(graph,{producer: 100}, edict({'num':5,'iter':5, 'simple':False, 'redis_ip':'localhost', 'redis_port':'6379'}))
 #client.run_dynamic(graph,input=100)
 #print(c)
 

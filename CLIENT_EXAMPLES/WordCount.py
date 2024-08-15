@@ -1,11 +1,10 @@
+#Example of a WordCount workflow running it with client functions
+
 from dispel4py.core import GenericPE
 from dispel4py.base import IterativePE
-from dispel4py.new.simple_process import process as simple_process
-from dispel4py.new.multi_process import process as multi_process
 from dispel4py.workflow_graph import WorkflowGraph
 from easydict import EasyDict as edict
 from client import d4pClient,Process
-from dispel4py.new.dynamic_redis import process as dyn_process
 
 class SplitLines(GenericPE):
     def __init__(self):
@@ -66,12 +65,14 @@ input=[{'input' : "Hello Hello algo mas World World"}]
 
 
 #SIMPLE 
-#simple_process(graph, {split: [ {'input' : "Hello Hello algo mas World World"}]})
 a=client.run(graph,input=input, verbose=True)
 print(a)
 
 #MULTI 
-#multi_process(graph, {split: [ {'input' : "Hello Hello algo mas World World"}]}, edict({'num':5, 'iter': 5,'simple': False}))
 #b=client.run_multiprocess(graph,input=input, verbose=True)
 #print(b)
 
+
+#REDIS 
+#client.run_dynamic(graph,input=input, verbose=True)
+#print(c)

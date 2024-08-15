@@ -1,3 +1,5 @@
+#Sample workflow for which we use to interact with Laminar framework using several Laminar Client functions
+
 from dispel4py.base import ProducerPE, IterativePE, ConsumerPE
 from dispel4py.workflow_graph import WorkflowGraph
 import random
@@ -46,8 +48,8 @@ client = d4pClient()
 
 client.login("root","root")
 
-#print("\n Register Graph \n")
-#client.register_Workflow(graph,"graph_sample")
+print("\n Register Graph \n")
+client.register_Workflow(graph,"graph_sample")
 
 
 print("\n Literal to Search on PEs \n")
