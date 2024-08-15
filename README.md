@@ -42,9 +42,9 @@ Enter target server URL into config.ini
 In the [CLIENT_EXAMPLES](https://github.com/StreamingFlow/dispel4py-client/tree/main/CLIENT_EXAMPLES) directory, we provide four dispel4py workflows that already include client functions. You can use these examples to test the Laminar framework with the client functions. The available workflows are:
 
 * [IsPrime.py](https://github.com/StreamingFlow/dispel4py-client/blob/main/CLIENT_EXAMPLES/IsPrime.py). You can find the explanation of this workflow [here](https://github.com/StreamingFlow/d4py_workflows/tree/main/others)
-* [WordCount.py](https://github.com/StreamingFlow/dispel4py-client/blob/main/CLIENT_EXAMPLES/WordCount.py). This workflow reads the input text provided by the user and returns the total count of each word found within it. 
+* [WordCount.py](https://github.com/StreamingFlow/dispel4py-client/blob/main/CLIENT_EXAMPLES/WordCount.py). This workflow reads the input text provided by the user and returns the total count of each word found within it 
 * [SensorIoT.py](https://github.com/StreamingFlow/dispel4py-client/blob/main/CLIENT_EXAMPLES/SensorIoT.py). You can find the explanation of this workflow [here](https://github.com/StreamingFlow/d4py_workflows/tree/main/others)
-* [AstroPhysics.py](https://github.com/StreamingFlow/dispel4py-client/blob/main/CLIENT_EXAMPLES/AstroPhysics.py). You can find the explanation of this workflow [here
+* [AstroPhysics.py](https://github.com/StreamingFlow/dispel4py-client/blob/main/CLIENT_EXAMPLES/AstroPhysics.py). You can find the explanation of this workflow [here](https://github.com/StreamingFlow/d4py_workflows/tree/main/internal_extinction)
 
 Additionally, we offer a [Notebook](https://github.com/StreamingFlow/dispel4py-client/blob/main/Laminar_Notebook_Sample.ipynb) that you can use to test the framework in a more interactive environment.
 
