@@ -53,9 +53,9 @@ words = SplitWords()
 count = CountWords()
 
 
-graph = WorkflowGraph()
-graph.connect(split, 'output', words, 'input')
-graph.connect(words, 'output', count, 'input')
+wc_graph = WorkflowGraph()
+wc_graph.connect(split, 'output', words, 'input')
+wc_graph.connect(words, 'output', count, 'input')
 
 
 client = d4pClient()
