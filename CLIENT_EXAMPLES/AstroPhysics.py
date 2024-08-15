@@ -131,13 +131,13 @@ input=[{'input' : "coordinates.txt"}]
 resources=["coordinates.txt"]
 
 ##SIMPLE 
-a=client.run(graph,input=input, resources=resources, verbose=True)
+a=client.run(astro_graph,input=input, resources=resources, verbose=True)
 print(a)
 
 ##MULTI
-#b=client.run_multiprocess(graph,input=input, resources=resources,  verbose=True)
+#b=client.run_multiprocess(astro_graph,input=input, resources=resources,  verbose=True)
 #print(b)
 
 ##REDIS 
-#client.run_dynamic(graph,input=input, resources=resources,  verbose=True)
+#client.run_dynamic(astro_graph,input=input, resources=resources,  verbose=True)
 #print(c)
