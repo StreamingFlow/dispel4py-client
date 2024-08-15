@@ -65,24 +65,39 @@ Before running these examples, ensure that you have registered a user and logged
 
 ## How to use the laminar CLI
 
-Start by registering a new user. You will be prompted to enter a username and password. This step only needs to be completed once for each user.
+### Register a New User:
+Begin by registering a new user. You will be prompted to enter a username and password. This step only needs to be completed once for each user.
 ```
 python register.py
 ```
 
-Launch the CLI application. You will be prompted to enter your username and password. If you haven’t registered yet, please complete the registration step above first. More information about the CLI is available [here](https://github.com/StreamingFlow/dispel4py-client/wiki#cli-options-laminarpy).
+### Launch the CLI Application:
+
+After registration, launch the CLI application. You will be prompted to enter your username and password. If you haven't registered yet, please complete the registration step above first. For more detailed information about the CLI, you can refer to the documentation.
 ```
 python laminar.py
 ```
 
-Once you are logged in the laminar, you could use  [CLIENT_EXAMPLES](https://github.com/StreamingFlow/dispel4py-client/tree/main/CLIENT_EXAMPLES) workflows (without client functions) or PEs to register them:
+### Prepare for Testing:
 
+To start testing the CLI, we recommend copying the desired files (e.g. wordcount_wf.py, sensor_wf.py or isprimePE.py) from the CLIENT_EXAMPLES directory. Once copied, you can begin using the CLI:
 ```
-(laminar) register_workflow CLIENT_EXAMPLES/wordcount_wf.py
-(laminar) register_workflow CLIENT_EXAMPLES/sensor_wf.py
-(laminar) register_workflow CLIENT_EXAMPLES/isprime_wf.py
-(laminar) register_pe CLIENT_EXAMPLES/isprimePE.py.py
+cp CLIENT_EXAMPLES/<file> .
+python laminar.py
 ```
+
+Note that the PEs or workflows files to use in laminar are the ones that do not include the client functions.
+
+### Register Workflows and PEs:
+
+Once logged into Laminar, you can use the workflows or Processing Elements (PEs) from the CLIENT_EXAMPLES directory (without client functions) to register them. For example:
+```
+(laminar) register_workflow wordcount_wf.py
+(laminar) register_workflow sensor_wf.py
+(laminar) register_pe isprimePE.py
+```
+
+If you're looking for more dispel4py workflows, additional examples are available [here](https://github.com/StreamingFlow/d4py_workflows).
 
 ## How to use the laminar Client Functions
 
