@@ -1,5 +1,4 @@
 #Sample workflow for which we use to interact with Laminar framework using several Laminar Client functions
-
 from dispel4py.base import ProducerPE, IterativePE, ConsumerPE
 from dispel4py.workflow_graph import WorkflowGraph
 import random
@@ -49,6 +48,10 @@ client = d4pClient()
 client.login("root","root")
 
 print("\n Register Graph \n")
+## Giving a manual description to the workflow at the registration time
+#client.register_Workflow(graph,"graph_sample", description="a workflow that produce random number and print only the prime ones.")
+
+## Without description. Laminar will automatically generate one at the registration time
 client.register_Workflow(graph,"graph_sample")
 
 
