@@ -1,5 +1,4 @@
 #Example of a WordCount workflow running it with client functions
-
 from dispel4py.core import GenericPE
 from dispel4py.base import IterativePE
 from dispel4py.workflow_graph import WorkflowGraph

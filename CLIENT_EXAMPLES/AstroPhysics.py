@@ -1,10 +1,6 @@
 from dispel4py.base import ProducerPE, IterativePE, ConsumerPE,GenericPE
 from dispel4py.workflow_graph import WorkflowGraph
-from dispel4py.new.simple_process import process as simple_process
-from easydict import EasyDict as edict
 from client import d4pClient,Process
-from dispel4py.new.multi_process import process as multi_process
-from dispel4py.new.dynamic_redis  import process as dyn_process
 
 
 type_dict={"E":-5, "E-S0":-3, "S0":-2, "S0a":0, "Sa":1, "Sab":2, "Sb":3, "Sbc":4, "Sc":6, "Scd":7, "Sd":8, "Sm":9, "SBa":1, "SBab":2, "SBb":3, "SBbc":4, "SBc":6, "SBcd":7, "SBd":8, "SBm":9}
