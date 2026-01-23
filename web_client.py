@@ -284,7 +284,8 @@ class ExecutionData:
                     pe_source_code = inspect.getsource(pe_class)
                     imports = imports + "," + create_import_string(pe_source_code)
                     #print(pe_source_code)
-                except OSError as e:
+                except (OSError, TypeError) as e:
+                    print(f"WARN: {e}")
                     pass
                     #print(f"Error getting source for {pe_class.__name__}: {e}")
         self.workflow_id = workflow_id
