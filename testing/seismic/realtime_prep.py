@@ -1,25 +1,20 @@
-from dispel4py.core import GenericPE
-from dispel4py.base import BasePE, IterativePE, ConsumerPE, create_iterative_chain
+from dispel4py.base import IterativePE, ConsumerPE
 from dispel4py.workflow_graph import WorkflowGraph
 from obspy.signal.util import next_pow_2
-from dispel4py.new.simple_process import process as simple_process
 from scipy.fftpack import fft
 import numpy as np
-from numpy import linspace
 import os
-import traceback
-from client import d4pClient
+from laminar.client.d4pyclient import d4pClient
 # import matplotlib as mpl
 # mpl.use('Agg')
 # import matplotlib.pyplot as plt
 import glob
 import re
 #import obspy
-import subprocess
 import time
 import pandas as pd
 
-from numpy import sign, arange, zeros, absolute, true_divide, sum,  floor, convolve, amax, logical_and
+from numpy import sign, zeros, absolute, true_divide, sum,  floor, convolve, amax, logical_and
 from numpy import arange, sqrt, abs, multiply, conjugate, real
 import copy
 

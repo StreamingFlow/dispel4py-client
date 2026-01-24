@@ -2,7 +2,8 @@
 from dispel4py.base import ProducerPE, IterativePE, ConsumerPE
 from dispel4py.workflow_graph import WorkflowGraph
 import random
-from client import d4pClient,Process
+from laminar.client.d4pyclient import d4pClient
+
 
 class NumberProducer(ProducerPE):
     def __init__(self):
