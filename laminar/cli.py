@@ -8,18 +8,14 @@ import time
 from tabulate import tabulate
 import os
 import pwinput
+import json
 from enum import Enum
 
 from dispel4py.workflow_graph import WorkflowGraph
 from dispel4py.base import *
 from laminar.argument_parser import CustomArgumentParser
 from laminar.client.d4pyclient import d4pClient
-
-
-class Process(Enum):
-    SIMPLE = 1
-    MULTI = 2
-    DYNAMIC = 3
+from laminar.global_variables import Process
 
 def type_checker(value):
     if value.isdigit():
@@ -37,8 +33,19 @@ class LaminarCLI(cmd.Cmd):
     def __init__(self):
         _clear_terminal()
         super().__init__()
-        self.prompt = "(laminar) "
-        self.intro = """Welcome to the Laminar CLI"""
+        self.prompt = "\033[1m(laminar) > \033[0m"
+        self.intro = """
+        \033[36m
+          _                    _                             ____ _     ___ 
+         | |    __ _ _ __ ___ (_)_ __   __ _ _ __           / ___| |   |_ _|
+         | |   / _` | '_ ` _ \\| | '_ \\ / _` | '__|  _____  | |   | |    | | 
+         | |__| (_| | | | | | | | | | | (_| | |    |_____| | |___| |___ | | 
+         |_____\\__,_|_| |_| |_|_|_| |_|\\__,_|_|             \\____|_____|___|
+        \033[0m
+
+        \033[1m                 Welcome to the Laminar CLI!\033[0m
+        """
+
         self.loaded_modules = {}  # Initialize the loaded_modules dictionary
         self.module_counter = 0  # Initialize a counter for module names
         self.client = d4pClient()
@@ -52,9 +59,15 @@ class LaminarCLI(cmd.Cmd):
                 self.client.login(username, password)
                 if self.client.get_login() is None:
                     print("Invalid login")
+            _clear_terminal()
 
         self.load_modules_on_startup()
-        _clear_terminal()
+
+    def cmdloop(self, intro=None):
+        try:
+            super().cmdloop(intro)
+        except KeyboardInterrupt:
+            print("\nExiting Laminar CLI.")
 
     def load_modules_on_startup(self):
     # Load modules from the registry
@@ -87,23 +100,25 @@ class LaminarCLI(cmd.Cmd):
             print(f"An error occurred: {e}")
 
     def help_literal_search(self):
-        print("Searches the registry for workflows and processing elements matching the search term in the name or description.")
-        print()
-        print("Arguments:")
-        print("  search_type   Type of items to search for. Choices are:")
-        print("                - 'workflow': Search only for workflows")
-        print("                - 'pe': Search only for processing elements (PEs)")
-        print("                - 'both': Search for both workflows and PEs (default)")
-        print("  search_term   The term to search for in the registry.")
-        print()
-        print("Usage:")
-        print("  literal_search [workflow|pe|both] [string]")
-        print()
-        print("Examples:")
-        print("  literal_search workflow some_term")
-        print("  literal_search pe some_term")
-        print("  literal_search both some_term")
-
+        print("""
+        Searches the registry for workflows and processing elements matching the search term in the name or description.
+        
+        Arguments:
+          search_type   Type of items to search for. Choices are:
+                        - 'workflow': Search only for workflows
+                        - 'pe': Search only for processing elements (PEs)
+                        - 'both': Search for both workflows and PEs (default)
+          search_term   The term to search for in the registry.
+          
+        Usage:
+          literal_search [workflow|pe|both] [string]
+        
+        Examples:
+          literal_search workflow some_term
+          literal_search pe some_term
+          literal_search both some_term
+          
+        """)
 
     def do_semantic_search(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
@@ -120,21 +135,23 @@ class LaminarCLI(cmd.Cmd):
             print(f"An error occurred: {e}")
 
     def help_semantic_search(self):
-        print("Searches the registry for workflows and processing elements matching semantically the search term.")
-        print()
-        print("Arguments:")
-        print("  search_type   Type of items to search for. Choices are:")
-        print("                - 'workflow': Search only for workflows")
-        print("                - 'pe': Search only for processing elements (PEs)")
-        print("  search_term   The term to search for in the registry.")
-        print()
-        print("Usage:")
-        print("  semantic_search [workflow|pe] [search_term] ")
-        print()
-        print("Examples:")
-        print("  semantic_search workflow some_term ")
-        print("  semantic_search pe some_term ")
-
+        print("""
+        Searches the registry for workflows and processing elements matching semantically the search term.
+        
+        Arguments:
+          search_type   Type of items to search for. Choices are:
+                        - 'workflow': Search only for workflows
+                        - 'pe': Search only for processing elements (PEs)
+                        
+          search_term   The term to search for in the registry.      
+                    
+        Usage:
+          semantic_search [workflow|pe] [search_term]
+        
+        Examples:
+          semantic_search workflow some_term 
+          semantic_search pe some_term 
+        """)
 
     def do_code_recommendation(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
@@ -152,28 +169,30 @@ class LaminarCLI(cmd.Cmd):
             print(f"An error occurred: {e}")
 
     def help_code_recommendation(self):
-        print("Provides code recommdations from registered workflows and processing elements matching the code snippet.")
-        print()
-        print("Arguments:")
-        print("  search_type   Type of items to search for. Choices are:")
-        print("                - 'workflow': Search only for workflows")
-        print("                - 'pe': Search only for processing elements (PEs)")
-        print("  code_snippet   The code_snippet to get recommendations from the registry.")
-        print()
-        print("Options:")
-        print("  --embedding_type  The type of embedding to use. Choices are:")
-        print("                - 'spt': Perform a search based on SPT features")
-        print("                - 'llm': Perform a search based on LLM-generated embeddings")
-        print()
-        print("Note: code recommdations for workflows only possible with 'spt' embedding_type ")
-        print()
-        print("Usage:")
-        print("  semantic_search [workflow|pe] [code_snippet] [--embedding_type llm|spt]")
-        print()
-        print("Examples:")
-        print("  code_recommendation pe code_snippet --embedding_type spt")
-        print("  code_recommendation workfkow code_snippet --embedding_type spt")
-        print("  code_recommendation pe code_snippett --embedding_type llm")
+        print("""
+        Provides code recommdations from registered workflows and processing elements matching the code snippet.
+
+        Arguments:
+          search_type   Type of items to search for. Choices are:
+                        - 'workflow': Search only for workflows
+                        - 'pe': Search only for processing elements (PEs)
+          code_snippet   The code_snippet to get recommendations from the registry.
+
+        Options:
+          --embedding_type  The type of embedding to use. Choices are:
+                        - 'spt': Perform a search based on SPT features
+                        - 'llm': Perform a search based on LLM-generated embeddings
+
+        Note: code recommdations for workflows only possible with 'spt' embedding_type 
+
+        Usage:
+          semantic_search [workflow|pe] [code_snippet] [--embedding_type llm|spt]
+
+        Examples:
+          code_recommendation pe code_snippet --embedding_type spt
+          code_recommendation workfkow code_snippet --embedding_type spt
+          code_recommendation pe code_snippett --embedding_type llm
+        """)
 
     def do_run(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
@@ -196,7 +215,7 @@ class LaminarCLI(cmd.Cmd):
 
                 feedback = self.client.run(id, input=inputVal, verbose=args["verbose"], resources=args["resource"], process=runType)
                 if feedback is not False:
-                    print(feedback)
+                    print(json.dumps(feedback, indent=2, sort_keys=True))
                 else:
                     print(f"No workflow is registered with ID {id}")
             except:
@@ -204,7 +223,7 @@ class LaminarCLI(cmd.Cmd):
                 runType = Process.MULTI if args["multi"] else Process.DYNAMIC if args["dynamic"] else Process.SIMPLE
                 feedback = self.client.run(args["identifier"], input=inputVal, verbose=args["verbose"], resources=args["resource"], process=runType)
                 if feedback is not False:
-                    print(feedback)
+                    print(json.dumps(feedback, indent=2, sort_keys=True))
                 else:
                     print(f"No workflow is registered with name {args['identifier']}")
         except argparse.ArgumentError as e:
@@ -308,9 +327,12 @@ class LaminarCLI(cmd.Cmd):
 
 
     def help_register_workflow(self):
-        print("Registers all workflows and PEs instantiated within a given file input.\n Remember to include all the imports necessary for those PEs within the file.")
-        print("Usage: register_workflow [file.py]")
-
+        print("""
+        Registers all workflows and PEs instantiated within a given file input.
+        Remember to include all the imports necessary for those PEs within the file.
+        
+        Usage: register_workflow [file.py]
+        """)
 
     def do_register_pe(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
@@ -360,9 +382,12 @@ class LaminarCLI(cmd.Cmd):
 
 
     def help_register_pe(self):
-        print("Registers all PEs instantiated within a given file input.\n Remember to include all the imports necessary for those PEs within the file.")
-        print("Usage: register_pe [file.py]")
-
+        print("""
+        Registers all PEs instantiated within a given file input.
+        Remember to include all the imports necessary for those PEs within the file.
+         
+        Usage: register_pe [file.py]
+        """)
 
     def do_quit(self, arg):
         sys.exit(0)
@@ -427,8 +452,11 @@ class LaminarCLI(cmd.Cmd):
             print(f"An error occurred: {e}")
 
     def help_remove_pe(self):
-        print("Removes a processing element by its name or ID, or removes all processing elements if --all is specified.")
-        print("Usage: remove_pe [pe_identifier] [--all]")
+        print("""
+        Removes a processing element by its name or ID, or removes all processing elements if --all is specified.
+        
+        Usage: remove_pe [pe_identifier] [--all]
+        """)
 
     def do_remove_workflow(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
@@ -469,8 +497,11 @@ class LaminarCLI(cmd.Cmd):
             print(f"An error occurred: {e}")
 
     def help_remove_workflow(self):
-        print("Removes a workflow by its name or ID, or removes all workflows if --all is specified.")
-        print("Usage: remove_workflow [workflow_identifier] [--all]")
+        print("""
+        Removes a workflow by its name or ID, or removes all workflows if --all is specified.
+        
+        Usage: remove_workflow [workflow_identifier] [--all]
+        """)
 
     def do_describe(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
@@ -492,8 +523,11 @@ class LaminarCLI(cmd.Cmd):
             print(f"An error occurred: {e}")
 
     def help_describe(self):
-        print("It provides the information on PEs or workflow by its name")
-        print("Usage: describe [identifier] [--source_code | -sc]")
+        print("""
+        It provides the information on PEs or workflow by its name 
+        
+        Usage: describe [identifier] [--source_code | -sc]
+        """)
 
 
     def do_update_workflow_description(self, arg):
@@ -510,8 +544,11 @@ class LaminarCLI(cmd.Cmd):
             print(f"An error occurred: {e}")
 
     def help_update_workflow_description(self):
-        print("Updates the description of a workflow by Id")
-        print("Usage: update_workflow_description [workflow_id] [new_description]")
+        print("""
+        Updates the description of a workflow by Id. 
+        
+        Usage: update_workflow_description [workflow_id] [new_description]
+        """)
 
     def do_update_pe_description(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
@@ -527,8 +564,11 @@ class LaminarCLI(cmd.Cmd):
             print(f"An error occurred: {e}")
 
     def help_update_pe_description(self):
-        print("Updates the description of a PE by Id")
-        print("Usage: update_pe_description [pe_id] [new_description]")
+        print("""
+        Updates the description of a PE by Id 
+        
+        Usage: update_pe_description [pe_id] [new_description]
+        """)
 
 
     def do_remove_all(self, arg):
@@ -548,7 +588,9 @@ class LaminarCLI(cmd.Cmd):
             print("Operation cancelled by user.")
 
 
-
     def help_remove_all(self):
-        print("Removes all workflows and Pocessing Elements registered by the user")
-        print("Usage: remove_all")
+        print("""
+        Removes all workflows and Pocessing Elements registered by the user 
+        
+        Usage: remove_all
+        """)

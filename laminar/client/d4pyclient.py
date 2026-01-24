@@ -3,7 +3,6 @@ from typing_extensions import Literal, get_args
 from typing import Union
 import os
 
-from laminar.process import Process
 from laminar.client.web.client import *
 import laminar.global_variables as g_vars
 
@@ -50,7 +49,7 @@ class d4pClient:
                                         module=module, module_name=module_name)
         return WebClient.register_Workflow(self, data)
 
-    def run(self, workflow: Union[str, int, WorkflowGraph], input=None, process=Process.SIMPLE,
+    def run(self, workflow: Union[str, int, WorkflowGraph], input=None, process=g_vars.Process,
             resources: list[str] = [], verbose=True):
         """Execute a Workflow with the client service"""
         workflow_id = None
@@ -78,12 +77,12 @@ class d4pClient:
     def run_multiprocess(self, workflow: Union[str, int, WorkflowGraph], input=None, resources: list[str] = [],
                          verbose=True):
         """Alternative for client.run(process=Process.MULTI)"""
-        return self.run(workflow, input, Process.MULTI, resources, verbose)
+        return self.run(workflow, input, g_vars.Process.MULTI, resources, verbose)
 
     def run_dynamic(self, workflow: Union[str, int, WorkflowGraph], input=None, resources: list[str] = [],
                     verbose=True):
         """Alternative for client.run(process=Process.DYNAMIC)"""
-        return self.run(workflow, input, Process.DYNAMIC, resources, verbose)
+        return self.run(workflow, input, g_vars.Process.DYNAMIC, resources, verbose)
 
     def get_PE(self, pe: Union[str, int], describe: bool = False):
         """Retrieve PE from registry"""

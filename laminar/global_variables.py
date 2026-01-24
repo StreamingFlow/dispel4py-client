@@ -1,10 +1,16 @@
 from dispel4py.base import *
 import configparser
+from enum import Enum
 
 config = configparser.ConfigParser()
 config.read('config.ini')
 
 CLIENT_AUTH_ID: str = "None"
+
+class Process(Enum):
+    SIMPLE = 1
+    MULTI = 2
+    DYNAMIC = 3
 
 try:
   BASE_URL: str = config['CONFIGURATION']['SERVER_URL']
