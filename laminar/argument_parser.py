@@ -1,13 +1,24 @@
 import argparse
 import sys
 
+import argparse
+import sys
+
 
 class CustomArgumentParser(argparse.ArgumentParser):
-    def __init__(self, exit_on_error=True):
-        super().__init__(exit_on_error=exit_on_error)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def error(self, message):
+        # called by argparse on bad input
+        if self.exit_on_error:
+            super().error(message)
+        else:
+            raise ValueError(message)
 
     def exit(self, status=0, message=None):
         if self.exit_on_error:
-            sys.exit(status)
+            super().exit(status, message)
         else:
-            raise argparse.ArgumentError(None, message=message)
+            if message:
+                raise ValueError(message)

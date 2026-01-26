@@ -14,12 +14,13 @@ from laminar.argument_parser import CustomArgumentParser
 from laminar.client.d4pyclient import d4pClient
 from laminar.global_variables import Process
 
+from laminar.clitools.search import SearchCommand
+
 
 def type_checker(value):
     if value.isdigit():
         return int(value)
     return value
-
 
 class LaminarCLI(cmd.Cmd):
 
@@ -55,6 +56,7 @@ class LaminarCLI(cmd.Cmd):
             clear_terminal()
 
         self.load_modules_on_startup()
+        self.search_command = SearchCommand(self.client)
 
     def cmdloop(self, intro=None):
         try:
@@ -78,72 +80,12 @@ class LaminarCLI(cmd.Cmd):
                 sys.modules[module_name] = mod
                 self.loaded_modules[module_name] = mod
 
-    def do_literal_search(self, arg):
-        parser = CustomArgumentParser(exit_on_error=False)
-        parser.add_argument("search_type", choices=["workflow", "pe", "both"], default="both")
-        parser.add_argument("search_term")
-        try:
-            args = vars(parser.parse_args(shlex.split(arg)))
-            feedback = self.client.search_Registry_Literal(args["search_term"], args["search_type"])
-            print_text(feedback[0], tab=True)
-        except argparse.ArgumentError as e:
-            print_error(e.message.replace("laminar.py", "literal_search"))
-        except Exception as e:
-            print_error(f"An error occurred: {e}")
 
-    def help_literal_search(self):
-        print_text("""
-        Searches the registry for workflows and processing elements matching the search term in the name or description.
-        
-        Arguments:
-          search_type   Type of items to search for. Choices are:
-                        - 'workflow': Search only for workflows
-                        - 'pe': Search only for processing elements (PEs)
-                        - 'both': Search for both workflows and PEs (default)
-          search_term   The term to search for in the registry.
-          
-        Usage:
-          literal_search [workflow|pe|both] [string]
-        
-        Examples:
-          literal_search workflow some_term
-          literal_search pe some_term
-          literal_search both some_term
-          
-        """)
+    def do_search(self, arg):
+        self.search_command.search(arg)
 
-    def do_semantic_search(self, arg):
-        parser = CustomArgumentParser(exit_on_error=False)
-        parser.add_argument("search_type", choices=["workflow", "pe"], default="pe")
-        parser.add_argument("search_term")
-
-        try:
-            args = vars(parser.parse_args(shlex.split(arg)))
-            feedback = self.client.search_Registry_Semantic(args["search_term"], args["search_type"])
-            print_text(feedback)
-        except argparse.ArgumentError as e:
-            print_error(e.message.replace("laminar.py", "semantic_search"))
-        except Exception as e:
-            print_error(f"An error occurred: {e}")
-
-    def help_semantic_search(self):
-        print_text("""
-        Searches the registry for workflows and processing elements matching semantically the search term.
-        
-        Arguments:
-          search_type   Type of items to search for. Choices are:
-                        - 'workflow': Search only for workflows
-                        - 'pe': Search only for processing elements (PEs)
-                        
-          search_term   The term to search for in the registry.      
-                    
-        Usage:
-          semantic_search [workflow|pe] [search_term]
-        
-        Examples:
-          semantic_search workflow some_term 
-          semantic_search pe some_term 
-        """)
+    def help_search(self):
+        self.search_command.help()
 
     def do_code_recommendation(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
