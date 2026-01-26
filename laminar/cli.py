@@ -85,7 +85,7 @@ class LaminarCLI(cmd.Cmd):
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
             feedback = self.client.search_Registry_Literal(args["search_term"], args["search_type"])
-            print_text(feedback)
+            print_text(feedback[0], tab=True)
         except argparse.ArgumentError as e:
             print_error(e.message.replace("laminar.py", "literal_search"))
         except Exception as e:

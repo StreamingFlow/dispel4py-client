@@ -4,6 +4,7 @@ import os
 import tabulate
 from rich import pretty, print
 from rich.console import Console
+from rich.syntax import Syntax
 
 console = Console()
 
@@ -50,3 +51,6 @@ def print_text(text, tab=False):
         console.print_json(data=text)
     else:
         console.print(text)
+
+def print_code(code):
+    console.print(Syntax(code, "python"))
