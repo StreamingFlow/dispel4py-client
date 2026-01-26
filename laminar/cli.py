@@ -286,7 +286,7 @@ class LaminarCLI(cmd.Cmd):
                 if len(pes) > 0:
                     print_status("Found PEs")
                 for key in pes:
-                    print_status(f"• {key} - {type(pes[key]).__name__}", end=" ")
+                    print_status(f"• {key} - {type(pes[key]).__name__}")
                     docstring = pes[key].__doc__
                     pe_class = pes[key]
                     pe_instance = pe_class()
@@ -298,7 +298,7 @@ class LaminarCLI(cmd.Cmd):
                 if len(workflows) > 0:
                     print_status("Found workflows")
                 for key in workflows:
-                    print_status(f"• {key} - {type(workflows[key]).__name__}", end=" ")
+                    print_status(f"• {key} - {type(workflows[key]).__name__}")
                     docstring = workflows[key].__doc__
                     if "A graph representing the workflow and related methods" in docstring:
                         docstring = None

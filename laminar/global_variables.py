@@ -2,8 +2,7 @@ from dispel4py.base import *
 import configparser
 from enum import Enum
 
-config = configparser.ConfigParser()
-config.read('config.ini')
+
 
 CLIENT_AUTH_ID: str = "None"
 
@@ -13,13 +12,15 @@ class Process(Enum):
     DYNAMIC = 3
 
 try:
-  BASE_URL: str = config['CONFIGURATION']['SERVER_URL']
-  if len(BASE_URL) < 1:
-    raise "No base URL error"
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+    BASE_URL: str = config['CONFIGURATION']['SERVER_URL']
+    if len(BASE_URL) < 1:
+        raise "No base URL error"
 except:
-    from laminar.screen_printer import print_error
-    print_error("ERROR: Server URL not configured - check your configuration file")
-    exit(1)
+    from laminar.screen_printer import print_warning
+    print_warning("Server URL not configured using default value: http://127.0.0.1:8080")
+    BASE_URL = "http://127.0.0.1:8080"
 
 BASE_URL_REGISTER: str = BASE_URL + "/registry/{}"
 

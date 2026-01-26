@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=65.5.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dispel4py-client"
+version = "1.0.0"
+description = "Client for the Laminar serverless framework."
+readme = "README.md"
+authors = [
+    { name = "Rosa Filgueira", email = "r.filgueira@epcc.ed.ac.uk" },
+]
+
+maintainers = [
+    { name = "Rosa Filgueira", email = "r.filgueira@epcc.ed.ac.uk" },
+    { name = "Marco Edoardo Santimaria", email = "marcoedoardo.santimaria@unito.it"}
+]
+
+requires-python = ">=3.10,<3.14"
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements_client.txt"]}
+
+# Entry points for the CLI
+[project.scripts]
+laminar = "laminar.__main__:main"
+
+# Include additional modules and data files
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["laminar*"]
+
+[tool.setuptools]
+zip-safe = false

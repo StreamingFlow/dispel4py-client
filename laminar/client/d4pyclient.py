@@ -6,6 +6,9 @@ import os
 from laminar.client.web.client import *
 import laminar.global_variables as g_vars
 
+import laminar.screen_printer
+from laminar.screen_printer import print_status, print_text
+
 _TYPES = Literal["pe", "workflow", "both"]
 _QUERY_TYPES = Literal["text", "code"]
 _E_TYPES = Literal["llm", "spt"]
@@ -115,25 +118,38 @@ class d4pClient:
         """
 
         if isinstance(obj, WorkflowGraph):
-            workflow_pes = [o.name for o in obj.get_contained_objects()]
-            print("PEs in Workflow:", workflow_pes)
+            workflow_pes = [{
+                "ID": o.id,
+                "Name": o.name,
+                "# Process": o.numprocesses,
+                "Inputs": o.inputconnections,
+                "Outputs": o.outputconnections,
+            } for o in obj.get_contained_objects()]
+
             descr = obj.__doc__ if obj.__doc__ else "No description available."
-            print(descr)
+            print_text(f"{descr}")
+            print_text(workflow_pes, tab=True)
+
             if include_source_code:
                 print("\n Workflow Source Code:\n")
                 print(sc)
 
         elif isinstance(obj, g_vars.PE_TYPES):
-            print("PE name:", getattr(obj, "name"))
+            pe_state = {
+                "Name": getattr(obj, "name"),
+                "PE Type": type(obj).__bases__[0].__name__ if len(type(obj).__bases__) > 0 else "No name available",
+            }
 
             for item, amount in obj.__dict__.items():
                 if item in ["wrapper", "pickleIgnore", "id", "name"]:
                     continue
+                pe_state[f"{item}"] = amount
 
-                print("{}: {} ".format(item, amount))
+            print_text([pe_state], tab=True)
+
             if include_source_code:
-                print("\nPE Source Code:\n")
-                print(sc)
+                print_text("\nPE Source Code:\n")
+                print_text(sc)
 
         else:
             assert isinstance(obj, type), "Requires an object of type WorkflowGraph or PE"
