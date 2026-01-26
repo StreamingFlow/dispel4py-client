@@ -15,6 +15,7 @@ from laminar.client.d4pyclient import d4pClient
 from laminar.global_variables import Process
 
 from laminar.clitools.search import SearchCommand
+from laminar.clitools.register import RegisterCommand
 
 
 def type_checker(value):
@@ -41,7 +42,7 @@ class LaminarCLI(cmd.Cmd):
         """
 
         self.loaded_modules = {}  # Initialize the loaded_modules dictionary
-        self.module_counter = 0  # Initialize a counter for module names
+
         self.client = d4pClient()
 
         if self.client.get_login() is not None:
@@ -57,6 +58,7 @@ class LaminarCLI(cmd.Cmd):
 
         self.load_modules_on_startup()
         self.search_command = SearchCommand(self.client)
+        self.register_command = RegisterCommand(self.client, self.loaded_modules)
 
     def cmdloop(self, intro=None):
         try:
@@ -194,141 +196,12 @@ class LaminarCLI(cmd.Cmd):
             run my_workflow --dynamic --resource file1.txt --resource file2.txt
         """)
 
-    def do_register_workflow(self, arg):
-        parser = CustomArgumentParser(exit_on_error=False)
-        parser.add_argument("filepath")
-        try:
-            args = vars(parser.parse_args(shlex.split(arg)))
-            try:
-                unique_module_name = f"module_name_{int(time.time())}_{self.module_counter}"
-                self.module_counter += 1
 
-                spec = importlib.util.spec_from_file_location(unique_module_name, args["filepath"])
-                mod = importlib.util.module_from_spec(spec)
-                sys.modules[unique_module_name] = mod  # Ensure module is in sys.modules
-                spec.loader.exec_module(mod)
-                self.loaded_modules[unique_module_name] = mod  # Store the loaded module
+    def do_register(self, arg):
+        self.register_command.register(arg)
 
-                pes = {}
-                workflows = {}
-                for var in dir(mod):
-                    attr = getattr(mod, var)
-                    if isinstance(attr, type) and issubclass(attr, (GenericPE, IterativePE, ProducerPE,
-                                                                    ConsumerPE)) and attr not in (GenericPE,
-                                                                                                  IterativePE,
-                                                                                                  ProducerPE,
-                                                                                                  ConsumerPE):
-                        pes[var] = attr
-                    if isinstance(attr, WorkflowGraph):
-                        workflows.update({var: attr})
-
-                if len(pes) == 0 and len(workflows) == 0:
-                    print_warning("Could not find any PEs or Workflows")
-                    return
-                if len(pes) > 0:
-                    print_status("Found PEs")
-                for key in pes:
-                    print_status(f"• {key} - {type(pes[key]).__name__}")
-                    docstring = pes[key].__doc__
-                    pe_class = pes[key]
-                    pe_instance = pe_class()
-                    r = self.client.register_PE(pe_instance, docstring)
-                    if r is None:
-                        print_warning("(Exists)")
-                    else:
-                        print_status(f"(ID {r})")
-                if len(workflows) > 0:
-                    print_status("Found workflows")
-                for key in workflows:
-                    print_status(f"• {key} - {type(workflows[key]).__name__}")
-                    docstring = workflows[key].__doc__
-                    if "A graph representing the workflow and related methods" in docstring:
-                        docstring = None
-                    r = self.client.register_Workflow(workflows[key], key, docstring, mod, unique_module_name)
-                    if r is None:
-                        print_warning("(Exists)")
-                    else:
-                        print_status(f"(ID {r})")
-                for var in dir(mod):
-                    attr = getattr(mod, var)
-                    if isinstance(attr, GenericPE):
-                        setattr(mod, var, None)
-                    if isinstance(attr, WorkflowGraph):
-                        setattr(mod, var, None)
-
-            except FileNotFoundError:
-                print_error(f"Could not find file at {args['filepath']}")
-            except SyntaxError:
-                print_error(f"Target file has invalid python syntax")
-            except Exception as e:
-                print_error(f"An error occurred: {e}")
-        except argparse.ArgumentError as e:
-            print_error(e.message.replace("laminar.py", "register_workflow"))
-        except Exception as e:
-            print_error(f"An error occurred: {e}")
-
-    def help_register_workflow(self):
-        print_status("""
-        Registers all workflows and PEs instantiated within a given file input.
-        Remember to include all the imports necessary for those PEs within the file.
-        
-        Usage: register_workflow [file.py]
-        """)
-
-    def do_register_pe(self, arg):
-        parser = CustomArgumentParser(exit_on_error=False)
-        parser.add_argument("filepath")
-
-        try:
-            args = vars(parser.parse_args(shlex.split(arg)))
-            unique_module_name = f"module_name_{int(time.time())}_{self.module_counter}"
-            self.module_counter += 1
-
-            spec = importlib.util.spec_from_file_location(unique_module_name, args["filepath"])
-            mod = importlib.util.module_from_spec(spec)
-            sys.modules[unique_module_name] = mod  # Ensure module is in sys.modules
-            spec.loader.exec_module(mod)
-            self.loaded_modules[unique_module_name] = mod  # Store the loaded module
-
-            pes = {}
-            for var in dir(mod):
-                attr = getattr(mod, var)
-                # Check if the attribute is a class and is a subclass of the PE types
-                if isinstance(attr, type) and issubclass(attr, (GenericPE, IterativePE, ProducerPE,
-                                                                ConsumerPE)) and attr not in (GenericPE, IterativePE,
-                                                                                              ProducerPE, ConsumerPE):
-                    pes[var] = attr
-            if len(pes) == 0:
-                print_warning("Could not find any PEs")
-                return
-
-            for key in pes:
-                print_status(f"• {key} - {pes[key].__name__}", end=" ")
-                pe_instance = pes[key]()
-                docstring = pes[key].__doc__
-                pe_class = pes[key]
-                pe_instance = pe_class()
-
-                try:
-                    r = self.client.register_PE(pe_instance, docstring)
-                    if r is None:
-                        print_warning("(Exists)")
-                    else:
-                        print_status(f"(ID {r})")
-                except Exception as e:
-                    print_error(f"An error occurred during PE registration: {e}")
-        except argparse.ArgumentError as e:
-            print_error(e.message.replace("laminar.py", "register_pe"))
-        except Exception as e:
-            print_error(f"An error occurred: {e}")
-
-    def help_register_pe(self):
-        print_text("""
-        Registers all PEs instantiated within a given file input.
-        Remember to include all the imports necessary for those PEs within the file.
-         
-        Usage: register_pe [file.py]
-        """)
+    def help_register(self):
+        self.register_command.help()
 
     def do_quit(self, arg):
         sys.exit(0)
