@@ -25,27 +25,35 @@ class WebClient:
         pass
 
     def register_User(self, user_data: AuthenticationData):
-        data = json.dumps(user_data.to_dict())
-        response = req.post(g_vars.URL_REGISTER_USER, data=data, headers=g_vars.headers)
-        response = json.loads(response.text)
-        if 'ApiError' in response.keys():
-            logger.error(response['ApiError']['message'])
-            return None
-        else:
-            logger.info("Successfully registered user: " + response["userName"])
-            return response["userName"]
+        try:
+            data = json.dumps(user_data.to_dict())
+            response = req.post(g_vars.URL_REGISTER_USER, data=data, headers=g_vars.headers)
+            response = json.loads(response.text)
+            if 'ApiError' in response.keys():
+                logger.error(response['ApiError']['message'])
+                return None
+            else:
+                logger.info("Successfully registered user: " + response["userName"])
+                return response["userName"]
+        except Exception as e:
+            print(f"Unable to connect to laminar server: {e}")
+            exit(0)
 
     def login_User(self, user_data: AuthenticationData):
-        data = json.dumps(user_data.to_dict())
-        response = req.post(g_vars.URL_LOGIN_USER, data=data, headers=g_vars.headers)
-        response = json.loads(response.text)
-        if 'ApiError' in response.keys():
-            logger.error(response['ApiError']['message'])
-            return None
-        else:
-            g_vars.CLIENT_AUTH_ID = response["userName"]
-            logger.info("Successfully logged in: " + response["userName"])
-            return response["userName"]
+        try:
+            data = json.dumps(user_data.to_dict())
+            response = req.post(g_vars.URL_LOGIN_USER, data=data, headers=g_vars.headers)
+            response = json.loads(response.text)
+            if 'ApiError' in response.keys():
+                logger.error(response['ApiError']['message'])
+                return None
+            else:
+                g_vars.CLIENT_AUTH_ID = response["userName"]
+                logger.info("Successfully logged in: " + response["userName"])
+                return response["userName"]
+        except Exception as e:
+            print(f"Unable to connect to laminar server: {e}")
+            exit(0)
 
     def register_PE(self, pe_payload: PERegistrationData):
         verify_login(logger)

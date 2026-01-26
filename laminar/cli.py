@@ -5,33 +5,26 @@ import importlib.util
 import shlex
 import sys
 import time
-from tabulate import tabulate
-import os
 import pwinput
-import json
-from enum import Enum
 
 from dispel4py.workflow_graph import WorkflowGraph
 from dispel4py.base import *
+from laminar.screen_printer import *
 from laminar.argument_parser import CustomArgumentParser
 from laminar.client.d4pyclient import d4pClient
 from laminar.global_variables import Process
+
 
 def type_checker(value):
     if value.isdigit():
         return int(value)
     return value
 
-def _clear_terminal():
-    if os.name == "nt":
-        os.system('cls')
-    else:
-        os.system('clear')
 
 class LaminarCLI(cmd.Cmd):
 
     def __init__(self):
-        _clear_terminal()
+        clear_terminal()
         super().__init__()
         self.prompt = "\033[1m(laminar) > \033[0m"
         self.intro = """
@@ -51,15 +44,15 @@ class LaminarCLI(cmd.Cmd):
         self.client = d4pClient()
 
         if self.client.get_login() is not None:
-            print(f"Logged in as {self.client.get_login()}")
+            print_status(f"Logged in as {self.client.get_login()}")
         else:
             while self.client.get_login() is None:
                 username = input("Username: ")
                 password = pwinput.pwinput("Password: ")
                 self.client.login(username, password)
                 if self.client.get_login() is None:
-                    print("Invalid login")
-            _clear_terminal()
+                    print_error("Invalid login")
+            clear_terminal()
 
         self.load_modules_on_startup()
 
@@ -67,15 +60,15 @@ class LaminarCLI(cmd.Cmd):
         try:
             super().cmdloop(intro)
         except KeyboardInterrupt:
-            print("\nExiting Laminar CLI.")
+            print_warning("\nExiting Laminar CLI.")
 
     def load_modules_on_startup(self):
-    # Load modules from the registry
+        # Load modules from the registry
         workflows = self.client.get_Workflows()
         for workflow in workflows:
             module_source_code = workflow['moduleSourceCode']
             if module_source_code:
-                if  workflow['moduleName']:
+                if workflow['moduleName']:
                     module_name = workflow['moduleName']
                 else:
                     module_name = "tmp"
@@ -85,7 +78,6 @@ class LaminarCLI(cmd.Cmd):
                 sys.modules[module_name] = mod
                 self.loaded_modules[module_name] = mod
 
-
     def do_literal_search(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
         parser.add_argument("search_type", choices=["workflow", "pe", "both"], default="both")
@@ -93,14 +85,14 @@ class LaminarCLI(cmd.Cmd):
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
             feedback = self.client.search_Registry_Literal(args["search_term"], args["search_type"])
-            print(feedback)
+            print_text(feedback)
         except argparse.ArgumentError as e:
-            print(e.message.replace("laminar.py", "literal_search"))
+            print_error(e.message.replace("laminar.py", "literal_search"))
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print_error(f"An error occurred: {e}")
 
     def help_literal_search(self):
-        print("""
+        print_text("""
         Searches the registry for workflows and processing elements matching the search term in the name or description.
         
         Arguments:
@@ -127,15 +119,15 @@ class LaminarCLI(cmd.Cmd):
 
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
-            feedback =self.client.search_Registry_Semantic(args["search_term"], args["search_type"])
-            print(feedback)
+            feedback = self.client.search_Registry_Semantic(args["search_term"], args["search_type"])
+            print_text(feedback)
         except argparse.ArgumentError as e:
-            print(e.message.replace("laminar.py", "semantic_search"))
+            print_error(e.message.replace("laminar.py", "semantic_search"))
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print_error(f"An error occurred: {e}")
 
     def help_semantic_search(self):
-        print("""
+        print_text("""
         Searches the registry for workflows and processing elements matching semantically the search term.
         
         Arguments:
@@ -161,15 +153,16 @@ class LaminarCLI(cmd.Cmd):
 
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
-            feedback = self.client.code_Recommendation(args["code_snippet"], args["search_type"], args["embedding_type"])
-            print(feedback)
+            feedback = self.client.code_Recommendation(args["code_snippet"], args["search_type"],
+                                                       args["embedding_type"])
+            print_text(feedback)
         except argparse.ArgumentError as e:
-            print(e.message.replace("laminar.py", "code_recommendation"))
+            print_error(e.message.replace("laminar.py", "code_recommendation"))
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print_error(f"An error occurred: {e}")
 
     def help_code_recommendation(self):
-        print("""
+        print_text("""
         Provides code recommdations from registered workflows and processing elements matching the code snippet.
 
         Arguments:
@@ -210,29 +203,34 @@ class LaminarCLI(cmd.Cmd):
                 args["resource"] = []
             try:
                 id = int(args["identifier"])
-                inputVal = args["input"] if args["rawinput"] or args["input"] is None else ast.literal_eval(args["input"])
+                inputVal = args["input"] if args["rawinput"] or args["input"] is None else ast.literal_eval(
+                    args["input"])
                 runType = Process.MULTI if args["multi"] else Process.DYNAMIC if args["dynamic"] else Process.SIMPLE
 
-                feedback = self.client.run(id, input=inputVal, verbose=args["verbose"], resources=args["resource"], process=runType)
+                feedback = self.client.run(id, input=inputVal, verbose=args["verbose"], resources=args["resource"],
+                                           process=runType)
                 if feedback is not False:
-                    print(json.dumps(feedback, indent=2, sort_keys=True))
+                    print_text(feedback)
                 else:
-                    print(f"No workflow is registered with ID {id}")
+                    print_error(f"No workflow is registered with ID {id}")
             except:
-                inputVal = args["input"] if args["rawinput"] or args["input"] is None else ast.literal_eval(args["input"])
+                inputVal = args["input"] if args["rawinput"] or args["input"] is None else ast.literal_eval(
+                    args["input"])
                 runType = Process.MULTI if args["multi"] else Process.DYNAMIC if args["dynamic"] else Process.SIMPLE
-                feedback = self.client.run(args["identifier"], input=inputVal, verbose=args["verbose"], resources=args["resource"], process=runType)
-                if feedback is not False:
-                    print(json.dumps(feedback, indent=2, sort_keys=True))
-                else:
-                    print(f"No workflow is registered with name {args['identifier']}")
+                feedback = self.client.run(args["identifier"], input=inputVal, verbose=args["verbose"],
+                                           resources=args["resource"], process=runType)
+
+                print_text(feedback) if feedback is not False else print_warning(
+                    f"No workflow is registered with name {args['identifier']}")
+
+
         except argparse.ArgumentError as e:
-            print(e.message.replace("laminar.py", "run"))
+            print_error(e.message.replace("laminar.py", "run"))
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print_error(f"An error occurred: {e}")
 
     def help_run(self):
-        print("""
+        print_text("""
         Runs a workflow in the registry based on the provided name or ID.
 
         Usage:
@@ -269,44 +267,46 @@ class LaminarCLI(cmd.Cmd):
                 spec.loader.exec_module(mod)
                 self.loaded_modules[unique_module_name] = mod  # Store the loaded module
 
-
-
                 pes = {}
                 workflows = {}
                 for var in dir(mod):
                     attr = getattr(mod, var)
-                    if isinstance(attr, type) and issubclass(attr, (GenericPE, IterativePE, ProducerPE, ConsumerPE)) and attr not in (GenericPE, IterativePE, ProducerPE, ConsumerPE):
+                    if isinstance(attr, type) and issubclass(attr, (GenericPE, IterativePE, ProducerPE,
+                                                                    ConsumerPE)) and attr not in (GenericPE,
+                                                                                                  IterativePE,
+                                                                                                  ProducerPE,
+                                                                                                  ConsumerPE):
                         pes[var] = attr
                     if isinstance(attr, WorkflowGraph):
                         workflows.update({var: attr})
 
                 if len(pes) == 0 and len(workflows) == 0:
-                    print("Could not find any PEs or Workflows")
+                    print_warning("Could not find any PEs or Workflows")
                     return
                 if len(pes) > 0:
-                    print("Found PEs")
+                    print_status("Found PEs")
                 for key in pes:
-                    print(f"• {key} - {type(pes[key]).__name__}", end=" ")
+                    print_status(f"• {key} - {type(pes[key]).__name__}", end=" ")
                     docstring = pes[key].__doc__
                     pe_class = pes[key]
                     pe_instance = pe_class()
                     r = self.client.register_PE(pe_instance, docstring)
                     if r is None:
-                        print("(Exists)")
+                        print_warning("(Exists)")
                     else:
-                        print(f"(ID {r})")
+                        print_status(f"(ID {r})")
                 if len(workflows) > 0:
-                    print("Found workflows")
+                    print_status("Found workflows")
                 for key in workflows:
-                    print(f"• {key} - {type(workflows[key]).__name__}", end=" ")
+                    print_status(f"• {key} - {type(workflows[key]).__name__}", end=" ")
                     docstring = workflows[key].__doc__
                     if "A graph representing the workflow and related methods" in docstring:
-                        docstring=None
+                        docstring = None
                     r = self.client.register_Workflow(workflows[key], key, docstring, mod, unique_module_name)
                     if r is None:
-                        print("(Exists)")
+                        print_warning("(Exists)")
                     else:
-                        print(f"(ID {r})")
+                        print_status(f"(ID {r})")
                 for var in dir(mod):
                     attr = getattr(mod, var)
                     if isinstance(attr, GenericPE):
@@ -315,19 +315,18 @@ class LaminarCLI(cmd.Cmd):
                         setattr(mod, var, None)
 
             except FileNotFoundError:
-                print(f"Could not find file at {args['filepath']}")
+                print_error(f"Could not find file at {args['filepath']}")
             except SyntaxError:
-                print(f"Target file has invalid python syntax")
+                print_error(f"Target file has invalid python syntax")
             except Exception as e:
-                print(f"An error occurred: {e}")
+                print_error(f"An error occurred: {e}")
         except argparse.ArgumentError as e:
-            print(e.message.replace("laminar.py", "register_workflow"))
+            print_error(e.message.replace("laminar.py", "register_workflow"))
         except Exception as e:
-            print(f"An error occurred: {e}")
-
+            print_error(f"An error occurred: {e}")
 
     def help_register_workflow(self):
-        print("""
+        print_status("""
         Registers all workflows and PEs instantiated within a given file input.
         Remember to include all the imports necessary for those PEs within the file.
         
@@ -353,14 +352,16 @@ class LaminarCLI(cmd.Cmd):
             for var in dir(mod):
                 attr = getattr(mod, var)
                 # Check if the attribute is a class and is a subclass of the PE types
-                if isinstance(attr, type) and issubclass(attr, (GenericPE, IterativePE, ProducerPE, ConsumerPE)) and attr not in (GenericPE, IterativePE, ProducerPE, ConsumerPE):
+                if isinstance(attr, type) and issubclass(attr, (GenericPE, IterativePE, ProducerPE,
+                                                                ConsumerPE)) and attr not in (GenericPE, IterativePE,
+                                                                                              ProducerPE, ConsumerPE):
                     pes[var] = attr
             if len(pes) == 0:
-                print("Could not find any PEs")
+                print_warning("Could not find any PEs")
                 return
 
             for key in pes:
-                print(f"• {key} - {pes[key].__name__}", end=" ")
+                print_status(f"• {key} - {pes[key].__name__}", end=" ")
                 pe_instance = pes[key]()
                 docstring = pes[key].__doc__
                 pe_class = pes[key]
@@ -369,20 +370,18 @@ class LaminarCLI(cmd.Cmd):
                 try:
                     r = self.client.register_PE(pe_instance, docstring)
                     if r is None:
-                        print("(Exists)")
+                        print_warning("(Exists)")
                     else:
-                        print(f"(ID {r})")
+                        print_status(f"(ID {r})")
                 except Exception as e:
-                    print(f"An error occurred during PE registration: {e}")
+                    print_error(f"An error occurred during PE registration: {e}")
         except argparse.ArgumentError as e:
-            print(e.message.replace("laminar.py", "register_pe"))
+            print_error(e.message.replace("laminar.py", "register_pe"))
         except Exception as e:
-            print(f"An error occurred: {e}")
-
-
+            print_error(f"An error occurred: {e}")
 
     def help_register_pe(self):
-        print("""
+        print_text("""
         Registers all PEs instantiated within a given file input.
         Remember to include all the imports necessary for those PEs within the file.
          
@@ -393,19 +392,18 @@ class LaminarCLI(cmd.Cmd):
         sys.exit(0)
 
     def help_quit(self):
-        print("Exits the Laminar CLI")
+        print_text("Exits the Laminar CLI")
 
     def do_list(self, arg):
         try:
             description, registry = self.client.get_Registry()
             if description:
-                print(tabulate(description, headers="keys", tablefmt="fancy_grid"))
+                print_text(description, tab=True)
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print_error(f"An error occurred: {e}")
 
     def help_list(self):
-        print("Lists all registered PEs and workflows")
-
+        print_text("Lists all registered PEs and workflows")
 
     def do_remove_pe(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
@@ -419,40 +417,42 @@ class LaminarCLI(cmd.Cmd):
                     type_remove = "pe"
                     response = self.client.remove_All(type=type_remove)
                     if response is None:
-                        print("No response from server.")
+                        print_error("No response from server.")
                     elif 'ApiError' in response:
-                        print(f"Error: {response['ApiError']['message']}")
+                        print_error(f"Error: {response['ApiError']['message']}")
                     else:
-                        print(response)
+                        print_text(response)
                 else:
-                    print("Operation cancelled by user.")
+                    print_warning("Operation cancelled by user.")
             else:
                 if args["pe_identifier"] is None:
-                    print("Error: Missing processing element identifier. Use --all to remove all processing elements.")
+                    print_error("Error: Missing processing element identifier. Use --all to remove all processing elements.")
                     return
                 try:
                     response = self.client.remove_PE(args["pe_identifier"])
                     if 'ApiError' in response:
-                        print(f"Error: {response['ApiError']['message']}.")
+                        print_error(f"Error: {response['ApiError']['message']}.")
                     else:
-                        print("Processing Element removed successfully")
+                        print_status("Processing Element removed successfully")
                 except Exception as e:
-                    print(f"An error occurred while removing the PE: {e}")
+                    print_error(f"An error occurred while removing the PE: {e}")
                     if "NoneType" in str(e):
-                        print("Problably you are trying to remove a workflow instead of a processing element. Use remove_workflow <id> instead. Or the PE <id> does not exit.")
+                        print_error(
+                            "Problably you are trying to remove a workflow instead of a processing element. Use remove_workflow <id> instead. Or the PE <id> does not exit.")
                     else:
-                        print("Probably the processing element is being used by a workflow. Try to remove the workflow first.")
+                        print_error(
+                            "Probably the processing element is being used by a workflow. Try to remove the workflow first.")
 
         except argparse.ArgumentError as e:
-            print(e.message.replace("laminar.py", "remove_pe"))
+            print_error(e.message.replace("laminar.py", "remove_pe"))
         except TypeError:
             # Specific catch for the 'NoneType' error that shouldn't be printed
             pass
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print_error(f"An error occurred: {e}")
 
     def help_remove_pe(self):
-        print("""
+        print_text("""
         Removes a processing element by its name or ID, or removes all processing elements if --all is specified.
         
         Usage: remove_pe [pe_identifier] [--all]
@@ -470,34 +470,34 @@ class LaminarCLI(cmd.Cmd):
                     type_remove = "workflow"
                     response = self.client.remove_All(type_remove)
                     if response is None:
-                        print("No response from server.")
+                        print_error("No response from server.")
                     elif 'ApiError' in response:
-                        print(f"Error: {response['ApiError']['message']}")
+                        print_error(f"Error: {response['ApiError']['message']}")
                     else:
-                        print(response)
+                        print_status(response)
 
                 else:
-                    print("Operation cancelled by user.")
+                    print_warning("Operation cancelled by user.")
             else:
                 if args["workflow_identifier"] is None:
-                    print("Error: Missing workflow identifier. Use --all to remove all workflows.")
+                    print_error("Error: Missing workflow identifier. Use --all to remove all workflows.")
                     return
 
                 response = self.client.remove_Workflow(args["workflow_identifier"])
                 if 'ApiError' in response:
-                    print(f"Error: {response['ApiError']['message']}")
+                    print_error(f"Error: {response['ApiError']['message']}")
                 else:
-                    print("Workflow removed successfully")
+                    print_status("Workflow removed successfully")
         except argparse.ArgumentError as e:
-            print(e.message.replace("laminar.py", "remove_workflow"))
+            print_error(e.message.replace("laminar.py", "remove_workflow"))
         except TypeError:
             # Specific catch for the 'NoneType' error that shouldn't be printed
             pass
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print_error(f"An error occurred: {e}")
 
     def help_remove_workflow(self):
-        print("""
+        print_text("""
         Removes a workflow by its name or ID, or removes all workflows if --all is specified.
         
         Usage: remove_workflow [workflow_identifier] [--all]
@@ -506,29 +506,29 @@ class LaminarCLI(cmd.Cmd):
     def do_describe(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
         parser.add_argument("identifier", type=type_checker)
-        parser.add_argument("--source_code", "-sc", action="store_true", help="Include the source code in the description")
+        parser.add_argument("--source_code", "-sc", action="store_true",
+                            help="Include the source code in the description")
 
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
-            data =  self.client.get_PE(args["identifier"]) or self.client.get_Workflow(args["identifier"])
+            data = self.client.get_PE(args["identifier"]) or self.client.get_Workflow(args["identifier"])
             if data:
-                obj=data[0]
-                sc=data[1]
+                obj = data[0]
+                sc = data[1]
                 self.client.describe(obj, sc, include_source_code=args["source_code"])
             else:
-                print(f"No description found for '{args['identifier']}'")
+                print_warning(f"No description found for '{args['identifier']}'")
         except argparse.ArgumentError as e:
-            print(e.message.replace("laminar.py", "describe"))
+            print_error(e.message.replace("laminar.py", "describe"))
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print_error(f"An error occurred: {e}")
 
     def help_describe(self):
-        print("""
+        print_text("""
         It provides the information on PEs or workflow by its name 
         
         Usage: describe [identifier] [--source_code | -sc]
         """)
-
 
     def do_update_workflow_description(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
@@ -537,14 +537,14 @@ class LaminarCLI(cmd.Cmd):
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
             feedback = self.client.update_Workflow_Description(args["workflow_id"], args["new_description"])
-            print(feedback)
+            print_status(feedback)
         except argparse.ArgumentError as e:
-            print(e.message.replace("laminar.py", "update_workflow_description"))
+            print_error(e.message.replace("laminar.py", "update_workflow_description"))
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print_error(f"An error occurred: {e}")
 
     def help_update_workflow_description(self):
-        print("""
+        print_text("""
         Updates the description of a workflow by Id. 
         
         Usage: update_workflow_description [workflow_id] [new_description]
@@ -557,19 +557,18 @@ class LaminarCLI(cmd.Cmd):
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
             feedback = self.client.update_PE_Description(args["pe_id"], args["new_description"])
-            print(feedback)
+            print_status(feedback)
         except argparse.ArgumentError as e:
-            print(e.message.replace("laminar.py", "update_pe_description"))
+            print_error(e.message.replace("laminar.py", "update_pe_description"))
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print_error(f"An error occurred: {e}")
 
     def help_update_pe_description(self):
-        print("""
+        print_text("""
         Updates the description of a PE by Id 
         
         Usage: update_pe_description [pe_id] [new_description]
         """)
-
 
     def do_remove_all(self, arg):
         confirmation = input("Are you sure you want to remove all workflows and processing elements? [Y/N]: ")
@@ -577,19 +576,18 @@ class LaminarCLI(cmd.Cmd):
             try:
                 response = self.client.remove_All()
                 if response is None:
-                    print("No response from server.")
+                    print_error("No response from server.")
                 elif 'ApiError' in response:
-                    print(f"Error: {response['ApiError']['message']}")
+                    print_error(f"Error: {response['ApiError']['message']}")
                 else:
-                    print(response)
+                    print_error(response)
             except Exception as e:
-                print(f"An error occurred: {e}")
+                print_error(f"An error occurred: {e}")
         else:
-            print("Operation cancelled by user.")
-
+            print_warning("Operation cancelled by user.")
 
     def help_remove_all(self):
-        print("""
+        print_text("""
         Removes all workflows and Pocessing Elements registered by the user 
         
         Usage: remove_all
