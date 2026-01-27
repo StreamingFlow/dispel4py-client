@@ -1,22 +1,18 @@
 import argparse
-import ast
 import cmd
 import importlib.util
 import shlex
 import sys
-import time
 import pwinput
 
-from dispel4py.workflow_graph import WorkflowGraph
-from dispel4py.base import *
 from laminar.screen_printer import *
 from laminar.argument_parser import CustomArgumentParser, type_checker
 from laminar.client.d4pyclient import d4pClient
-from laminar.global_variables import Process
-
 from laminar.clitools.search import SearchCommand
 from laminar.clitools.register import RegisterCommand
 from laminar.clitools.remove import RemoveCommand
+from laminar.clitools.runcommand import RunCommand
+
 
 class LaminarCLI(cmd.Cmd):
 
@@ -55,6 +51,7 @@ class LaminarCLI(cmd.Cmd):
         self.search_command = SearchCommand(self.client)
         self.register_command = RegisterCommand(self.client, self.loaded_modules)
         self.remove_command = RemoveCommand(self.client)
+        self.run_command = RunCommand(self.client)
 
     def cmdloop(self, intro=None):
         try:
@@ -77,7 +74,6 @@ class LaminarCLI(cmd.Cmd):
                 exec(module_source_code, mod.__dict__)
                 sys.modules[module_name] = mod
                 self.loaded_modules[module_name] = mod
-
 
     def do_search(self, arg):
         self.search_command.search(arg)
@@ -103,7 +99,7 @@ class LaminarCLI(cmd.Cmd):
 
     def help_code_recommendation(self):
         print_text("""
-        Provides code recommdations from registered workflows and processing elements matching the code snippet.
+        Provides code recommendation from registered workflows and processing elements matching the code snippet.
 
         Arguments:
           search_type   Type of items to search for. Choices are:
@@ -116,82 +112,22 @@ class LaminarCLI(cmd.Cmd):
                         - 'spt': Perform a search based on SPT features
                         - 'llm': Perform a search based on LLM-generated embeddings
 
-        Note: code recommdations for workflows only possible with 'spt' embedding_type 
+        Note: code recommendations for workflows only possible with 'spt' embedding_type 
 
         Usage:
           semantic_search [workflow|pe] [code_snippet] [--embedding_type llm|spt]
 
         Examples:
           code_recommendation pe code_snippet --embedding_type spt
-          code_recommendation workfkow code_snippet --embedding_type spt
-          code_recommendation pe code_snippett --embedding_type llm
+          code_recommendation workflow code_snippet --embedding_type spt
+          code_recommendation pe code_snippet --embedding_type llm
         """)
 
     def do_run(self, arg):
-        parser = CustomArgumentParser(exit_on_error=False)
-        parser.add_argument("identifier", type=type_checker)
-        parser.add_argument("--rawinput", action="store_true")
-        parser.add_argument("-v", "--verbose", action="store_true")
-        parser.add_argument("-i", "--input", dest="input", required=False)
-        parser.add_argument("-r", "--resource", action="append", required=False)
-        parser.add_argument("--multi", action="store_true")
-        parser.add_argument("--dynamic", action="store_true")
-
-        try:
-            args = vars(parser.parse_args(shlex.split(arg)))
-            if not isinstance(args["resource"], list):
-                args["resource"] = []
-            try:
-                id = int(args["identifier"])
-                inputVal = args["input"] if args["rawinput"] or args["input"] is None else ast.literal_eval(
-                    args["input"])
-                runType = Process.MULTI if args["multi"] else Process.DYNAMIC if args["dynamic"] else Process.SIMPLE
-
-                feedback = self.client.run(id, input=inputVal, verbose=args["verbose"], resources=args["resource"],
-                                           process=runType)
-                if feedback is not False:
-                    print_text(feedback)
-                else:
-                    print_error(f"No workflow is registered with ID {id}")
-            except:
-                inputVal = args["input"] if args["rawinput"] or args["input"] is None else ast.literal_eval(
-                    args["input"])
-                runType = Process.MULTI if args["multi"] else Process.DYNAMIC if args["dynamic"] else Process.SIMPLE
-                feedback = self.client.run(args["identifier"], input=inputVal, verbose=args["verbose"],
-                                           resources=args["resource"], process=runType)
-
-                print_text(feedback) if feedback is not False else print_warning(
-                    f"No workflow is registered with name {args['identifier']}")
-
-
-        except argparse.ArgumentError as e:
-            print_error(e.message.replace("laminar.py", "run"))
-        except Exception as e:
-            print_error(f"An error occurred: {e}")
+        self.run_command.run(arg)
 
     def help_run(self):
-        print_text("""
-        Runs a workflow in the registry based on the provided name or ID.
-
-        Usage:
-            run identifier [options]
-
-        Options:
-            identifier               Name or ID of the workflow to run
-            --rawinput               Treat input as a raw string instead of evaluating it
-            -v, --verbose            Enable verbose output
-            -i, --input <data>       Input data for the workflow
-            -r, --resource <resource> Specify resources required by the workflow (can be used multiple times)
-            --multi                  Run the workflow in parallel using multiprocessing
-            --dynamic                Run the workflow in parallel using Redis
-
-        Examples:
-            run my_workflow -i '[{"input" : "1,2,3"}]' 
-            run my_workflow -i 100 --dynamic -v
-            run 123 --input "[{"input" : "1,2,3"}]" --multi --verbose
-            run my_workflow --dynamic --resource file1.txt --resource file2.txt
-        """)
-
+        self.run_command.help()
 
     def do_register(self, arg):
         self.register_command.register(arg)

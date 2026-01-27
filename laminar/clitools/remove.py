@@ -60,24 +60,25 @@ class RemoveCommand:
             
         Arguments:
             type       The type of object to remove.
-                        - 'workflow': Search only for workflows.
-                        - 'pe': Search only for processing elements.
-                        - '*': Search all elements.
+                        - 'workflow': Removes a workflow with given ID.
+                        - 'pe': Remove a PE with a given ID.
+                        - 'all': Remove all registered Workflows and PEs
 
-            id         The ID of the object to remove. Either an integer or '*' to remove all.
+            id         The ID of the object to remove. Either an integer or 'all' to remove all.
         """)
 
     def remove(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
-        parser.add_argument("type", help="Type of object to remove", choices=["workflow", "pe", "*"])
-        parser.add_argument("id", type=type_checker, default=-1)
+        parser.add_argument("type", help="Type of object to remove", choices=["workflow", "pe", "all"])
+        parser.add_argument("id", type=type_checker, default=-1, nargs='?')
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
 
-            remove_all = args["id"] == "*"
+            remove_all = args["id"] == "all" or args["type"] == "all"
 
             if remove_all:
-                confirmation = input("Are you sure you want to remove all processing elements? [Y/N]: ")
+                confirmation = input(
+                    f"Are you sure you want to remove all {args["type"] if "all" not in args["type"] else "objects"}? [Y/N]: ")
                 if confirmation.lower() != 'y':
                     print_warning("Operation cancelled by user.")
                     return
@@ -90,7 +91,7 @@ class RemoveCommand:
             elif "workflow" in args["type"]:
                 self._remove_workflow(workflow_id=args["id"], remove_all=remove_all)
             else:
-                self._remove_pe(pe_id=-1, remove_all=True)
                 self._remove_workflow(workflow_id=-1, remove_all=True)
+                self._remove_pe(pe_id=-1, remove_all=True)
         except Exception as e:
             print_error(e)
