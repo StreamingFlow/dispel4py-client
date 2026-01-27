@@ -4,10 +4,11 @@ import pickle
 import codecs
 
 import laminar.global_variables as g_vars
+from laminar.screen_printer import print_warning
+
 
 def verify_login(logger):
     if g_vars.CLIENT_AUTH_ID == "None":
-
         print("You must be logged-in to perform this operation.")
         exit()
 
@@ -72,8 +73,12 @@ def get_objects(results):
                 "Name": result['entryPoint'],
                 "Description": desc
             })
-            obj = pickle.loads(codecs.decode(result['workflowCode'].encode(), "base64"))
-
+            try:
+                obj = pickle.loads(codecs.decode(result['workflowCode'].encode(), "base64"))
+                objectList.append(obj)
+            except Exception as e:
+                print_warning(F"An exception occurred while fetching {result['peName']} : {e}")
+                pass
         else:
             object_description.append({
                 "ID": result['peId'],
@@ -81,8 +86,13 @@ def get_objects(results):
                 "Name": result['peName'],
                 "Description": desc
             })
-            obj = pickle.loads(codecs.decode(result['peCode'].encode(), "base64"))
-        objectList.append(obj)
+            try:
+                obj = pickle.loads(codecs.decode(result['peCode'].encode(), "base64"))
+                objectList.append(obj)
+            except Exception as e:
+                print_warning(F"An exception occurred while fetching {result['peId']} : {e}")
+                pass
+
     return object_description, objectList
 
 

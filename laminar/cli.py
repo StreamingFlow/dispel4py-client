@@ -10,18 +10,13 @@ import pwinput
 from dispel4py.workflow_graph import WorkflowGraph
 from dispel4py.base import *
 from laminar.screen_printer import *
-from laminar.argument_parser import CustomArgumentParser
+from laminar.argument_parser import CustomArgumentParser, type_checker
 from laminar.client.d4pyclient import d4pClient
 from laminar.global_variables import Process
 
 from laminar.clitools.search import SearchCommand
 from laminar.clitools.register import RegisterCommand
-
-
-def type_checker(value):
-    if value.isdigit():
-        return int(value)
-    return value
+from laminar.clitools.remove import RemoveCommand
 
 class LaminarCLI(cmd.Cmd):
 
@@ -59,6 +54,7 @@ class LaminarCLI(cmd.Cmd):
         self.load_modules_on_startup()
         self.search_command = SearchCommand(self.client)
         self.register_command = RegisterCommand(self.client, self.loaded_modules)
+        self.remove_command = RemoveCommand(self.client)
 
     def cmdloop(self, intro=None):
         try:
@@ -220,103 +216,11 @@ class LaminarCLI(cmd.Cmd):
     def help_list(self):
         print_text("Lists all registered PEs and workflows")
 
-    def do_remove_pe(self, arg):
-        parser = CustomArgumentParser(exit_on_error=False)
-        parser.add_argument("pe_identifier", nargs='?', type=type_checker)
-        parser.add_argument("--all", action="store_true", help="Remove all processing elements")
-        try:
-            args = vars(parser.parse_args(shlex.split(arg)))
-            if args["all"]:
-                confirmation = input("Are you sure you want to remove all processing elements? [Y/N]: ")
-                if confirmation.lower() == 'y':
-                    type_remove = "pe"
-                    response = self.client.remove_All(type=type_remove)
-                    if response is None:
-                        print_error("No response from server.")
-                    elif 'ApiError' in response:
-                        print_error(f"Error: {response['ApiError']['message']}")
-                    else:
-                        print_text(response)
-                else:
-                    print_warning("Operation cancelled by user.")
-            else:
-                if args["pe_identifier"] is None:
-                    print_error("Error: Missing processing element identifier. Use --all to remove all processing elements.")
-                    return
-                try:
-                    response = self.client.remove_PE(args["pe_identifier"])
-                    if 'ApiError' in response:
-                        print_error(f"Error: {response['ApiError']['message']}.")
-                    else:
-                        print_status("Processing Element removed successfully")
-                except Exception as e:
-                    print_error(f"An error occurred while removing the PE: {e}")
-                    if "NoneType" in str(e):
-                        print_error(
-                            "Problably you are trying to remove a workflow instead of a processing element. Use remove_workflow <id> instead. Or the PE <id> does not exit.")
-                    else:
-                        print_error(
-                            "Probably the processing element is being used by a workflow. Try to remove the workflow first.")
+    def help_remove(self):
+        self.remove_command.help()
 
-        except argparse.ArgumentError as e:
-            print_error(e.message.replace("laminar.py", "remove_pe"))
-        except TypeError:
-            # Specific catch for the 'NoneType' error that shouldn't be printed
-            pass
-        except Exception as e:
-            print_error(f"An error occurred: {e}")
-
-    def help_remove_pe(self):
-        print_text("""
-        Removes a processing element by its name or ID, or removes all processing elements if --all is specified.
-        
-        Usage: remove_pe [pe_identifier] [--all]
-        """)
-
-    def do_remove_workflow(self, arg):
-        parser = CustomArgumentParser(exit_on_error=False)
-        parser.add_argument("workflow_identifier", nargs='?', type=type_checker)
-        parser.add_argument("--all", action="store_true", help="Remove all workflows")
-        try:
-            args = vars(parser.parse_args(shlex.split(arg)))
-            if args["all"]:
-                confirmation = input("Are you sure you want to remove all workflows? [Y/N]: ")
-                if confirmation.lower() == 'y':
-                    type_remove = "workflow"
-                    response = self.client.remove_All(type_remove)
-                    if response is None:
-                        print_error("No response from server.")
-                    elif 'ApiError' in response:
-                        print_error(f"Error: {response['ApiError']['message']}")
-                    else:
-                        print_status(response)
-
-                else:
-                    print_warning("Operation cancelled by user.")
-            else:
-                if args["workflow_identifier"] is None:
-                    print_error("Error: Missing workflow identifier. Use --all to remove all workflows.")
-                    return
-
-                response = self.client.remove_Workflow(args["workflow_identifier"])
-                if 'ApiError' in response:
-                    print_error(f"Error: {response['ApiError']['message']}")
-                else:
-                    print_status("Workflow removed successfully")
-        except argparse.ArgumentError as e:
-            print_error(e.message.replace("laminar.py", "remove_workflow"))
-        except TypeError:
-            # Specific catch for the 'NoneType' error that shouldn't be printed
-            pass
-        except Exception as e:
-            print_error(f"An error occurred: {e}")
-
-    def help_remove_workflow(self):
-        print_text("""
-        Removes a workflow by its name or ID, or removes all workflows if --all is specified.
-        
-        Usage: remove_workflow [workflow_identifier] [--all]
-        """)
+    def do_remove(self, arg):
+        self.remove_command.remove(arg)
 
     def do_describe(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
@@ -383,27 +287,4 @@ class LaminarCLI(cmd.Cmd):
         Updates the description of a PE by Id 
         
         Usage: update_pe_description [pe_id] [new_description]
-        """)
-
-    def do_remove_all(self, arg):
-        confirmation = input("Are you sure you want to remove all workflows and processing elements? [Y/N]: ")
-        if confirmation.lower() == 'y':
-            try:
-                response = self.client.remove_All()
-                if response is None:
-                    print_error("No response from server.")
-                elif 'ApiError' in response:
-                    print_error(f"Error: {response['ApiError']['message']}")
-                else:
-                    print_error(response)
-            except Exception as e:
-                print_error(f"An error occurred: {e}")
-        else:
-            print_warning("Operation cancelled by user.")
-
-    def help_remove_all(self):
-        print_text("""
-        Removes all workflows and Pocessing Elements registered by the user 
-        
-        Usage: remove_all
         """)

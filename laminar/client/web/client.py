@@ -217,6 +217,7 @@ class WebClient:
             logger.info("Successfully removed PE: " + str(pe))
         else:
             logger.error(response['ApiError']['message'])
+        return response
 
     def remove_Workflow(self, workflow: Union[int, str]):
         verify_login(logger)
@@ -230,6 +231,7 @@ class WebClient:
             logger.info("Successfully removed Workflow: " + str(workflow))
         else:
             logger.error(response['ApiError']['message'])
+        return response
 
     def search(self, search_payload: SearchData):
         verify_login(logger)

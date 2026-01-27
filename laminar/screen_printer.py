@@ -1,6 +1,6 @@
 import json
 import os
-
+import traceback
 import tabulate
 from rich import pretty, print
 from rich.console import Console
@@ -20,7 +20,9 @@ def clear_terminal():
 def print_status(status):
     console.print(f"[bold green]{status}[/bold green]")
 
-def print_error(error):
+def print_error(error, _traceback = False):
+    if _traceback:
+        console.print(f"{traceback.format_exc()}")
     console.print(f"[bold red]ERR: {error}[/bold red]")
 
 def print_warning(warning):

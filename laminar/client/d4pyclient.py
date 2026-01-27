@@ -210,11 +210,11 @@ class d4pClient:
 
     def remove_PE(self, pe: Union[str, int]):
         """Remove PE from Registry"""
-        WebClient.remove_PE(self, pe)
+        return WebClient.remove_PE(self, pe)
 
     def remove_Workflow(self, workflow: Union[str, int]):
         """Remove Workflow from Registry"""
-        WebClient.remove_Workflow(self, workflow)
+        return WebClient.remove_Workflow(self, workflow)
 
     def get_PEs_By_Workflow(self, workflow: Union[str, int]):
         """Retrieve PEs in Workflow"""
