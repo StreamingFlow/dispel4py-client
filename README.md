@@ -1,107 +1,153 @@
+# Laminar Client
+
 ![Laminar Logo](logo.webp)
 
-# Introduction
+## Overview
 
-The Laminar Client is the primary interface for interacting with the Laminar framework, allowing users to manage and execute [dispel4py](https://github.com/StreamingFlow/d4py) stream-based workflows seamlessly. This component acts as the entry point for users, providing both a Command Line Interface (CLI) and direct client functions that can be used within Python scripts or Jupyter notebooks. 
+The Laminar Client is the primary user-facing component of the Laminar framework. It provides a unified interface for
+registering, managing, and executing dispel4py stream-based workflows, either through a Command Line Interface (CLI) or
+directly from Python code and Jupyter notebooks.
 
-By leveraging the Laminar Client, users can register dispel4py workflows and Processing Elements (PEs), initiate and monitor workflow executions, and interact with other core components of the Laminar framework, such as the [Laminar Server](https://github.com/StreamingFlow/dispel4py-server) and [Laminar Execution Engine](https://github.com/StreamingFlow/dispel4py-execution). The client communicates with the Laminar Server to route requests and handle operations on behalf of the user, ensuring that workflows are executed efficiently and accurately. 
+The client communicates with the Laminar Server to authenticate users, register workflows and Processing Elements (PEs),
+submit executions, and monitor their progress. Through this interaction, the Laminar Client enables efficient and
+scalable execution of data-intensive applications using dispel4py’s automatic parallelisation and dynamic execution
+capabilities.
 
-Laminar takes full advantage of dispel4py’s capabilities, including automatic parallelization of workflows and dynamic resource provisioning when running workflows in parallel or dynamically. These features ensure efficient and scalable execution of data-intensive applications.
+## Architecture at a Glance
 
+The Laminar Client acts as the entry point into the Laminar ecosystem and integrates with the following components:
 
-Whether you are using the CLI for quick interactions or embedding client functions into your scripts for more complex tasks, the Laminar Client is designed to provide a flexible and user-friendly experience, making it an essential tool for working with the Laminar framework.
+- Laminar Server: Handles authentication, request routing, and workflow management
+- Laminar Execution Engine: Executes registered workflows
+- dispel4py: Defines stream-based workflows and Processing Elements
 
+Together, these components provide a flexible environment for developing and running scalable data processing pipelines.
 
-# Laminar Client Instructions 
+## Getting Started
 
-The following instructions will allow you to run the client application to run dispel4py workflows 
+### Clone the Repository
 
-##  Clone the Repository 
-```
+```bash
 git clone https://github.com/StreamingFlow/dispel4py-client.git
-```
-Then enter directory by 
-```
 cd dispel4py-client
 ```
 
-## Enviroment 
+### Python Environment
 
-In order to run the application you need to create a new Python 3.10 enviroment 
-```
---note conda must be installed beforehand, go to https://conda.io/projects/conda/en/stable/user-guide/install/linux.html
+A Python 3.10 (or newer) environment is required. The recommended approach is to use Conda.
+
+```bash
 conda create --name laminar python=3.10
 conda activate laminar
 ```
 
-## Install client modules
+### Install the Laminar Client
+
+Install the client and CLI tool locally:
+
+```bash
+pip install .
 ```
-pip install -r requirements_client.txt
-```
-Enter target server URL into config.ini
 
-## How to use the laminar Client Functions
+After installation, configure the target Laminar Server by editing the `config.ini` file and setting the server URL.
 
-In the [CLIENT_EXAMPLES](https://github.com/StreamingFlow/dispel4py-client/tree/main/CLIENT_EXAMPLES) directory, we provide four dispel4py workflows that already include client functions. You can use these examples to test the Laminar framework with the client functions. The available workflows are:
+## Using the Laminar Client in Python
 
-* [IsPrime.py](https://github.com/StreamingFlow/dispel4py-client/blob/main/CLIENT_EXAMPLES/IsPrime.py). The workflow generates as many random numbers as the number indicate by the user in the input, and prints out only the prime numbers.
-* [WordCount.py](https://github.com/StreamingFlow/dispel4py-client/blob/main/CLIENT_EXAMPLES/WordCount.py). This workflow reads the input text provided by the user and returns the total count of each word found within it 
-* [SensorIoT.py](https://github.com/StreamingFlow/dispel4py-client/blob/main/CLIENT_EXAMPLES/SensorIoT.py). You can find the explanation of this workflow [here](https://github.com/StreamingFlow/d4py_workflows/tree/main/others)
-* [AstroPhysics.py](https://github.com/StreamingFlow/dispel4py-client/blob/main/CLIENT_EXAMPLES/AstroPhysics.py). You can find the explanation of this workflow [here](https://github.com/StreamingFlow/d4py_workflows/tree/main/internal_extinction)
+The `CLIENT_EXAMPLES` directory contains several example dispel4py workflows that already integrate Laminar client
+functions. These examples demonstrate how to authenticate, register workflows, and trigger executions programmatically.
 
-Additionally, we offer a [Notebook](https://github.com/StreamingFlow/dispel4py-client/blob/main/Laminar_Notebook_Sample.ipynb) that you can use to test the framework in a more interactive environment.
+Available examples include:
 
-For more examples, the [CLIENT_EXAMPLES](https://github.com/StreamingFlow/dispel4py-client/tree/main/CLIENT_EXAMPLES) directory also contains other workflows that don't include client functions. These can be used with the CLI.
+- IsPrime.py  
+  Generates a user-defined number of random values and outputs only the prime numbers.
 
+- WordCount.py  
+  Counts the frequency of each word in a user-provided text.
 
-If you're looking for more dispel4py workflows, additional examples are available [here](https://github.com/StreamingFlow/d4py_workflows). You could adapt these for running them with client functions.
+- SensorIoT.py  
+  Simulates an IoT sensor data processing workflow. A detailed explanation is available in the dispel4py workflows
+  repository.
 
-To run a test any of the five workflows which include client functions, copy the desired file from the CLIENT_EXAMPLES directory and execute it with the following commands:
+- AstroPhysics.py  
+  Implements an astrophysics workflow. Further documentation is available in the dispel4py workflows repository.
 
-```
-cp CLIENT_EXAMPLES\<file> .
+An interactive Jupyter notebook example is also provided:
+
+- Laminar_Notebook_Sample.ipynb
+
+Additional workflows that do not include client functions are also available in the `CLIENT_EXAMPLES` directory and can
+be used with the CLI.
+
+### Running Client-Based Examples
+
+To execute a workflow that includes client functions:
+
+```bash
+cp CLIENT_EXAMPLES/<file> .
 python <file>
 ```
 
-Before running these examples, ensure that you have registered a user and logged in using the appropriate client functions. This step is crucial for authenticating your requests with the Laminar framework.
+Before running these examples, ensure that you have registered a user and logged in using the Laminar client functions,
+as authentication is required to interact with the Laminar framework.
 
-## How to use the laminar CLI
+## Using the Laminar CLI
 
-### Register a New User:
-Begin by registering a new user. You will be prompted to enter a username and password. This step only needs to be completed once for each user.
-```
-python register.py
-```
+### Register a New User
 
-### Launch the CLI Application:
+Register a user account (required only once per user):
 
-After registration, launch the CLI application. You will be prompted to enter your username and password. If you haven't registered yet, please complete the registration step above first. For more detailed information about the CLI, you can refer to the documentation.
-```
-python laminar.py
+```bash
+laminar --register
 ```
 
-### Prepare for Testing:
+You will be prompted to provide a username and password. It is also possible to skip the login step by setting the
+following enviroment variables:
+- `LAMINAR_USERNAME`: Previously register laminar username
+- `LAMINAR_PASSWORD`: Password of the account
 
-To start testing the CLI, we recommend copying the desired files (e.g. wordcount_wf.py, sensor_wf.py or isprimePE.py) from the CLIENT_EXAMPLES directory. Once copied, you can begin using the CLI:
+### Launch the CLI
+
+Start the interactive CLI session:
+
+```bash
+laminar
 ```
+
+Alternatively, if running from the source directory:
+
+```bash
+python -m laminar
+```
+
+### Preparing Workflows for the CLI
+
+For CLI-based testing, copy workflow or PE files that do not include client functions from the `CLIENT_EXAMPLES`
+directory:
+
+```bash
 cp CLIENT_EXAMPLES/<file> .
-python laminar.py
+laminar
 ```
 
-Note that the PEs or workflows files to use in laminar are the ones that do not include the client functions.
+### Registering Workflows and Processing Elements
 
-### Register Workflows and PEs:
+Within the CLI session, workflows and PEs can be registered as follows:
 
-Once logged into Laminar, you can use the workflows or Processing Elements (PEs) from the CLIENT_EXAMPLES directory (without client functions) to register them. For example:
+```bash
+(laminar) > register workflow wordcount_wf.py
+(laminar) > register workflow sensor_wf.py
+(laminar) > register pe isprimePE.py
 ```
-(laminar) register_workflow wordcount_wf.py
-(laminar) register_workflow sensor_wf.py
-(laminar) register_pe isprimePE.py
-```
 
-If you're looking for more dispel4py workflows, additional examples are available [here](https://github.com/StreamingFlow/d4py_workflows).
+Additional dispel4py workflows suitable for use with Laminar are available in the dispel4py workflows repository and can
+be adapted as needed.
 
-## User Manual
+## Documentation
 
-For detailed instructions on installation, configuration, and usage, please refer to the comprehensive **User Manual** available in the [wiki](https://github.com/StreamingFlow/dispel4py-client/wiki) of this repository. The manual covers everything you need to get started with the Laminar framework, including step-by-step guides for installing components, running workflows, and managing Processing Elements (PEs). It also provides in-depth explanations of the Command Line Interface (CLI) as well as the client functions to be used in scripts or jupyter notebooks.
+Comprehensive documentation, including installation guides, configuration instructions, and detailed CLI and client API
+usage, is available in the project wiki:
 
+https://github.com/StreamingFlow/dispel4py-client/wiki
+
+The user manual provides step-by-step instructions for running workflows, managing Processing Elements, and integrating
+Laminar into scripts and Jupyter notebooks.
