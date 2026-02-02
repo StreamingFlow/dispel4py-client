@@ -47,7 +47,7 @@ class SearchCommand:
                 self.client.search_Registry_Literal(args["search_term"], args["object"]) if args["type"] == "literal"
                 else self.client.search_Registry_Semantic(args["search_term"], args["object"])
             )
-            
+
             print_text(feedback, tab=True)
 
         except argparse.ArgumentError as e:

@@ -12,6 +12,7 @@ from laminar.clitools.search import SearchCommand
 from laminar.clitools.register import RegisterCommand
 from laminar.clitools.remove import RemoveCommand
 from laminar.clitools.runcommand import RunCommand
+from laminar.clitools.update_description import UpdateDescriptionCommand
 
 
 class LaminarCLI(cmd.Cmd):
@@ -52,6 +53,7 @@ class LaminarCLI(cmd.Cmd):
         self.register_command = RegisterCommand(self.client, self.loaded_modules)
         self.remove_command = RemoveCommand(self.client)
         self.run_command = RunCommand(self.client)
+        self.update_description_command = UpdateDescriptionCommand(self.client)
 
     def cmdloop(self, intro=None):
         try:
@@ -185,42 +187,8 @@ class LaminarCLI(cmd.Cmd):
         Usage: describe [identifier] [--source_code | -sc]
         """)
 
-    def do_update_workflow_description(self, arg):
-        parser = CustomArgumentParser(exit_on_error=False)
-        parser.add_argument("workflow_id", type=type_checker)
-        parser.add_argument("new_description", type=str)
-        try:
-            args = vars(parser.parse_args(shlex.split(arg)))
-            feedback = self.client.update_Workflow_Description(args["workflow_id"], args["new_description"])
-            print_status(feedback)
-        except argparse.ArgumentError as e:
-            print_error(e.message.replace("laminar.py", "update_workflow_description"))
-        except Exception as e:
-            print_error(f"An error occurred: {e}")
+    def do_update_description(self, arg):
+        self.update_description_command.update_description(arg)
 
-    def help_update_workflow_description(self):
-        print_text("""
-        Updates the description of a workflow by Id. 
-        
-        Usage: update_workflow_description [workflow_id] [new_description]
-        """)
-
-    def do_update_pe_description(self, arg):
-        parser = CustomArgumentParser(exit_on_error=False)
-        parser.add_argument("pe_id", type=type_checker)
-        parser.add_argument("new_description", type=str)
-        try:
-            args = vars(parser.parse_args(shlex.split(arg)))
-            feedback = self.client.update_PE_Description(args["pe_id"], args["new_description"])
-            print_status(feedback)
-        except argparse.ArgumentError as e:
-            print_error(e.message.replace("laminar.py", "update_pe_description"))
-        except Exception as e:
-            print_error(f"An error occurred: {e}")
-
-    def help_update_pe_description(self):
-        print_text("""
-        Updates the description of a PE by Id 
-        
-        Usage: update_pe_description [pe_id] [new_description]
-        """)
+    def help_update_description(self):
+        self.update_description_command.help()
