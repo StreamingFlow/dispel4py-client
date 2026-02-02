@@ -29,12 +29,12 @@ class d4pClient:
     def register(self, user_name: str, user_password: str):
         """ Register a user with the Registry service """
         data = AuthenticationData(user_name=user_name, user_password=user_password)
-        return WebClient.register_User(self, data)
+        return WebClient.register_user(self, data)
 
     def login(self, user_name: str, user_password: str):
         """Login user to use Register service"""
         data = AuthenticationData(user_name=user_name, user_password=user_password)
-        return WebClient.login_User(self, data)
+        return WebClient.login_user(self, data)
 
     def get_login(self):
         """Returns the username of the current user, or None if no user is logged in"""

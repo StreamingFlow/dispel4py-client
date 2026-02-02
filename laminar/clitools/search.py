@@ -42,12 +42,13 @@ class SearchCommand:
 
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
-            if args["type"] == "literal":
-                feedback = self.client.search_Registry_Literal(args["search_term"], args["object"])
-                print_text(feedback[0], tab=True)
-            else:
-                feedback = self.client.search_Registry_Semantic(args["search_term"], args["object"])
-                print_text(feedback)
+
+            feedback = (
+                self.client.search_Registry_Literal(args["search_term"], args["object"]) if args["type"] == "literal"
+                else self.client.search_Registry_Semantic(args["search_term"], args["object"])
+            )
+            
+            print_text(feedback, tab=True)
 
         except argparse.ArgumentError as e:
             print_error(e.message.replace("laminar.py", "semantic_search"))

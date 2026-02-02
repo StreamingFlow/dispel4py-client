@@ -24,7 +24,7 @@ class WebClient:
     def __init__(self):
         pass
 
-    def register_User(self, user_data: AuthenticationData):
+    def register_user(self, user_data: AuthenticationData):
         try:
             data = json.dumps(user_data.to_dict())
             response = req.post(g_vars.URL_REGISTER_USER, data=data, headers=g_vars.headers)
@@ -39,7 +39,7 @@ class WebClient:
             print(f"Unable to connect to laminar server: {e}")
             exit(0)
 
-    def login_User(self, user_data: AuthenticationData):
+    def login_user(self, user_data: AuthenticationData):
         try:
             data = json.dumps(user_data.to_dict())
             response = req.post(g_vars.URL_LOGIN_USER, data=data, headers=g_vars.headers)
@@ -242,7 +242,7 @@ class WebClient:
         if response.ok:
             if response.text:
                 response = json.loads(response.text)
-                return get_objects(response)
+                return get_objects(response)[0]
             else:
                 return []
         logger.error(response.reason)
