@@ -1,15 +1,10 @@
-import sys
-# antlr4 -v 4.13.0 -Dlanguage=Python3 PythonParser.g4
-from antlr4 import * #antlr4-python3-runtime==4.13.1
-from antlr4.tree.Trees import Trees
-from Aroma.PythonLexer import PythonLexer
-from Aroma.PythonParser import PythonParser
-from antlr4.tree.Tree import TerminalNode, TerminalNodeImpl, Tree, ParseTree
+from antlr4 import *
+from laminar.aroma.PythonLexer import PythonLexer
+from laminar.aroma.PythonParser import PythonParser
+from antlr4.tree.Tree import TerminalNodeImpl
 import json
 
 # for reading in as string
-
-
 
 # from VisitorInterp import VisitorInterp
 
@@ -287,18 +282,3 @@ class ConvertPyToAST:
         return simpleTree
 
 
-# calling from command line
-if __name__ == '__main__':
-    # print("hello world")
-    codeStr = '''
-class isEven(IterativePE):
-    def __init__(self):
-        IterativePE.__init__(self)
-    def _process(self, input):
-        if (input % 2 == 0):
-            return True
-    
-        else:
-            return False'''
-    converted = ConvertPyToAST(codeStr, False)
-    print(converted.result)

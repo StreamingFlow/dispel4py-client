@@ -1,13 +1,11 @@
 # antlr4 -v 4.13.0 -Dlanguage=Python3 PythonParser.g4
 from antlr4 import * #antlr4-python3-runtime==4.13.1
-from antlr4.tree.Trees import Trees
-from Aroma.PythonLexer import PythonLexer
-from Aroma.PythonParser import PythonParser
-from antlr4.tree.Tree import TerminalNode, TerminalNodeImpl, Tree, ParseTree
+from laminar.aroma.PythonLexer import PythonLexer
+from laminar.aroma.PythonParser import PythonParser
+from antlr4.tree.Tree import TerminalNodeImpl
 
 from enum import Enum
 
-import json
 
 # takes a function as input and creates an equivalent PE
     # ProducerPE (takes no input, returns an output)
@@ -15,12 +13,8 @@ import json
     # ConsumerPE (takes an input, returns no output)
 
 # create an __init__ that just creates it's type
-
 # create an _process that is just the function
-
 # drop any functions that take more than 1 arguement
-
-
 # the PE types currently supported
 
 # note that the tests we are given may require additional context to be functional
@@ -283,22 +277,4 @@ class ConvertToPE:
                 # print(text)
 
         return text
-
-
-# testStr ='''def testFunc(var):\n    print("test")\n    if(True and 2==2):\n        print("example")\n        print("test")\n    return test'''  
-
-# print(ConvertToPE(testStr, False, 3).pe)
-
-# shows how to read from json should you wish to upload a dataset in this way
-# (file is the destination, data_file is the source)
-# file = open("C:/Users/danie/Desktop/Laminar/dispel4py-client/testPEs.py", "a")
-# with open("C:/Users/danie/Desktop/Laminar/python_train_1.jsonl") as data_file:
-#     for line in data_file:
-#         data = json.loads(line)
-#         print(data['code'])
-#         converted = ConvertToPE(data['code'], False)
-#         if converted.pe != None:
-#             print(converted.pe)
-#             file.write(converted.pe + "\n")
-            
 

@@ -1,11 +1,7 @@
 from dispel4py.base import ProducerPE, IterativePE, ConsumerPE
 from dispel4py.workflow_graph import WorkflowGraph
 import random
-from easydict import EasyDict as edict
-from client import d4pClient,Process
-from dispel4py.new.dynamic_redis import process as dyn_process
-from dispel4py.new.simple_process import process as simple_process
-from dispel4py.new.multi_process import process as multi_process
+from laminar.client.d4pyclient import d4pClient
 import time
 import pandas as pd
 import numpy as np

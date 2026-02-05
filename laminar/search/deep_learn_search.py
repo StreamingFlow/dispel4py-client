@@ -1,5 +1,7 @@
 import warnings
 
+import tabulate
+
 # Suppress specific warning messages
 warnings.filterwarnings("ignore", message="the imp module is deprecated", category=DeprecationWarning)
 warnings.filterwarnings("ignore", message="Consider setting GitHub token to avoid hitting rate limits.")
@@ -14,11 +16,14 @@ import codecs
 from transformers import pipeline, AutoModel, AutoTokenizer
 from transformers import RobertaTokenizer, T5ForConditionalGeneration
 from transformers import logging
+
 logging.disable_default_handler()
 
 import os
-os.environ["TOKENIZERS_PARALLELISM"] = "false"  # Disable parallelism to avoid warnings
 
+from laminar.screen_printer import print_status, print_warning, print_text
+
+os.environ["TOKENIZERS_PARALLELISM"] = "false"  # Disable parallelism to avoid warnings
 
 model_text_to_code = pipeline(
     model="Lazyhope/RepoSim",
@@ -60,35 +65,18 @@ def generate_summary(text):
 
 # SEARCH
 def similarity_search(user_query, all_pes, type, search_type, embedding_type):
-    print(f"Performing similarity search on {search_type}, with query type: {type}")
+    print_status(f"Performing similarity search on {search_type}, with query type: {type}")
 
     # format all PEs response
     all_pes_df = pd.json_normalize(all_pes)
 
-    if type == "text":
-        print("Encoding query as text...")
-        # query embedding
-        user_query_docs_emb = encode(user_query, 1)
-        
+    if type != "text" and embedding_type != "llm":
+        print_warning("Search type not yet implemented!")
+        return None
 
-        user_query_emb = user_query_docs_emb.cpu().numpy()
-        
-
-        embed_type = 'descEmbedding'
-    else:
-
-        if embedding_type == "llm":
-            print("Encoding query as code...")
-            # query embedding
-            user_query_docs_emb = encode(user_query, 2)
-            user_query_emb = user_query_docs_emb.cpu().numpy()
-            embed_type = 'codeEmbedding'
-
-        else: 
-            print("To Implement AST")
-            all_pes_df["astEmbedding"]
-
-            
+    embed_type = 'descEmbedding' if type == "text" else 'codeEmbedding'
+    user_query_docs_emb = encode(user_query, 1 if type == "text" else 2)
+    user_query_emb = user_query_docs_emb.cpu().numpy()
 
     # Compute cosine similarity
     all_pes_df[embed_type] = all_pes_df[embed_type].apply(lambda x: np.array(list(map(float, x[1:-1].split()))))
@@ -105,18 +93,9 @@ def similarity_search(user_query, all_pes, type, search_type, embedding_type):
     # Retrieve the top 5 most similar documents
     top_5_similar_docs = sorted_df.head(5)
 
+    selected_columns = ['peId', 'peName', 'description', 'cosine_similarity'] if search_type == "pe" else ['workflowId',
+                                                                                                           'workflowName',
+                                                                                                           'description',
+                                                                                                           'cosine_similarity']
 
-    if search_type == "pe":
-        selected_columns = ['peId', 'peName', 'description', 'cosine_similarity']
-        print(top_5_similar_docs[selected_columns])
-
-        # Retrieve code column
-        obj_list = top_5_similar_docs["peCode"].apply(lambda x: pickle.loads(codecs.decode(x.encode(), "base64"))).tolist()
-
-    else:
-        selected_columns = ['workflowId', 'workflowName', 'description', 'cosine_similarity']
-        print(top_5_similar_docs[selected_columns])
-        # Retrieve code column
-        obj_list = top_5_similar_docs["workflowCode"].apply(lambda x: pickle.loads(codecs.decode(x.encode(), "base64"))).tolist()
-    return obj_list
-    
+    return top_5_similar_docs[selected_columns]

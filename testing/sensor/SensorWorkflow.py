@@ -1,6 +1,6 @@
 from dispel4py.base import IterativePE, ConsumerPE, ProducerPE
 from dispel4py.workflow_graph import WorkflowGraph
-from client import d4pClient,Process
+from laminar.client.d4pyclient import d4pClient
 import numpy as np
 import json
 

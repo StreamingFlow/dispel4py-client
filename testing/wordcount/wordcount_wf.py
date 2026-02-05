@@ -1,11 +1,7 @@
 from dispel4py.core import GenericPE
 from dispel4py.base import IterativePE
-from dispel4py.new.simple_process import process as simple_process
-from dispel4py.new.multi_process import process as multi_process
 from dispel4py.workflow_graph import WorkflowGraph
-from easydict import EasyDict as edict
-from client import d4pClient,Process
-from dispel4py.new.dynamic_redis import process as dyn_process
+
 
 class SplitLines(GenericPE):
     def __init__(self):

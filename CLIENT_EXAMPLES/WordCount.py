@@ -2,8 +2,8 @@
 from dispel4py.core import GenericPE
 from dispel4py.base import IterativePE
 from dispel4py.workflow_graph import WorkflowGraph
-from easydict import EasyDict as edict
-from client import d4pClient,Process
+from laminar.client.d4pyclient import d4pClient
+
 
 class SplitLines(GenericPE):
     def __init__(self):
@@ -12,8 +12,7 @@ class SplitLines(GenericPE):
         self._add_output("output")
         
     def _process(self, inputs):
-        import os 
-        ##print("!!!SplitLines self.id %s, rankid %s, process.rank %s" % (self.id, os.getpid(), self.rank))	
+        ##print("!!!SplitLines self.id %s, rankid %s, process.rank %s" % (self.id, os.getpid(), self.rank))
         for line in inputs["input"].splitlines():
             self.write("output", line)
 
@@ -23,8 +22,7 @@ class SplitWords(IterativePE):
         IterativePE.__init__(self)
         
     def _process(self, data):
-        import os 
-        #print("!!!SplitWords self.id %s, rankid %s, process.rank %s" % (self.id, os.getpid(), self.rank))	
+        #print("!!!SplitWords self.id %s, rankid %s, process.rank %s" % (self.id, os.getpid(), self.rank))
         for word in data.split(" "):
             self.write("output", (word,1))
 
@@ -39,8 +37,7 @@ class CountWords(GenericPE):
         self.count=defaultdict(int)
         
     def _process(self, inputs):
-        import os 
-        #print("!!!!CountWords self.id %s, rankid %s, process.rank %s" % (self.id, os.getpid(),self.rank))	
+        #print("!!!!CountWords self.id %s, rankid %s, process.rank %s" % (self.id, os.getpid(),self.rank))
         word, count = inputs['input']
         self.count[word] += count
     
