@@ -5,11 +5,33 @@ import tabulate
 from rich import pretty, print
 from rich.console import Console
 from rich.syntax import Syntax
+import shutil
+import textwrap
+from tabulate import tabulate
 
 console = Console()
 
-
 pretty.install()
+
+term_width = shutil.get_terminal_size().columns
+
+
+def wrap_cell(cell, width):
+    return "\n".join(textwrap.wrap(str(cell), width=width))
+
+
+def wrap_table(rows, headers):
+    # crude column width guess
+    col_width = max(10, term_width // len(headers) - 3)
+
+    wrapped = []
+    for row in rows:
+        wrapped.append({
+            k: wrap_cell(v, col_width)
+            for k, v in row.items()
+        })
+    return wrapped
+
 
 def clear_terminal():
     if os.name == "nt":
@@ -17,13 +39,16 @@ def clear_terminal():
     else:
         os.system('clear')
 
+
 def print_status(status):
     console.print(f"[bold green]{status}[/bold green]")
 
-def print_error(error, _traceback = False):
+
+def print_error(error, _traceback=False):
     if _traceback:
         console.print(f"{traceback.format_exc()}")
     console.print(f"[bold red]ERR: {error}[/bold red]")
+
 
 def print_warning(warning):
     console.print(f"[bold yellow]{warning}[/bold yellow]")
@@ -38,7 +63,8 @@ def print_text(text, tab=False):
         tab: if True, prints as table (expects list of dicts)
     """
     if tab:
-        console.print(tabulate.tabulate(text, headers="keys", tablefmt="fancy_grid"))
+        wrapped_text = wrap_table(text, headers=text[0].keys())
+        console.print(tabulate(wrapped_text, headers="keys", tablefmt="fancy_grid"))
         return
 
     # If it's a string, try parsing as JSON
@@ -53,6 +79,7 @@ def print_text(text, tab=False):
         console.print_json(data=text)
     else:
         console.print(text)
+
 
 def print_code(code):
     console.print(Syntax(code, "python"))

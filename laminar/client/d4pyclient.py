@@ -48,8 +48,9 @@ class d4pClient:
     def register_Workflow(self, workflow: WorkflowGraph, workflow_name: str, description: str = None, module=None,
                           module_name=None):
         """Register a Workflow with the client service"""
-        data = WorkflowRegistrationData(workflow=workflow, entry_point=workflow_name, description=description,
-                                        module=module, module_name=module_name)
+        print_status(f"Registering workflow: {workflow_name}")
+        data = WorkflowRegistrationData(workflow=workflow, workflow_name=workflow_name, entry_point=workflow_name,
+                                        description=description, module=module, module_name=module_name)
         return WebClient.register_Workflow(self, data)
 
     def run(self, workflow: Union[str, int, WorkflowGraph], input=None, process=g_vars.Process,

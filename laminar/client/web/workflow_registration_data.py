@@ -9,7 +9,6 @@ from laminar.client.web.utils import get_payload
 class WorkflowRegistrationData:
     def __init__(self, *, workflow: any, workflow_name: str = None, workflow_code: str = None, workflow_pes=None, entry_point: str = None, description: str = None, module=None, module_name=None):
         if workflow is not None:
-            workflow_name = workflow.__class__.__name__
             workflow_code = get_payload(workflow)
         workflow_pes = workflow.get_contained_objects()
         workflow_source_code = "class " + entry_point + "():\n"

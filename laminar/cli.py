@@ -5,6 +5,9 @@ import shlex
 import sys
 import pwinput
 
+from laminar.llms.core import LLMConnector
+from laminar.llms.OpenAIConnector import OpenAIConnector
+
 from laminar.screen_printer import *
 from laminar.argument_parser import CustomArgumentParser, type_checker
 from laminar.client.d4pyclient import d4pClient
@@ -185,6 +188,37 @@ class LaminarCLI(cmd.Cmd):
         It provides the information on PEs or workflow by its name 
         
         Usage: describe [identifier] [--source_code | -sc]
+        """)
+
+    def do_explain(self, arg):
+        parser = CustomArgumentParser(exit_on_error=False)
+        parser.add_argument("identifier", type=type_checker)
+
+        try:
+            args = vars(parser.parse_args(shlex.split(arg)))
+            data = (self.client.get_Workflow(args["identifier"])
+                    or self.client.get_PE(args["identifier"]))
+
+            if data:
+                source_code = data[1]
+                object_kind = "workflow" if "Workflow" in str(data[0].__class__.__name__) else "pe"
+                object_name = data[2]
+
+                connector = OpenAIConnector("gpt-4o", ["Return JSON only. Do not explain."])
+                description = connector.describe(object_name, object_kind, source_code)
+                print("Description: {}".format(description["description"]))
+                print("Inputs: {}".format(description["inputs"]))
+                print("Outputs: {}".format(description["outputs"]))
+
+            else:
+                raise print_error(f"No object found with ID: '{args['identifier']}'")
+        except Exception as e:
+            print_error(e)
+
+    def help_explain(self):
+        print_text("""
+        Use LLMs to explain a workflow or a PE from the registered items. 
+        Requires only the ID od the targeted component to be explained.
         """)
 
     def do_update_description(self, arg):

@@ -8,6 +8,8 @@ from dispel4py.workflow_graph import WorkflowGraph
 from laminar.screen_printer import print_status, print_warning, print_error
 from laminar.argument_parser import CustomArgumentParser
 
+from laminar.llms.OpenAIConnector import OpenAIConnector
+
 
 class RegisterCommand:
 
@@ -15,6 +17,11 @@ class RegisterCommand:
         self.client = client
         self.module_counter = 0  # Initialize a counter for module names
         self.loaded_modules = loaded_modules
+        self.openAiConnector = OpenAIConnector("gpt-4o", [
+            "Return JSON only. Do not explain.",
+            "Make the response description no longer than 200 characters.",
+            "Ensure that the description contains all the information and is not verbose"
+        ])
 
     def _register_pe(self, filepath):
 
@@ -41,14 +48,14 @@ class RegisterCommand:
                 return
 
             for key in pes:
-                print_status(f"• {key} - {pes[key].__name__}", end=" ")
-                pe_instance = pes[key]()
-                docstring = pes[key].__doc__
+                print_status(f"• {key} - {pes[key].__name__}")
+                print_status("Awaiting LLMs description generation...")
+                docstring = self.openAiConnector.describe(component_name=key, kind="pe", code=pes[key])
                 pe_class = pes[key]
                 pe_instance = pe_class()
 
                 try:
-                    r = self.client.register_PE(pe_instance, docstring)
+                    r = self.client.register_PE(pe_instance, docstring["description"])
                     if r is None:
                         print_warning("(Exists)")
                     else:
@@ -86,26 +93,26 @@ class RegisterCommand:
             if len(pes) == 0 and len(workflows) == 0:
                 print_warning("Could not find any PEs or Workflows")
                 return
-            if len(pes) > 0:
-                print_status("Found PEs")
+
             for key in pes:
                 print_status(f"• {key} - {type(pes[key]).__name__}")
-                docstring = pes[key].__doc__
+                print_status("Awaiting LLMs description generation...")
+                docstring = self.openAiConnector.describe(component_name=key, kind="pe", code=pes[key])
                 pe_class = pes[key]
                 pe_instance = pe_class()
-                r = self.client.register_PE(pe_instance, docstring)
+                r = self.client.register_PE(pe_instance, docstring["description"])
                 if r is None:
                     print_warning("(Exists)")
                 else:
                     print_status(f"(ID {r})")
-            if len(workflows) > 0:
-                print_status("Found workflows")
+
             for key in workflows:
                 print_status(f"• {key} - {type(workflows[key]).__name__}")
-                docstring = workflows[key].__doc__
-                if "A graph representing the workflow and related methods" in docstring:
-                    docstring = None
-                r = self.client.register_Workflow(workflows[key], key, docstring, mod, unique_module_name)
+                print_status("Awaiting LLMs description generation...")
+                docstring = self.openAiConnector.describe(component_name=key, kind="workflow", code=workflows[key])
+                r = self.client.register_Workflow(workflow=workflows[key], workflow_name=key,
+                                                  description=docstring["description"],
+                                                  module=mod, module_name=unique_module_name)
                 if r is None:
                     print_warning("(Exists)")
                 else:

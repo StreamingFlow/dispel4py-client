@@ -78,6 +78,7 @@ class WebClient:
         data = json.dumps(workflow_dict)
         response = req.post(g_vars.URL_REGISTER_WORKFLOW.format(g_vars.CLIENT_AUTH_ID), data=data,
                             headers=g_vars.headers)
+
         response = json.loads(response.text)
         if 'ApiError' in response.keys():
             logger.error(response['ApiError']['message'])
@@ -165,7 +166,7 @@ class WebClient:
             peCode = response["peCode"]
             sourceCode = response["sourceCode"]
             unpickled_result = pickle.loads(codecs.decode(peCode.encode(), "base64"))
-            return [unpickled_result, sourceCode]
+            return [unpickled_result, sourceCode, response["peName"], response["peId"]]
 
     def get_Workflow(self, workflow: Union[int, str]):
         verify_login(logger)
@@ -183,7 +184,7 @@ class WebClient:
             workflowCode = response["workflowCode"]
             moduleSourceCode = response["moduleSourceCode"]
             unpickled_result: WorkflowGraph = pickle.loads(codecs.decode(workflowCode.encode(), "base64"))
-            return [unpickled_result, moduleSourceCode]
+            return [unpickled_result, moduleSourceCode, response["workflowName"], response["workflowId"]]
 
     def get_PEs_By_Workflow(self, workflow: Union[int, str]):
         verify_login(logger)
