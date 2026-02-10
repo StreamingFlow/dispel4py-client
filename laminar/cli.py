@@ -5,7 +5,7 @@ import shlex
 import sys
 import pwinput
 
-from laminar.llms.core import LLMConnector
+from laminar.llms.LLMConnector import LLMConnector
 from laminar.llms.OpenAIConnector import OpenAIConnector
 
 from laminar.screen_printer import *
@@ -195,10 +195,13 @@ class LaminarCLI(cmd.Cmd):
     def do_explain(self, arg):
         parser = CustomArgumentParser(exit_on_error=False)
         parser.add_argument("identifier", type=type_checker)
+        parser.add_argument("--provider", help="The LLM provider to use for explanation", required=False,
+                            default="openai")
+        parser.add_argument("--model", help="The model to use for explanation", required=False, default=None)
 
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
-            self.explain_command.explain(args["identifier"])
+            self.explain_command.explain(identifier=args["identifier"], provider=args["provider"], model=args["model"])
         except Exception as e:
             print_error(e)
 

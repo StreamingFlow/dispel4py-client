@@ -1,33 +1,31 @@
 import openai
-from laminar.llms.core import LLMConnector
 import os
 import re
 import json
 
+from laminar.screen_printer import print_warning
 
-class OpenAIConnector(LLMConnector):
 
-    def __init__(self, model: str, system_queries: list[str] = None):
-        super().__init__()
+class OpenAIConnector():
+
+    def __init__(self):
         self.key = os.environ["OPENAI_API_KEY"] if "OPENAI_API_KEY" in os.environ else None
         if self.key is None:
             raise RuntimeError("OpenAI API key not set")
 
         self.client = openai.OpenAI(api_key=self.key)
-        self.model = model
-        self.system_queries = system_queries
+        self.default_model = "gpt-4o"
 
-    def describe(self, component_name: str, kind: str, code: str) -> dict[str, str | dict[str, str]]:
-        if kind not in ["pe", "workflow"]:
-            raise RuntimeError(f"Unknown kind {kind}")
+    def describe(self, query: str, model: str, context_queries: list[str] = None) -> dict[str, str | dict[str, str]]:
+        if model is None:
+            model = self.default_model
 
-        messages = [{"role": "system", "content": query} for query in self.system_queries]
-        messages.append(
-            {"role": "user",
-             "content": super()._get_description_prompt(component_name=component_name, component_type=kind, code=code)})
+        print_warning(f"Using {model} for description generation.")
+        messages = [{"role": "system", "content": query} for query in context_queries]
+        messages.append({"role": "user", "content": query})
 
         response = self.client.chat.completions.create(
-            model=self.model,
+            model=model,
             messages=messages,
             temperature=0.0
         )
