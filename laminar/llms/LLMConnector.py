@@ -56,6 +56,8 @@ CODE:
 
         description_query = self._get_description_prompt(component_name, kind, str(code))
         print_warning(f"using {provider} LLMs")
+
         return self.connectors[provider].describe(query=description_query,
-                                                  model=model,
-                                                  context_queries=context_queries)
+                                                         model=model,
+                                                         context_queries=context_queries)
+

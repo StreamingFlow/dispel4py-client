@@ -32,4 +32,7 @@ class OpenAIConnector():
 
         txt = response.choices[0].message.content.strip()
         txt = re.sub(r"^```json|```$", "", txt, flags=re.I).strip()
-        return json.loads(txt)
+        response = json.loads(txt)
+        response["description"] = f"(({model}@OpenAI))-> " + response["description"]
+
+        return response

@@ -29,4 +29,7 @@ class GeminiConnector():
             contents=query,
         )
 
-        return json.loads(response.text)
+        response = json.loads(response.text)
+        response["description"] = f"(({model}@Gemini))-> " + response["description"]
+
+        return response
