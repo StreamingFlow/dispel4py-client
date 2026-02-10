@@ -21,13 +21,6 @@ The description should be suitable for:
 - semantic similarity search
 - explaining results to users
 
-Return JSON only, describing the code, the inputs and the outputs:
-{{
-  "description": "...",
-  "inputs": ["...", ...],
-  "outputs": ["...", ...]
-}}
-
 CODE:
 {}
         """

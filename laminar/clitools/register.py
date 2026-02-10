@@ -19,8 +19,12 @@ class RegisterCommand:
         self.loaded_modules = loaded_modules
         self.openAiConnector = OpenAIConnector("gpt-4o", [
             "Return JSON only. Do not explain.",
-            "Make the response description no longer than 200 characters.",
-            "Ensure that the description contains all the information and is not verbose"
+            "Provide your reply in no more than five phrases.",
+            """Return JSON only, describing the code, the inputs and the outputs:
+            {{
+                'description': '...',
+            }}""",
+            "Ensure that the description contains all the information and is not verbose or repetitive"
         ])
 
     def _register_pe(self, filepath):

@@ -17,7 +17,7 @@ class OpenAIConnector(LLMConnector):
         self.model = model
         self.system_queries = system_queries
 
-    def describe(self, component_name: str, kind: str, code: str) -> dict[str, str]:
+    def describe(self, component_name: str, kind: str, code: str) -> dict[str, str | dict[str, str]]:
         if kind not in ["pe", "workflow"]:
             raise RuntimeError(f"Unknown kind {kind}")
 
