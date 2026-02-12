@@ -20,7 +20,7 @@ class GeminiConnector():
         str, str | dict[str, str]]:
         if model is None:
             model = self.default_model
-        print_warning(f"Using {model} for description generation.")
+        print_warning(f"Using {model} from Gemini for description generation...")
         response = self.client.models.generate_content(
             model=model,
             config=types.GenerateContentConfig(
@@ -30,6 +30,6 @@ class GeminiConnector():
         )
 
         response = json.loads(response.text)
-        response["description"] = f"(({model}@Gemini))-> " + response["description"]
-
+        response["model"] = model
+        response["provider"] = "Gemini"
         return response

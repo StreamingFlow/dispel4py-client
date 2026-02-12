@@ -9,19 +9,26 @@ from laminar.client.web.utils import get_payload, create_import_string
 
 
 class PERegistrationData:
-    def __init__(self, *, pe: type, pe_name: str = None, pe_code: any = None, description: str = None):
+    def __init__(self, *, pe: type, pe_name: str = None, pe_code: any = None, description: str = None,
+                 inputDescription: str = None, outputDescription: str = None, llmProvider: str = None,
+                 llmModel: str = None):
         pe_class = pe.__class__
+
+        self.llmProvider = llmProvider
+        self.llmModel = llmModel
+        self.inputDescription = inputDescription
+        self.outputDescription = outputDescription
 
         try:
             pe_source_code = inspect.getsource(pe_class)
         except OSError as e:
             pe_source_code = "Source code not available"
-            #print(f"An error occurred: could not find class definition for {pe_class}. Error: {str(e)}")
-            #print("Debugging info: Is the class defined dynamically or imported from elsewhere?")
+            # print(f"An error occurred: could not find class definition for {pe_class}. Error: {str(e)}")
+            # print("Debugging info: Is the class defined dynamically or imported from elsewhere?")
         except TypeError as e:
             pe_source_code = "Source code not available"
-            #print(f"An error occurred: {str(e)}")
-            #print("Debugging info: The class might be a built-in or a C extension.")
+            # print(f"An error occurred: {str(e)}")
+            # print("Debugging info: The class might be a built-in or a C extension.")
 
         if pe is not None:
             pe_name = pe_class.__name__
@@ -71,7 +78,11 @@ class PERegistrationData:
             "peImports": self.pe_imports,
             "codeEmbedding": self.code_embedding,
             "descEmbedding": self.desc_embedding,
-            "astEmbedding": self.astEmbedding
+            "astEmbedding": self.astEmbedding,
+            "lldDescriptionProvider": self.llmProvider,
+            "lldDescriptionModel" : self.llmModel,
+            "inputsDescription": self.inputDescription,
+            "outputsDescription": self.outputDescription,
         }
 
     def __str__(self):

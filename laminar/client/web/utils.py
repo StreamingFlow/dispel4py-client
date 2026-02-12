@@ -61,7 +61,6 @@ def get_payload(code: any):
 def get_objects(results):
     objectList = []
     object_description = []
-    print("\nREGISTRY\n")
     for index, result in enumerate(results, start=1):
         desc = result['description']
         if desc is None:
@@ -69,9 +68,13 @@ def get_objects(results):
         if 'workflowName' in result.keys():
             object_description.append({
                 "ID": result['workflowId'],
-                "Type": "Workflow",
+                "Type": "WF",
                 "Name": result['entryPoint'],
-                "Description": desc
+                "Description": desc,
+                "LLM provider / model": "{} / {}".format(result["lldDescriptionProvider"],
+                                                         result["lldDescriptionModel"]),
+                "Inputs": result['inputsDescription'],
+                "Outputs": result['outputsDescription'],
             })
             try:
                 obj = pickle.loads(codecs.decode(result['workflowCode'].encode(), "base64"))
@@ -82,9 +85,13 @@ def get_objects(results):
         else:
             object_description.append({
                 "ID": result['peId'],
-                "Type": "Processing Element",
+                "Type": "PE",
                 "Name": result['peName'],
-                "Description": desc
+                "Description": desc,
+                "LLM provider / model": "{} / {}".format(result["lldDescriptionProvider"],
+                                                         result["lldDescriptionModel"]),
+                "Inputs": result['inputsDescription'],
+                "Outputs": result['outputsDescription'],
             })
             try:
                 obj = pickle.loads(codecs.decode(result['peCode'].encode(), "base64"))

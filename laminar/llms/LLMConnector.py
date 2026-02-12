@@ -35,12 +35,12 @@ CODE:
         try:
             self.connectors["openai"] = OpenAIConnector()
         except RuntimeError:
-            print_warning("Warn: unable to connect to Gemini.")
+            print_warning("Warn: unable to connect to OpenAI.")
 
         try:
             self.connectors["gemini"] = GeminiConnector()
         except RuntimeError:
-            print_warning("Warn: unable to connect to OpenAi.")
+            print_warning("Warn: unable to connect to Gemini.")
 
         if len(self.connectors) == 0:
             raise RuntimeError("No LLM connectors available.")
@@ -55,7 +55,6 @@ CODE:
             raise RuntimeError(f"Unknown kind {kind}")
 
         description_query = self._get_description_prompt(component_name, kind, str(code))
-        print_warning(f"using {provider} LLMs")
 
         return self.connectors[provider].describe(query=description_query,
                                                          model=model,

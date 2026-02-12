@@ -40,17 +40,22 @@ class d4pClient:
         """Returns the username of the current user, or None if no user is logged in"""
         return g_vars.CLIENT_AUTH_ID if g_vars.CLIENT_AUTH_ID != "None" else None
 
-    def register_PE(self, pe: g_vars.PE_TYPES, description: str = None):
+    def register_PE(self, pe: g_vars.PE_TYPES, description: str = None, inputDescription: str = None,
+                    outputDescription: str = None, llmProvider: str = None, llmModel: str = None):
         """Register a PE with the client service"""
-        data = PERegistrationData(pe=pe, description=description)
+        data = PERegistrationData(pe=pe, description=description, inputDescription=inputDescription,
+                                  outputDescription=outputDescription, llmModel=llmModel, llmProvider=llmProvider)
         return WebClient.register_PE(self, data)
 
     def register_Workflow(self, workflow: WorkflowGraph, workflow_name: str, description: str = None, module=None,
-                          module_name=None):
+                          module_name=None, inputDescription: str = None,
+                          outputDescription: str = None, llmProvider: str = None, llmModel: str = None):
         """Register a Workflow with the client service"""
         print_status(f"Registering workflow: {workflow_name}")
         data = WorkflowRegistrationData(workflow=workflow, workflow_name=workflow_name, entry_point=workflow_name,
-                                        description=description, module=module, module_name=module_name)
+                                        description=description, module=module, module_name=module_name,
+                                        inputDescription=inputDescription, outputDescription=outputDescription,
+                                        llmModel=llmModel, llmProvider=llmProvider)
         return WebClient.register_Workflow(self, data)
 
     def run(self, workflow: Union[str, int, WorkflowGraph], input=None, process=g_vars.Process,

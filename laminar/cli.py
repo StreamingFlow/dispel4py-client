@@ -14,9 +14,9 @@ from laminar.client.d4pyclient import d4pClient
 from laminar.clitools.search import SearchCommand
 from laminar.clitools.register import RegisterCommand
 from laminar.clitools.remove import RemoveCommand
-from laminar.clitools.runcommand import RunCommand
+from laminar.clitools.run import RunCommand
 from laminar.clitools.update_description import UpdateDescriptionCommand
-from laminar.clitools.explaincommand import ExplainCommand
+from laminar.clitools.explain import ExplainCommand
 
 
 class LaminarCLI(cmd.Cmd):

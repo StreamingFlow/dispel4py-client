@@ -8,16 +8,45 @@ import inspect
 from dispel4py.base import GenericPE, IterativePE, ProducerPE, ConsumerPE
 from dispel4py.workflow_graph import WorkflowGraph
 
+from laminar.client.d4pyclient import d4pClient
 from laminar.llms.LLMConnector import LLMConnector
 from laminar.screen_printer import print_status, print_warning, print_error
 from laminar.argument_parser import CustomArgumentParser
 
-from laminar.llms.OpenAIConnector import OpenAIConnector
+PE_CONTEXT_QUERIES = [
+    "Return JSON only. Do not explain.",
+    "Provide your reply in no more than five phrases.",
+    """Return JSON only, describing the code, the inputs and the outputs:
+    {{
+        'description': '...',
+        'inputs':  '<input_name>:<description>\n...',
+        'outputs': '<output_name>:<description>\n...',
+    }}""",
+    "The <input_name> and <output_name> arguments are placeholders for the channels used to communicate",
+    "<description> is a placeholder for the description of the input or output",
+    "If either no input or output is available, return null",
+    "Ensure that the description contains all the information and is not verbose or repetitive"
+]
+
+WORKFLOW_CONTEXT_QUERIES = [
+    "Return JSON only. Do not explain.",
+    "Provide your reply in no more than five phrases.",
+    """Return JSON only, describing the code, the inputs and the outputs:
+    {{
+          'description': '...',
+          'inputs':  '<input_name>:<description>\n...',
+          'outputs': '<output_name>:<description>\n...',
+    }}""",
+    "The <input_name> and <output_name> arguments are placeholders for the workflow user inputs and workflow output",
+    "<description> is a placeholder for the description of the input or output",
+    "If either no input or output is available, return null",
+    "Ensure that the description contains all the information and is not verbose or repetitive"
+]
 
 
 class RegisterCommand:
 
-    def __init__(self, client, loaded_modules={}):
+    def __init__(self, client: d4pClient, loaded_modules={}):
         self.client = client
         self.module_counter = 0  # Initialize a counter for module names
         self.loaded_modules = loaded_modules
@@ -55,23 +84,17 @@ class RegisterCommand:
 
             for key in pes:
                 print_status(f"• {key} - {pes[key].__name__}")
-                print_status("Awaiting LLMs description generation...")
                 docstring = self.AiConnector.describe(component_name=key, kind="pe", code=inspect.getsource(pes[key]),
                                                       model=model,
-                                                      provider=provider, context_queries=[
-                        "Return JSON only. Do not explain.",
-                        "Provide your reply in no more than five phrases.",
-                        """Return JSON only, describing the code, the inputs and the outputs:
-                        {{
-                            'description': '...',
-                        }}""",
-                        "Ensure that the description contains all the information and is not verbose or repetitive"
-                    ])
+                                                      provider=provider, context_queries=PE_CONTEXT_QUERIES)
                 pe_class = pes[key]
                 pe_instance = pe_class()
 
                 try:
-                    r = self.client.register_PE(pe_instance, docstring["description"])
+                    r = self.client.register_PE(pe_instance, description=docstring["description"],
+                                                inputDescription=docstring["inputs"],
+                                                outputDescription=docstring["outputs"], llmModel=docstring["model"],
+                                                llmProvider=docstring["provider"])
                     if r is None:
                         print_warning("(Exists)")
                     else:
@@ -119,22 +142,16 @@ class RegisterCommand:
 
             for key in pes:
                 print_status(f"• {key} - {type(pes[key]).__name__}")
-                print_status("Awaiting LLMs description generation...")
                 source_code = inspect.getsource(pes[key])
                 docstring = self.AiConnector.describe(component_name=key, kind="pe", code=source_code,
                                                       model=model,
-                                                      provider=provider, context_queries=[
-                        "Return JSON only. Do not explain.",
-                        "Provide your reply in no more than five phrases.",
-                        """Return JSON only, describing the code, the inputs and the outputs:
-                        {{
-                            'description': '...',
-                        }}""",
-                        "Ensure that the description contains all the information and is not verbose or repetitive"
-                    ])
+                                                      provider=provider, context_queries=PE_CONTEXT_QUERIES)
                 pe_class = pes[key]
                 pe_instance = pe_class()
-                r = self.client.register_PE(pe_instance, docstring["description"])
+                r = self.client.register_PE(pe_instance, description=docstring["description"],
+                                            inputDescription=docstring["inputs"],
+                                            outputDescription=docstring["outputs"], llmModel=docstring["model"],
+                                            llmProvider=docstring["provider"])
                 if r is None:
                     print_warning("(Exists)")
                 else:
@@ -148,25 +165,19 @@ class RegisterCommand:
                     workflow_source_code += inspect.getsource(pe.__class__)
 
                 print_status(f"• {key} - {type(workflows[key]).__name__}")
-                print_status("Awaiting LLMs description generation...")
                 docstring = self.AiConnector.describe(component_name=key,
                                                       kind="workflow",
                                                       code=workflow_source_code,
                                                       model=model,
                                                       provider=provider,
-                                                      context_queries=[
-                                                          "Return JSON only. Do not explain.",
-                                                          "Provide your reply in no more than five phrases.",
-                                                          """Return JSON only, describing the code, the inputs and the outputs:
-                                                          {{
-                                                              'description': '...',
-                                                          }}""",
-                                                          "Ensure that the description contains all the information and is not verbose or repetitive"
-                                                      ])
+                                                      context_queries=WORKFLOW_CONTEXT_QUERIES)
 
                 r = self.client.register_Workflow(workflow=workflows[key], workflow_name=key,
                                                   description=docstring["description"],
-                                                  module=mod, module_name=unique_module_name)
+                                                  module=mod, module_name=unique_module_name,
+                                                  inputDescription=docstring["inputs"],
+                                                  outputDescription=docstring["outputs"], llmModel=docstring["model"],
+                                                  llmProvider=docstring["provider"])
                 if r is None:
                     print_warning("(Exists)")
                 else:
