@@ -1,6 +1,7 @@
 from laminar.llms.GeminiConnector import GeminiConnector
 from laminar.llms.OpenAIConnector import OpenAIConnector
-from laminar.screen_printer import print_warning, print_error
+from laminar.llms.OpenWebUI import OpenWebUIConnector
+from laminar.screen_printer import print_warning
 
 
 class LLMConnector:
@@ -41,6 +42,11 @@ CODE:
             self.connectors["gemini"] = GeminiConnector()
         except RuntimeError:
             print_warning("Warn: unable to connect to Gemini.")
+
+        try:
+            self.connectors["openwebui"] = OpenWebUIConnector()
+        except RuntimeError:
+            print_warning("Warn: unable to connect to OpenWebUI.")
 
         if len(self.connectors) == 0:
             raise RuntimeError("No LLM connectors available.")

@@ -15,7 +15,6 @@ from laminar.argument_parser import CustomArgumentParser
 
 PE_CONTEXT_QUERIES = [
     "Return JSON only. Do not explain.",
-    "Provide your reply in no more than five phrases.",
     """Return JSON only, describing the code, the inputs and the outputs:
     {{
         'description': '...',
@@ -30,7 +29,6 @@ PE_CONTEXT_QUERIES = [
 
 WORKFLOW_CONTEXT_QUERIES = [
     "Return JSON only. Do not explain.",
-    "Provide your reply in no more than five phrases.",
     """Return JSON only, describing the code, the inputs and the outputs:
     {{
           'description': '...',
