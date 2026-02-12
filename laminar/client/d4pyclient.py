@@ -22,21 +22,23 @@ class d4pClient:
     """Class to interact with registry and server services"""
 
     def __init__(self):
+        self.webclient = WebClient()
+        self.encoder = None
+
         user_name = os.getenv('LAMINAR_USERNAME')
         user_password = os.getenv('LAMINAR_PASSWORD')
         if user_name is not None and user_password is not None:
             self.login(user_name, user_password)
-        self.encoder = None
 
     def register(self, user_name: str, user_password: str):
         """ Register a user with the Registry service """
         data = AuthenticationData(user_name=user_name, user_password=user_password)
-        return WebClient.register_user(self, data)
+        return self.webclient.register_user(data)
 
     def login(self, user_name: str, user_password: str):
         """Login user to use Register service"""
         data = AuthenticationData(user_name=user_name, user_password=user_password)
-        return WebClient.login_user(self, data)
+        return self.webclient.login_user(data)
 
     def get_login(self):
         """Returns the username of the current user, or None if no user is logged in"""
@@ -50,7 +52,7 @@ class d4pClient:
         data = PERegistrationData(pe=pe, description=description, inputDescription=inputDescription,
                                   outputDescription=outputDescription, llmModel=llmModel, llmProvider=llmProvider,
                                   encoder=self.encoder)
-        return WebClient.register_PE(self, data)
+        return self.webclient.register_PE(data)
 
     def register_Workflow(self, workflow: WorkflowGraph, workflow_name: str, description: str = None, module=None,
                           module_name=None, inputDescription: str = None,
@@ -64,7 +66,7 @@ class d4pClient:
                                         description=description, module=module, module_name=module_name,
                                         inputDescription=inputDescription, outputDescription=outputDescription,
                                         llmModel=llmModel, llmProvider=llmProvider, encoder=self.encoder)
-        return WebClient.register_Workflow(self, data)
+        return self.webclient.register_Workflow(data)
 
     def run(self, workflow: Union[str, int, WorkflowGraph], input=None, process=g_vars.Process,
             resources: list[str] = [], verbose=True):
@@ -89,7 +91,7 @@ class d4pClient:
             process=process
         )
 
-        return WebClient.run(self, data, verbose)
+        return self.webclient.run(data, verbose)
 
     def run_multiprocess(self, workflow: Union[str, int, WorkflowGraph], input=None, resources: list[str] = [],
                          verbose=True):
@@ -103,21 +105,20 @@ class d4pClient:
 
     def get_PE(self, pe: Union[str, int], describe: bool = False):
         """Retrieve PE from registry"""
-        data = WebClient.get_PE(self, pe)
+        data = self.webclient.get_PE(pe)
         if data:
             pe_obj = data[0]
-            pe_sc = data[1]
             if describe and pe_obj:
-                WebClient.describe(pe_obj)
+                self.describe(pe_obj, None, False)
         return data
 
     def get_Workflow(self, workflow: Union[str, int], describe: bool = False):
         """Retrieve Workflow from registry"""
-        data = WebClient.get_Workflow(self, workflow)
+        data = self.webclient.get_Workflow(workflow)
         if data:
             workflow_obj = data[0]
             if describe and workflow_obj:
-                WebClient.describe(self, workflow)
+                self.describe(workflow, None, False)
         return data
 
     def describe(self, obj: any, sc, include_source_code: bool = False):
@@ -152,8 +153,6 @@ class d4pClient:
 
             workflow_pes = sorted(workflow_pes, key=lambda x: x["Step #"])
 
-            descr = obj.__doc__ if obj.__doc__ else "No description available."
-            print_text(f"{descr}")
             print_text(workflow_pes, tab=True)
 
             if include_source_code:
@@ -162,7 +161,6 @@ class d4pClient:
 
         elif isinstance(obj, g_vars.PE_TYPES):
             pe_state = {
-
                 "Name": getattr(obj, "name"),
                 "PE Type": type(obj).__bases__[0].__name__ if len(type(obj).__bases__) > 0 else "No name available",
             }
@@ -193,7 +191,7 @@ class d4pClient:
         logger.info(f"Semantic Searched for '{search}'")
 
         # Perform the search
-        return WebClient.search_similarity(self, data, query_type, embedding_type)
+        return self.webclient.search_similarity(data, query_type, embedding_type)
 
     def code_Recommendation(self, search: str, search_type: _TYPES = "pe", embedding_type: _E_TYPES = "spt"):
         """Semantic Search registry for workflows and pes"""
@@ -212,7 +210,7 @@ class d4pClient:
         logger.info(f"Semantic Searched for '{search}'")
 
         # Perform the search
-        return WebClient.search_similarity(self, data, query_type, embedding_type)
+        return self.webclient.search_similarity(data, query_type, embedding_type)
 
     def search_Registry_Literal(self, search: str, search_type: _TYPES = "both"):
         """Literal Search registry for workflow and pes"""
@@ -220,40 +218,40 @@ class d4pClient:
         assert search_type in options, f"'{search_type}' is not in {options}"
         data = SearchData(search=search, search_type=search_type)
         logger.info(f"Literal Searched for '{search}'")
-        return WebClient.search(self, data)
+        return self.webclient.search(data)
 
     def remove_PE(self, pe: Union[str, int]):
         """Remove PE from Registry"""
-        return WebClient.remove_PE(self, pe)
+        return self.webclient.remove_PE(pe)
 
     def remove_Workflow(self, workflow: Union[str, int]):
         """Remove Workflow from Registry"""
-        return WebClient.remove_Workflow(self, workflow)
+        return self.webclient.remove_Workflow(workflow)
 
     def get_PEs_By_Workflow(self, workflow: Union[str, int]):
         """Retrieve PEs in Workflow"""
-        return WebClient.get_PEs_By_Workflow(self, workflow)
+        return self.webclient.get_PEs_By_Workflow(workflow)
 
     def get_Workflows(self):
         """Retrieve all Workflow"""
-        return WebClient.get_Workflows(self)
+        return self.webclient.get_Workflows()
 
     def get_Registry(self):
         """Retrieve Registry"""
-        return WebClient.get_Registry(self)
+        return self.webclient.get_Registry()
 
     def update_Workflow_Description(self, workflow: Union[str, int], new_description):
-        return WebClient.update_workflow_description(self, workflow, new_description)
+        return self.webclient.update_workflow_description(workflow, new_description)
 
     def update_PE_Description(self, pe: Union[str, int], new_description):
-        return WebClient.update_pe_description(self, pe, new_description)
+        return self.webclient.update_pe_description(pe, new_description)
 
     def remove_All(self, type: str = "all"):
         """Remove all Workflows and PEs from Registry"""
         try:
             if type == "all" or type == "workflow":
                 # Remove all WFs
-                (workflow_ids, pe_ids) = WebClient.get_ids(self)
+                (workflow_ids, pe_ids) = self.webclient.get_ids()
                 if len(workflow_ids) > 0:
                     for workflow_id in workflow_ids:
                         try:
@@ -265,7 +263,7 @@ class d4pClient:
                     return "Finished removing Workflows"
             if type == "all" or type == "pe":
                 # Remove all PEs
-                (workflow_ids, pe_ids) = WebClient.get_ids(self)
+                (workflow_ids, pe_ids) = self.webclient.get_ids()
                 if len(pe_ids) > 0:
                     for pe_id in pe_ids:
                         try:

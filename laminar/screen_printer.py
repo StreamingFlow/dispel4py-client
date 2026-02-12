@@ -44,7 +44,7 @@ def print_status(status):
     console.print(f"[bold green]{status}[/bold green]")
 
 
-def print_error(error, _traceback=False):
+def print_error(error, _traceback=True):
     if _traceback:
         console.print(f"{traceback.format_exc()}")
     console.print(f"[bold red]ERR: {error}[/bold red]")

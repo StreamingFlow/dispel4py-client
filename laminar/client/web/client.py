@@ -170,7 +170,7 @@ class WebClient:
             peCode = response["peCode"]
             sourceCode = response["sourceCode"]
             unpickled_result = pickle.loads(codecs.decode(peCode.encode(), "base64"))
-            return [unpickled_result, sourceCode, response["peName"], response["peId"]]
+            return [unpickled_result, sourceCode, response["peName"], response["peId"], response["description"]]
 
     def get_Workflow(self, workflow: Union[int, str]):
         verify_login(logger)
@@ -178,6 +178,8 @@ class WebClient:
             url = g_vars.URL_GET_WORKFLOW_NAME.format(g_vars.CLIENT_AUTH_ID) + workflow
         elif isinstance(workflow, int):
             url = g_vars.URL_GET_WORKFLOW_ID.format(g_vars.CLIENT_AUTH_ID) + str(workflow)
+        else:
+            raise TypeError("Invalid type for workflow: {}".format(type(workflow)))
         response = req.get(url=url)
         response = json.loads(response.text)
         if 'ApiError' in response.keys():
@@ -188,7 +190,8 @@ class WebClient:
             workflowCode = response["workflowCode"]
             moduleSourceCode = response["moduleSourceCode"]
             unpickled_result: WorkflowGraph = pickle.loads(codecs.decode(workflowCode.encode(), "base64"))
-            return [unpickled_result, moduleSourceCode, response["workflowName"], response["workflowId"]]
+            return [unpickled_result, moduleSourceCode, response["workflowName"], response["workflowId"],
+                    response["description"]]
 
     def get_PEs_By_Workflow(self, workflow: Union[int, str]):
         verify_login(logger)
