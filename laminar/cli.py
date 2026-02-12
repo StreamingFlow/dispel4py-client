@@ -5,9 +5,6 @@ import shlex
 import sys
 import pwinput
 
-from laminar.llms.LLMConnector import LLMConnector
-from laminar.llms.OpenAIConnector import OpenAIConnector
-
 from laminar.screen_printer import *
 from laminar.argument_parser import CustomArgumentParser, type_checker
 from laminar.client.d4pyclient import d4pClient

@@ -1,13 +1,14 @@
-from laminar.search.deep_learn_search import *
 from typing import Union
 import requests as req
 import cloudpickle as pickle
 import json
 import logging
 import numpy as np
-from laminar.conversion import ConvertPy
+import pandas as pd
+
 from dispel4py.workflow_graph import WorkflowGraph
 
+from laminar.conversion import ConvertPy
 from laminar.aroma.similar import setup_features, compare_similar
 from laminar.client.web.authentication_data import AuthenticationData
 from laminar.client.web.execution_data import ExecutionData
@@ -15,6 +16,7 @@ from laminar.client.web.pe_registration_data import PERegistrationData
 from laminar.client.web.search_data import SearchData
 from laminar.client.web.workflow_registration_data import WorkflowRegistrationData
 from laminar.client.web.utils import *
+from laminar.llms.encoder import LaminarCodeEncoder
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(format='%(message)s', level=logging.FATAL)
@@ -22,7 +24,7 @@ logging.basicConfig(format='%(message)s', level=logging.FATAL)
 
 class WebClient:
     def __init__(self):
-        pass
+        self.encoder = None
 
     def register_user(self, user_data: AuthenticationData):
         try:
@@ -74,6 +76,8 @@ class WebClient:
 
     def register_Workflow(self, workflow_payload: WorkflowRegistrationData):
         verify_login(logger)
+        if not self.encoder:
+            self.encoder = LaminarCodeEncoder()
         workflow_dict = workflow_payload.to_dict()
         data = json.dumps(workflow_dict)
         response = req.post(g_vars.URL_REGISTER_WORKFLOW.format(g_vars.CLIENT_AUTH_ID), data=data,
@@ -90,7 +94,7 @@ class WebClient:
                 pe_res = req.get(url=get_pe_url)
                 pe_res = json.loads(pe_res.text)
                 if 'ApiError' in pe_res.keys():
-                    data = PERegistrationData(pe=pe_obj)
+                    data = PERegistrationData(pe=pe_obj, encoder=self.encoder)
                     pe_id = WebClient.register_PE(self, data)
                     req.put(url=g_vars.URL_LINK_PE_TO_WORKFLOW.format(g_vars.CLIENT_AUTH_ID,
                                                                       workflow_id, pe_id))
@@ -274,8 +278,7 @@ class WebClient:
         response = json.loads(response.text)
 
         if embedding_type == "llm":
-            return similarity_search(search_dict['search'], response, query_type, search_dict["searchType"],
-                                     embedding_type)
+            raise NotImplementedError("LLM similarity search not yet implemented")
         else:
             ## this for embedding_type == "spt" 
             astEmbeddings = []
@@ -374,7 +377,9 @@ class WebClient:
 
     def update_workflow_description(self, workflow, new_description):
         verify_login(logger)
-        new_embedding = np.array_str(encode(new_description, 1).cpu().numpy())
+        if not self.encoder:
+            self.encoder = LaminarCodeEncoder()
+        new_embedding = np.array_str(self.encoder.encode(new_description, 1).cpu().numpy())
         url = g_vars.URL_UPDATE_WORKFLOW_DESC_ID.format(g_vars.CLIENT_AUTH_ID, workflow)
         response = req.put(url=url, json={"description": new_description, "descEmbedding": new_embedding},
                            headers=g_vars.headers)
@@ -386,7 +391,9 @@ class WebClient:
 
     def update_pe_description(self, pe, new_description):
         verify_login(logger)
-        new_embedding = np.array_str(encode(new_description, 1).cpu().numpy())
+        if not self.encoder:
+            self.encoder = LaminarCodeEncoder()
+        new_embedding = np.array_str(self.encoder.encode(new_description, 1).cpu().numpy())
         url = g_vars.URL_UPDATE_PE_DESC_ID.format(g_vars.CLIENT_AUTH_ID, pe)
         response = req.put(url=url, json={"description": new_description, "descEmbedding": new_embedding},
                            headers=g_vars.headers)

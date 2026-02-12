@@ -1,6 +1,6 @@
-from laminar.llms.GeminiConnector import GeminiConnector
-from laminar.llms.OpenAIConnector import OpenAIConnector
-from laminar.llms.OpenWebUI import OpenWebUIConnector
+from laminar.llms.connectors.GeminiConnector import GeminiConnector
+from laminar.llms.connectors.OpenAIConnector import OpenAIConnector
+from laminar.llms.connectors.OpenWebUI import OpenWebUIConnector
 from laminar.screen_printer import print_warning
 
 

@@ -4,20 +4,18 @@ import numpy as np
 from laminar.conversion import ConvertPy
 
 from laminar.aroma.similar import setup_features
-from laminar.search.deep_learn_search import generate_summary, encode
 from laminar.client.web.utils import get_payload, create_import_string
+from laminar.llms.encoder import LaminarCodeEncoder
 
 
 class PERegistrationData:
     def __init__(self, *, pe: type, pe_name: str = None, pe_code: any = None, description: str = None,
                  inputDescription: str = None, outputDescription: str = None, llmProvider: str = None,
-                 llmModel: str = None):
+                 llmModel: str = None, encoder: LaminarCodeEncoder):
         pe_class = pe.__class__
 
-        self.llmProvider = llmProvider
-        self.llmModel = llmModel
-        self.inputDescription = inputDescription
-        self.outputDescription = outputDescription
+        if not description:
+            raise RuntimeError("PE description not provided")
 
         try:
             pe_source_code = inspect.getsource(pe_class)
@@ -37,19 +35,17 @@ class PERegistrationData:
         except OSError:
             pe_process_source_code = "Source code not available"
 
+        self.llmProvider = llmProvider
+        self.llmModel = llmModel
+        self.inputDescription = inputDescription
+        self.outputDescription = outputDescription
         self.pe_name = pe_name
         self.pe_code = get_payload(pe)
-        if description:
-            self.description = description
-        else:
-            if pe_source_code != "Source code not available":
-                self.description = generate_summary(pe_source_code).replace(" class ", " pe ")
-            else:
-                self.description = generate_summary(pe_process_source_code)
+        self.description = description
         self.pe_source_code = pe_source_code
         self.pe_imports = create_import_string(pe_source_code)
-        self.code_embedding = np.array_str(encode(pe_process_source_code, 2).cpu().numpy())
-        self.desc_embedding = np.array_str(encode(self.description, 1).cpu().numpy())
+        self.code_embedding = np.array_str(encoder.encode(pe_process_source_code, 2).cpu().numpy())
+        self.desc_embedding = np.array_str(encoder.encode(self.description, 1).cpu().numpy())
         # convert to json style file for AST similarity
 
         # Ensure valid Python code is passed to AST parser

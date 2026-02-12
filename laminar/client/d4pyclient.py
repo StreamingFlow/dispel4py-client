@@ -7,6 +7,7 @@ from laminar.client.web.client import *
 import laminar.global_variables as g_vars
 
 import laminar.screen_printer
+from laminar.llms.encoder import LaminarCodeEncoder
 from laminar.screen_printer import print_status, print_text, print_code
 
 _TYPES = Literal["pe", "workflow", "both"]
@@ -25,6 +26,7 @@ class d4pClient:
         user_password = os.getenv('LAMINAR_PASSWORD')
         if user_name is not None and user_password is not None:
             self.login(user_name, user_password)
+        self.encoder = None
 
     def register(self, user_name: str, user_password: str):
         """ Register a user with the Registry service """
@@ -43,8 +45,11 @@ class d4pClient:
     def register_PE(self, pe: g_vars.PE_TYPES, description: str = None, inputDescription: str = None,
                     outputDescription: str = None, llmProvider: str = None, llmModel: str = None):
         """Register a PE with the client service"""
+        if not self.encoder:
+            self.encoder = LaminarCodeEncoder()
         data = PERegistrationData(pe=pe, description=description, inputDescription=inputDescription,
-                                  outputDescription=outputDescription, llmModel=llmModel, llmProvider=llmProvider)
+                                  outputDescription=outputDescription, llmModel=llmModel, llmProvider=llmProvider,
+                                  encoder=self.encoder)
         return WebClient.register_PE(self, data)
 
     def register_Workflow(self, workflow: WorkflowGraph, workflow_name: str, description: str = None, module=None,
@@ -52,10 +57,13 @@ class d4pClient:
                           outputDescription: str = None, llmProvider: str = None, llmModel: str = None):
         """Register a Workflow with the client service"""
         print_status(f"Registering workflow: {workflow_name}")
+        if not self.encoder:
+            self.encoder = LaminarCodeEncoder()
+
         data = WorkflowRegistrationData(workflow=workflow, workflow_name=workflow_name, entry_point=workflow_name,
                                         description=description, module=module, module_name=module_name,
                                         inputDescription=inputDescription, outputDescription=outputDescription,
-                                        llmModel=llmModel, llmProvider=llmProvider)
+                                        llmModel=llmModel, llmProvider=llmProvider, encoder=self.encoder)
         return WebClient.register_Workflow(self, data)
 
     def run(self, workflow: Union[str, int, WorkflowGraph], input=None, process=g_vars.Process,
