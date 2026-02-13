@@ -11,7 +11,7 @@ from laminar.client.d4pyclient import d4pClient
 from laminar.clitools.search import SearchCommand
 from laminar.clitools.register import RegisterCommand
 from laminar.clitools.remove import RemoveCommand
-from laminar.clitools.runcommand import RunCommand
+from laminar.clitools.run import RunCommand
 from laminar.clitools.update_description import UpdateDescriptionCommand
 
 
@@ -172,6 +172,7 @@ class LaminarCLI(cmd.Cmd):
             if data:
                 obj = data[0]
                 sc = data[1]
+                print_text([{"description": data[4]}], tab=True)  # Print description as obtained from DB
                 self.client.describe(obj, sc, include_source_code=args["source_code"])
             else:
                 print_warning(f"No description found for '{args['identifier']}'")
