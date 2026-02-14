@@ -17,6 +17,7 @@ from laminar.client.web.search_data import SearchData
 from laminar.client.web.workflow_registration_data import WorkflowRegistrationData
 from laminar.client.web.utils import *
 from laminar.llms.encoder import LaminarCodeEncoder
+from laminar.screen_printer import print_text
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(format='%(message)s', level=logging.FATAL)
@@ -94,6 +95,7 @@ class WebClient:
                 pe_res = req.get(url=get_pe_url)
                 pe_res = json.loads(pe_res.text)
                 if 'ApiError' in pe_res.keys():
+                    print_text(pe_res)
                     data = PERegistrationData(pe=pe_obj, encoder=self.encoder)
                     pe_id = WebClient.register_PE(self, data)
                     req.put(url=g_vars.URL_LINK_PE_TO_WORKFLOW.format(g_vars.CLIENT_AUTH_ID,

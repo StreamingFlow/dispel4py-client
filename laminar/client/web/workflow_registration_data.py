@@ -10,7 +10,7 @@ class WorkflowRegistrationData:
     def __init__(self, *, workflow: any, workflow_name: str = None, workflow_code: str = None, workflow_pes=None,
                  entry_point: str = None, description: str = None, module=None, module_name=None,
                  inputDescription: str = None, outputDescription: str = None, llmProvider: str = None,
-                 llmModel: str = None, encoder: LaminarCodeEncoder):
+                 llmModel: str = None, tags: list[str] = None ,encoder: LaminarCodeEncoder):
         if workflow is not None:
             workflow_code = get_payload(workflow)
 
@@ -39,7 +39,8 @@ class WorkflowRegistrationData:
         self.workflow_code = workflow_code
         self.entry_point = entry_point
         self.workflow_pes = workflow_pes
-        self.desc_embedding = np.array_str(encoder.embed_text(self.description, 1))
+        self.desc_embedding = np.array_str(encoder.embed_text(self.description))
+        self.tags = tags
 
         if module:
             self.module_source_code = inspect.getsource(module)
@@ -64,6 +65,7 @@ class WorkflowRegistrationData:
             "lldDescriptionModel": self.llmModel,
             "inputsDescription": self.inputDescription,
             "outputsDescription": self.outputDescription,
+            "tags": self.tags
         }
 
     def __str__(self):

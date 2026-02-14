@@ -75,6 +75,7 @@ def get_objects(results):
                                                          result["lldDescriptionModel"]),
                 "Inputs": result['inputsDescription'],
                 "Outputs": result['outputsDescription'],
+                "Tags": result['tags']
             })
             try:
                 obj = pickle.loads(codecs.decode(result['workflowCode'].encode(), "base64"))
@@ -92,6 +93,7 @@ def get_objects(results):
                                                          result["lldDescriptionModel"]),
                 "Inputs": result['inputsDescription'],
                 "Outputs": result['outputsDescription'],
+                "Tags": result['tags']
             })
             try:
                 obj = pickle.loads(codecs.decode(result['peCode'].encode(), "base64"))

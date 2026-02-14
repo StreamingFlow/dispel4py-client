@@ -20,6 +20,7 @@ PE_CONTEXT_QUERIES = [
         'description': '...',
         'inputs':  '<input_name>:<description>\n...',
         'outputs': '<output_name>:<description>\n...',
+        'tags' : ['tag1', 'tag2', ...]
     }}""",
     "The <input_name> and <output_name> arguments are placeholders for the channels used to communicate",
     "<description> is a placeholder for the description of the input or output",
@@ -34,9 +35,11 @@ WORKFLOW_CONTEXT_QUERIES = [
           'description': '...',
           'inputs':  '<input_name>:<description>\n...',
           'outputs': '<output_name>:<description>\n...',
+          'tags' : ['tag1', 'tag2', ...]
     }}""",
     "The <input_name> and <output_name> arguments are placeholders for the workflow user inputs and workflow output",
     "<description> is a placeholder for the description of the input or output",
+    "Tags is a list of keywords that describe the workflow or the PE, so that it may be categorized",
     "If either no input or output is available, return null",
     "Ensure that the description contains all the information and is not verbose or repetitive"
 ]
@@ -90,9 +93,9 @@ class RegisterCommand:
 
                 try:
                     r = self.client.register_PE(pe_instance, description=docstring["description"],
-                                                inputDescription=docstring["inputs"],
-                                                outputDescription=docstring["outputs"], llmModel=docstring["model"],
-                                                llmProvider=docstring["provider"])
+                                                input_description=docstring["inputs"],
+                                                output_description=docstring["outputs"], llm_model=docstring["model"],
+                                                llm_provider=docstring["provider"], tags=docstring["tags"])
                     if r is None:
                         print_warning("(Exists)")
                     else:
@@ -147,9 +150,9 @@ class RegisterCommand:
                 pe_class = pes[key]
                 pe_instance = pe_class()
                 r = self.client.register_PE(pe_instance, description=docstring["description"],
-                                            inputDescription=docstring["inputs"],
-                                            outputDescription=docstring["outputs"], llmModel=docstring["model"],
-                                            llmProvider=docstring["provider"])
+                                            input_description=docstring["inputs"],
+                                            output_description=docstring["outputs"], llm_model=docstring["model"],
+                                            llm_provider=docstring["provider"], tags=docstring["tags"])
                 if r is None:
                     print_warning("(Exists)")
                 else:
@@ -173,9 +176,9 @@ class RegisterCommand:
                 r = self.client.register_Workflow(workflow=workflows[key], workflow_name=key,
                                                   description=docstring["description"],
                                                   module=mod, module_name=unique_module_name,
-                                                  inputDescription=docstring["inputs"],
-                                                  outputDescription=docstring["outputs"], llmModel=docstring["model"],
-                                                  llmProvider=docstring["provider"])
+                                                  input_description=docstring["inputs"],
+                                                  output_description=docstring["outputs"], llm_model=docstring["model"],
+                                                  llm_provider=docstring["provider"], tags=docstring["tags"])
                 if r is None:
                     print_warning("(Exists)")
                 else:

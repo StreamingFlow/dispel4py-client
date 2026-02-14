@@ -11,7 +11,7 @@ from laminar.llms.encoder import LaminarCodeEncoder
 class PERegistrationData:
     def __init__(self, *, pe: type, pe_name: str = None, pe_code: any = None, description: str = None,
                  inputDescription: str = None, outputDescription: str = None, llmProvider: str = None,
-                 llmModel: str = None, encoder: LaminarCodeEncoder):
+                 llmModel: str = None, tags: list[str] = None ,encoder: LaminarCodeEncoder):
         pe_class = pe.__class__
 
         if not description:
@@ -44,8 +44,9 @@ class PERegistrationData:
         self.description = description
         self.pe_source_code = pe_source_code
         self.pe_imports = create_import_string(pe_source_code)
-        self.code_embedding = np.array_str(encoder.embed_code(pe_process_source_code, 2))
-        self.desc_embedding = np.array_str(encoder.embed_text(self.description, 1))
+        self.code_embedding = np.array_str(encoder.embed_code(pe_process_source_code))
+        self.desc_embedding = np.array_str(encoder.embed_text(self.description))
+        self.tags = tags
         # convert to json style file for AST similarity
 
         # Ensure valid Python code is passed to AST parser
@@ -79,6 +80,7 @@ class PERegistrationData:
             "lldDescriptionModel": self.llmModel,
             "inputsDescription": self.inputDescription,
             "outputsDescription": self.outputDescription,
+            "tags": self.tags
         }
 
     def __str__(self):

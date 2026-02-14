@@ -52,7 +52,7 @@ CODE:
             raise RuntimeError("No LLM connectors available.")
 
     def describe(self, component_name: str, kind: str, code: str, model: str = None, provider: str = "openai",
-                 context_queries: list[str] = None) -> dict[str, str]:
+                 context_queries: list[str] = None) -> dict[str, str | list[str]]:
 
         if provider not in self.connectors.keys():
             raise RuntimeError(f"Unknown model {provider}")
@@ -63,6 +63,5 @@ CODE:
         description_query = self._get_description_prompt(component_name, kind, str(code))
 
         return self.connectors[provider].describe(query=description_query,
-                                                         model=model,
-                                                         context_queries=context_queries)
-
+                                                  model=model,
+                                                  context_queries=context_queries)
