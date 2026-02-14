@@ -5,8 +5,6 @@ import os
 
 from laminar.client.web.client import *
 import laminar.global_variables as g_vars
-
-import laminar.screen_printer
 from laminar.llms.encoder import LaminarCodeEncoder
 from laminar.screen_printer import print_status, print_text, print_code
 

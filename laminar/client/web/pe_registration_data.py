@@ -44,8 +44,8 @@ class PERegistrationData:
         self.description = description
         self.pe_source_code = pe_source_code
         self.pe_imports = create_import_string(pe_source_code)
-        self.code_embedding = np.array_str(encoder.encode(pe_process_source_code, 2).cpu().numpy())
-        self.desc_embedding = np.array_str(encoder.encode(self.description, 1).cpu().numpy())
+        self.code_embedding = np.array_str(encoder.embed_code(pe_process_source_code, 2))
+        self.desc_embedding = np.array_str(encoder.embed_text(self.description, 1))
         # convert to json style file for AST similarity
 
         # Ensure valid Python code is passed to AST parser
@@ -76,7 +76,7 @@ class PERegistrationData:
             "descEmbedding": self.desc_embedding,
             "astEmbedding": self.astEmbedding,
             "lldDescriptionProvider": self.llmProvider,
-            "lldDescriptionModel" : self.llmModel,
+            "lldDescriptionModel": self.llmModel,
             "inputsDescription": self.inputDescription,
             "outputsDescription": self.outputDescription,
         }

@@ -39,7 +39,7 @@ class WorkflowRegistrationData:
         self.workflow_code = workflow_code
         self.entry_point = entry_point
         self.workflow_pes = workflow_pes
-        self.desc_embedding = np.array_str(encoder.encode(self.description, 1).cpu().numpy())
+        self.desc_embedding = np.array_str(encoder.embed_text(self.description, 1))
 
         if module:
             self.module_source_code = inspect.getsource(module)
