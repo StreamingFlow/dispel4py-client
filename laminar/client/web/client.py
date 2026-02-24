@@ -16,6 +16,7 @@ from laminar.client.web.pe_registration_data import PERegistrationData
 from laminar.client.web.search_data import SearchData
 from laminar.client.web.workflow_registration_data import WorkflowRegistrationData
 from laminar.client.web.utils import *
+from laminar.global_variables import URL_SEARCH_PE, URL_SEARCH_WORKFLOW
 from laminar.llms.encoder import LaminarCodeEncoder
 from laminar.screen_printer import print_text
 
@@ -60,6 +61,7 @@ class WebClient:
 
     def register_PE(self, pe_payload: PERegistrationData):
         verify_login(logger)
+        PE_ID = None
         data = json.dumps(pe_payload.to_dict())
         response = req.post(g_vars.URL_REGISTER_PE.format(g_vars.CLIENT_AUTH_ID), data=data,
                             headers=g_vars.headers)
@@ -69,11 +71,24 @@ class WebClient:
                 logger.error(response['ApiError']['debugMessage'])
                 return None
             else:
-                pe_id = response["peId"]
+                pe_id = int(response["peId"])
                 logger.info("Successfully registered PE " + response["peName"] + " with ID " + str(pe_id))
-                return int(pe_id)
+
+                response = req.post(URL_SEARCH_PE, json={
+                    "id": pe_id,
+                    "name": pe_payload.pe_name,
+                    "description": pe_payload.description,
+                    "tags": ",".join(pe_payload.tags),
+                    "keywords": ",".join(pe_payload.tags)
+                })
+
+                if response.status_code != 200:
+                    print_warning(f"Error occurred while indexing PE {pe_payload.pe_name} : {response.text}")
+
+                return pe_id
         else:
             logging.error(f"Failed to register PE {pe_payload.pe_name}")
+            return None
 
     def register_Workflow(self, workflow_payload: WorkflowRegistrationData):
         verify_login(logger)
@@ -90,6 +105,19 @@ class WebClient:
             return None
         else:
             workflow_id = response['workflowId']
+
+            response_fts = req.post(URL_SEARCH_WORKFLOW, json={
+                "id": int(workflow_id),
+                "name": workflow_payload.workflow_name,
+                "description": workflow_payload.description,
+                "tags": ",".join(workflow_payload.tags),
+                "keywords": ",".join(workflow_payload.tags)  # TODO: understand difference between tags and keywords
+            })
+
+            if response_fts.status_code != 200:
+                print_warning(
+                    f"Error occurred while indexing Workflow: {workflow_payload.workflow_name} : {response_fts.text}")
+
             for pe_obj in workflow_payload.workflow_pes:
                 get_pe_url = g_vars.URL_GET_PE_NAME.format(g_vars.CLIENT_AUTH_ID) + pe_obj.name
                 pe_res = req.get(url=get_pe_url)
@@ -221,6 +249,12 @@ class WebClient:
             url = g_vars.URL_REMOVE_PE_NAME.format(g_vars.CLIENT_AUTH_ID) + pe
         elif isinstance(pe, int):
             url = g_vars.URL_REMOVE_PE_ID.format(g_vars.CLIENT_AUTH_ID) + str(pe)
+
+        response_fts = req.delete(url=URL_SEARCH_PE.format(g_vars.CLIENT_AUTH_ID) + "?id=" + str(pe))
+
+        if response_fts.status_code != 200:
+            print_warning(f"Error occurred while deleting Workflow: {pe} : {response_fts.text}")
+
         response = req.delete(url=url)
         response = json.loads(response.text)
         if response == 1:
@@ -235,6 +269,13 @@ class WebClient:
             url = g_vars.URL_REMOVE_WORKFLOW_NAME.format(g_vars.CLIENT_AUTH_ID) + workflow
         elif isinstance(workflow, int):
             url = g_vars.URL_REMOVE_WORKFLOW_ID.format(g_vars.CLIENT_AUTH_ID) + str(workflow)
+
+        # TODO: delete with name and not only id
+        response_fts = req.delete(url=URL_SEARCH_WORKFLOW.format(g_vars.CLIENT_AUTH_ID) + "?id=" + str(workflow))
+
+        if response_fts.status_code != 200:
+            print_warning(f"Error occurred while deleting Workflow: {workflow} : {response_fts.text}")
+
         response = req.delete(url=url)
         response = json.loads(response.text)
         if response == 1:

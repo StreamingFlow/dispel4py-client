@@ -72,6 +72,10 @@ URL_UPDATE_WORKFLOW_DESC_ID: str = BASE_URL_REGISTER + "/workflow/update/{}/desc
 
 URL_UPDATE_PE_DESC_ID: str = BASE_URL_REGISTER + "/pe/update/{}/description"
 
+URL_SEARCH_PE: str = BASE_URL_REGISTER + "/pe/search"
+
+URL_SEARCH_WORKFLOW: str = BASE_URL_REGISTER + "/workflow/search"
+
 PE_TYPES = (BasePE,IterativePE,ProducerPE,ConsumerPE,SimpleFunctionPE,CompositePE,GenericPE)
 
 headers = {
