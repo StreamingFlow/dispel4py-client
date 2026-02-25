@@ -13,6 +13,7 @@ from laminar.clitools.register import RegisterCommand
 from laminar.clitools.remove import RemoveCommand
 from laminar.clitools.run import RunCommand
 from laminar.clitools.update_description import UpdateDescriptionCommand
+from laminar.clitools.search_library import SearchLibraryCommand
 
 
 class LaminarCLI(cmd.Cmd):
@@ -54,6 +55,7 @@ class LaminarCLI(cmd.Cmd):
         self.remove_command = RemoveCommand(self.client)
         self.run_command = RunCommand(self.client)
         self.update_description_command = UpdateDescriptionCommand(self.client)
+        self.search_library_command = SearchLibraryCommand(self.client) #TODO: pass instances of other params
 
     def cmdloop(self, intro=None):
         try:
@@ -193,3 +195,10 @@ class LaminarCLI(cmd.Cmd):
 
     def help_update_description(self):
         self.update_description_command.help()
+
+
+    def do_search_library(self, arg):
+        self.search_library_command.search_library(arg)
+
+    def help_search_library(self):
+        self.search_library_command.help()

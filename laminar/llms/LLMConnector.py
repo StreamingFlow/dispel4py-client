@@ -31,6 +31,10 @@ CODE:
 {}
         """
 
+        self.RERANK_PROMPT = """
+        Return JSON only. Do not explain.
+        """
+
         self.connectors = {}
 
         try:
@@ -65,3 +69,18 @@ CODE:
         return self.connectors[provider].describe(query=description_query,
                                                   model=model,
                                                   context_queries=context_queries)
+
+    def rerank(self, provider: str = "openai", model: str = None, query: str = None, candidates: list = None,
+               top_k: int = 3) -> dict:
+        return self.connectors[provider].rerank(model, query, candidates, top_k, self.RERANK_PROMPT)
+
+    def propose_workflow_composition(self, provider: str = "openai", model: str = None, query: str = None,
+                                     pe_candidates: list = None, max_fixes: int = 2) -> dict:
+
+        return self.connectors[provider].propose_workflow_composition(model, query, pe_candidates, max_fixes)
+
+    def propose_new_component(self, provider: str = "openai", model: str = None, query: str = None) -> dict:
+        return self.connectors[provider].propose(model, query)
+
+    def classify(self, provider: str = "openai", model: str = "gpt-4o", query: str = None) -> dict:
+        return self.connectors[provider].classify(model, query)

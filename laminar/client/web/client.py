@@ -5,6 +5,7 @@ import json
 import logging
 import numpy as np
 import pandas as pd
+import re
 
 from dispel4py.workflow_graph import WorkflowGraph
 
@@ -414,12 +415,12 @@ class WebClient:
                     lambda x: pickle.loads(codecs.decode(x.encode(), "base64"))).tolist()
                 return obj_list
 
-    def get_Registry(self):
+    def get_Registry(self, extended = False):
         verify_login(logger)
         url = g_vars.URL_REGISTRY_ALL.format(g_vars.CLIENT_AUTH_ID)
         response = req.get(url=url)
         response = json.loads(response.text)
-        return get_objects(response)
+        return get_objects(response, extended)
 
     def update_workflow_description(self, workflow, new_description):
         verify_login(logger)
@@ -464,3 +465,38 @@ class WebClient:
                     pe_list.append(result['peId'])
 
         return (workflow_list, pe_list)
+
+    def lexical_scores(self, kind: str, query: str, limit: int = 50) -> dict:
+
+        def prepare_full_text_query_string(q: str) -> str:
+            """
+            Convert a free-form string into a simplified FTS query.
+
+            Lowercases the input, extracts alphanumeric/underscore tokens,
+            removes words shorter than 3 characters, limits to the first
+            12 tokens, and joins them with " OR ". Returns an empty string
+            if no valid tokens are found.
+            """
+            re_tokens = re.findall(r"[a-zA-Z0-9_]+", (q or "").lower())
+            tokens = [t for t in re_tokens if len(t) > 2]
+            if not tokens:
+                return ""
+            return " OR ".join(tokens[:12])
+
+        q = prepare_full_text_query_string(query)
+        if not q:
+            return {}
+
+        scores = {}
+
+        if kind in ("pe", "either"):
+            rows = req.get(URL_SEARCH_PE.format(g_vars.CLIENT_AUTH_ID) + "?q=" + q + "&limit=" + str(limit)).json()
+            for row in rows:
+                scores[("pe", int(row["id"]))] = 1.0 / (1.0 + float(row["score"])) if row["score"] else 0.0
+
+        if kind in ("workflow", "either"):
+            rows = req.get(URL_SEARCH_WORKFLOW.format(g_vars.CLIENT_AUTH_ID) + "?q=" + q + "&limit=" + str(limit)).json()
+            for row in rows:
+                scores[("pe", int(row["id"]))] = 1.0 / (1.0 + float(row["score"])) if row["score"] else 0.0
+
+        return scores

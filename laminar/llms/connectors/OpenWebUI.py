@@ -65,3 +65,16 @@ class OpenWebUIConnector:
                 print_error(f"Return code: {e.response.status_code}: {e.response.text}")
 
             raise e
+
+    def rerank(self, query: str, candidates: list, top_k: int = 3, context_queries: list[str] = None):
+        raise NotImplementedError
+
+    def propose_workflow_composition(self, model: str = "gpt-4o", query: str = None, pe_candidates: list = None,
+                                 max_fixes: int = 2) -> dict:
+        raise NotImplementedError
+
+    def classify(self, model: str = "gpt-4o", query: str = None) -> dict:
+        return NotImplementedError
+
+    def propose(self, model: str = "gpt-4o", query: str = None):
+        raise NotImplementedError

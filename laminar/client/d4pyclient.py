@@ -236,9 +236,9 @@ class d4pClient:
         """Retrieve all Workflow"""
         return self.webclient.get_Workflows()
 
-    def get_Registry(self):
+    def get_Registry(self, extended: bool = False):
         """Retrieve Registry"""
-        return self.webclient.get_Registry()
+        return self.webclient.get_Registry(extended)
 
     def update_Workflow_Description(self, workflow: Union[str, int], new_description):
         return self.webclient.update_workflow_description(workflow, new_description)
@@ -279,3 +279,6 @@ class d4pClient:
         except Exception as e:
             self.logger.error(f"Error occurred while removing all workflows and/or PEs: {e}")
             return {"ApiError": {"message": str(e)}}
+
+    def lexical_scores(self, kind: str, query: str, limit: int = 50) -> dict:
+        return self.webclient.lexical_scores(kind, query, limit)

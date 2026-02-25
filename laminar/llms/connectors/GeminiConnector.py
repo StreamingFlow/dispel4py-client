@@ -33,3 +33,16 @@ class GeminiConnector():
         response["model"] = model
         response["provider"] = "Gemini"
         return response
+
+    def rerank(self, query: str, candidates: list, top_k: int = 3, context_queries: list[str] = None):
+        raise NotImplementedError
+
+    def propose_workflow_composition(self, model: str = "gpt-4o", query: str = None, pe_candidates: list = None,
+                                 max_fixes: int = 2) -> dict:
+        raise NotImplementedError
+
+    def classify(self, model: str = "gpt-4o", query: str = None) -> dict:
+        return NotImplementedError
+
+    def propose(self, model: str = "gpt-4o", query: str = None):
+        raise NotImplementedError
