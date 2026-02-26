@@ -1,9 +1,10 @@
+from typing import Any
 import openai
 import os
 import re
 import json
 
-from laminar.screen_printer import print_warning, print_text
+from laminar.screen_printer import print_warning, print_text, print_error
 
 
 def safe_json_loads(s: str, default):
@@ -42,7 +43,7 @@ def has_suspicious_ports(code: str) -> bool:
     return False
 
 
-def is_valid_workflow_code_v4(code: str):
+def is_valid_workflow_code(code: str):
     issues = []
     if not code or ("WorkflowGraph" not in code) or ("graph.connect" not in code):
         issues.append("Missing WorkflowGraph or graph.connect")
@@ -63,6 +64,24 @@ class OpenAIConnector():
         self.client = openai.OpenAI(api_key=self.key)
         self.default_model = "gpt-4o"
 
+    def call(self, model: str, prompt: list[dict[str, str | Any]]) -> dict:
+        prompt.append({"role": "system", "content": "return only JSON. DO NOT EXPLAIN."})
+        resp = self.client.chat.completions.create(
+            model=model,
+            messages=prompt,
+            temperature=0.0 if "nano" not in model else None,
+        )
+        txt = resp.choices[0].message.content.strip()
+        txt = re.sub(r"^```json|```$", "", txt, flags=re.I).strip()
+
+        try:
+            result = json.loads(txt)
+        except Exception as e:
+            print_error(f"WARNING: failed to parse JSON: {e}")
+            print_text(txt)
+            raise e
+        return result
+
     def describe(self, query: str, model: str, context_queries: list[str] = None) -> dict[str, str | dict[str, str]]:
         if model is None:
             model = self.default_model
@@ -71,15 +90,8 @@ class OpenAIConnector():
         messages = [{"role": "system", "content": query} for query in context_queries]
         messages.append({"role": "user", "content": query})
 
-        response = self.client.chat.completions.create(
-            model=model,
-            messages=messages,
-            temperature=0.0 if "nano" not in model else None,
-        )
+        response = self.call(model, messages)
 
-        txt = response.choices[0].message.content.strip()
-        txt = re.sub(r"^```json|```$", "", txt, flags=re.I).strip()
-        response = json.loads(txt)
         response["model"] = model
         response["provider"] = "OpenAI"
         return response
@@ -130,14 +142,7 @@ class OpenAIConnector():
         messages = [{"role": "system", "content": query} for query in context_queries]
         messages.append({"role": "user", "content": prompt})
 
-        resp = self.client.chat.completions.create(
-            model=model,
-            messages=messages,
-            temperature=0.0
-        )
-        txt = resp.choices[0].message.content.strip()
-        txt = re.sub(r"^```json|```$", "", txt, flags=re.I).strip()
-        return json.loads(txt)
+        return self.call(model, messages)
 
     def propose_workflow_composition(self, model: str = "gpt-4o", query: str = None, pe_candidates: list = None,
                                      max_fixes: int = 2) -> dict:
@@ -150,17 +155,6 @@ class OpenAIConnector():
                 "tags": safe_json_loads(c.get("tags_json"), []),
                 "io": safe_json_loads(c.get("io_json"), {})
             })
-
-        def call(prompt: str) -> dict:
-            resp = self.client.chat.completions.create(
-                model=model,
-                messages=[{"role": "system", "content": "Return JSON only. Do not explain."},
-                          {"role": "user", "content": prompt}],
-                temperature=0.0
-            )
-            txt = resp.choices[0].message.content.strip()
-            txt = re.sub(r"^```json|```$", "", txt, flags=re.I).strip()
-            return json.loads(txt)
 
         base_prompt = f"""
         User request:
@@ -175,6 +169,7 @@ class OpenAIConnector():
         - Must include a sink/write PE (e.g., WriteJSONL) that is connected.
         - Use standard ports: connect(..., "output", ..., "input") whenever possible.
         - Prefer composing from existing PEs listed below.
+        - If new PEs are created, ensure that all of them are being included in the "new_pe" list. 
 
         Return JSON:
         {{
@@ -183,25 +178,29 @@ class OpenAIConnector():
           "description": "...",
           "workflow_code": "...",
           "uses_pes": ["PE1","PE2",...],
-          "new_pe": null OR {{
+          "new_pe": null OR [
+            {{
               "name": "...",
               "description": "...",
               "code": "..."
-          }}
+            }},
+            ..
+          ]
         }}
 
         Available PEs:
         {json.dumps(pe_compact, ensure_ascii=False)}
         """.strip()
 
-        proposal = call(base_prompt)
+        messages = [{"role": "user", "content": base_prompt}]
+        proposal = self.call(model, messages)
 
         for _ in range(max_fixes + 1):
-            ok, issues = is_valid_workflow_code_v4(proposal.get("workflow_code", ""))
+            ok, issues = is_valid_workflow_code(proposal.get("workflow_code", ""))
             if ok:
                 return proposal
 
-            fix_prompt = f"""
+            fix_prompt = [{"role": "user", "content": f"""
         Your workflow proposal has issues:
 
         Issues:
@@ -214,9 +213,10 @@ class OpenAIConnector():
 
         Original proposal:
         {json.dumps(proposal, ensure_ascii=False)}
-        """.strip()
+        """.strip()}
+                          ]
 
-            proposal = call(fix_prompt)
+            proposal = self.call(model, fix_prompt)
 
         return proposal
 
@@ -234,17 +234,7 @@ class OpenAIConnector():
     {query}
     """.strip()
 
-        resp = self.client.chat.completions.create(
-            model=model,
-            messages=[
-                {"role": "system", "content": "Return JSON only. Do not explain."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.0
-        )
-        txt = resp.choices[0].message.content.strip()
-        txt = re.sub(r"^```json|```$", "", txt, flags=re.I).strip()
-        return json.loads(txt)
+        return self.call(model, [{"role": "user", "content": prompt}])
 
     def propose(self, model: str = "gpt-4o", query: str = None):
         prompt = f"""
@@ -260,12 +250,4 @@ class OpenAIConnector():
                                 - If pe: provide a dispel4py PE class.
                                 """.strip()
 
-        resp = self.client.chat.completions.create(
-            model=model,
-            messages=[{"role": "system", "content": "Return JSON only. Do not explain."},
-                      {"role": "user", "content": prompt}],
-            temperature=0.0
-        )
-        txt = resp.choices[0].message.content.strip()
-        txt = re.sub(r"^```json|```$", "", txt, flags=re.I).strip()
-        return json.loads(txt)
+        return self.call(model, [{"role": "user", "content": prompt}])

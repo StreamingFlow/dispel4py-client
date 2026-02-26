@@ -1,23 +1,77 @@
 import base64
-import re
 import json
-import shlex
 import argparse
+import numpy as np
+import os
 
 from laminar.argument_parser import CustomArgumentParser
 from laminar.cli import print_text, print_error
 from laminar.client.d4pyclient import d4pClient
 from laminar.llms.LLMConnector import LLMConnector
 from laminar.llms.encoder import LaminarCodeEncoder
-from laminar.screen_printer import print_code
+from laminar.screen_printer import print_code, print_warning, print_status
+from laminar.clitools.register import RegisterCommand
 
 
-class SearchLibraryCommand:
+def cosine(a: np.ndarray, b: np.ndarray) -> float:
+    if a is None or b is None or a.size == 0 or b.size == 0:
+        return -1.0
+    # embeddings already normalized in CELL 3
+    return float(np.dot(a, b))
 
-    def __init__(self, client: d4pClient, enccoder: LaminarCodeEncoder = None, llm_connector: LLMConnector = None):
+
+def hybrid_weights(input_type: str):
+    # return (desc_weight, code_weight)
+    if input_type == "mixed":
+        return 0.5, 0.5
+    if input_type == "code":
+        return 0.2, 0.8
+    return 1.0, 0.0
+
+
+def tag_boost(query: str, tags_json: str, max_boost: float = 0.06) -> float:
+    if not tags_json:
+        return 0.0
+
+    if not isinstance(tags_json, list):
+        try:
+            tags = set(json.loads(tags_json))
+        except Exception as e:
+            print_error(f"WARNING: failed to parse tags: {e}")
+            return 0.0
+    else:
+        tags = set(tags_json)
+
+    q = (query or "").lower()
+    hits = 0
+    for t in tags:
+        t2 = str(t).lower().replace("_", " ")
+        if t2 and t2 in q:
+            hits += 1
+
+    return min(max_boost, 0.02 * hits)
+
+
+def _safe_json_loads(s: str, default):
+    if isinstance(s, list):
+        return s
+
+    try:
+        return json.loads(s) if s else default
+    except Exception as e:
+        print_error(f"WARNING: failed to load JSON: {e}")
+        print_text(f"Input: {s}")
+        return default
+
+
+class AdvancedSearchCommand:
+
+    def __init__(self, client: d4pClient, encoder: LaminarCodeEncoder = None, llm_connector: LLMConnector = None,
+                 registerInterface: RegisterCommand = None):
         self.client = client
-        self.encoder = enccoder or LaminarCodeEncoder()
-        self.connector = llm_connector or LLMConnector()  # TODO: fix this correctly
+        self.encoder = encoder or LaminarCodeEncoder()
+        self.connector = llm_connector or LLMConnector()
+        self.registerInterface = registerInterface or RegisterCommand(self.client, llmConnector=self.connector)
 
         self._CAP_HINTS = {
             "csv": ["csv", "readcsv"],
@@ -44,7 +98,7 @@ class SearchLibraryCommand:
         req = self._extract_requested_caps(query)
         if not req:
             return 0.0
-        pe_list = self._safe_json_loads(pe_list_json, [])
+        pe_list = _safe_json_loads(pe_list_json, [])
         if not pe_list:
             return 0.0
 
@@ -64,19 +118,13 @@ class SearchLibraryCommand:
 
         return matched / max(1, len(req))
 
-    def _safe_json_loads(self, s: str, default):
-        try:
-            return json.loads(s) if s else default
-        except Exception:
-            return default
-
     def _retrieve(self,
                   query: str,
                   *,
                   kind: str,
                   input_type: str,
                   top_n: int = 30):
-        w_desc, w_code = self.encoder.hybrid_weights(input_type)
+        w_desc, w_code = hybrid_weights(input_type)
         q_text, q_code = self.encoder.embed_query(query, input_type)
         lex = self.client.lexical_scores(kind, query, limit=120)
 
@@ -90,8 +138,7 @@ class SearchLibraryCommand:
 
         for pe in pe_rows:
             name = pe["peName"]
-            tags_json = pe['tags']
-            pe_tags_by_name[name] = self._safe_json_loads(tags_json, [])
+            pe_tags_by_name[name] = pe['tags'] if isinstance(pe['tags'], list) else []
 
         # weights
         W_EMB = 0.60
@@ -111,10 +158,9 @@ class SearchLibraryCommand:
                 desc = pe["description"]
                 tags_json = pe["tags"]
 
-
-                s_desc = self.encoder.cosine(q_text, self.encoder.embed_text(desc)) if (
+                s_desc = cosine(q_text, self.encoder.embed_text(desc)) if (
                         q_text is not None and desc is not None) else -1.0
-                s_code = self.encoder.cosine(q_code, self.encoder.embed_code(code)) if (
+                s_code = cosine(q_code, self.encoder.embed_code(code)) if (
                         q_code is not None and code is not None) else -1.0
 
                 emb = 0.0
@@ -128,7 +174,7 @@ class SearchLibraryCommand:
                 emb = emb / wsum if wsum > 0 else max(s_desc, s_code)
 
                 lex_s = lex.get(("pe", int(pe_id)), 0.0)
-                tag_s = self.encoder.tag_boost(query, tags_json) / 0.06  # ~0..1
+                tag_s = tag_boost(query, tags_json) / 0.06  # ~0..1
 
                 final = W_EMB * emb + W_LEX * lex_s + W_TAG * tag_s
 
@@ -148,14 +194,13 @@ class SearchLibraryCommand:
                 code = workflow["workflowCode"]
                 desc = workflow["description"]
                 dblob = workflow["descEmbedding"]
-                cblob = None  # todo add embedding of code on server side
                 tags_json = workflow["tags"]
                 pe_list_json = workflow["tags"]
                 edges_json = None
 
-                s_desc = self.encoder.cosine(q_text, self.encoder.embed_text(desc)) if (
+                s_desc = cosine(q_text, self.encoder.embed_text(desc)) if (
                         q_text is not None and dblob is not None) else -1.0
-                s_code = self.encoder.cosine(q_code, self.encoder.embed_code(code)) if (
+                s_code = cosine(q_code, self.encoder.embed_code(code)) if (
                         q_code is not None and code is not None) else -1.0
 
                 emb = 0.0
@@ -169,7 +214,7 @@ class SearchLibraryCommand:
                 emb = emb / wsum if wsum > 0 else max(s_desc, s_code)
 
                 lex_s = lex.get(("workflow", int(wid)), 0.0)
-                tag_s = self.encoder.tag_boost(query, tags_json) / 0.06
+                tag_s = tag_boost(query, tags_json) / 0.06
                 struct_s = self._workflow_structure_score(query, pe_list_json, pe_tags_by_name)
 
                 final = W_EMB * emb + W_LEX * lex_s + W_TAG * tag_s + W_STR * struct_s
@@ -199,15 +244,16 @@ class SearchLibraryCommand:
                 kind = clf.get("kind", kind)
                 input_type = clf.get("input_type", input_type)
             except Exception as e:
-                print("WARNING: failed to classify user intent with GPT. Using heuristic approach")
-                print(e)
+                print_warning(f"WARNING: failed to classify user intent with GPT. Using heuristic approach: {e}")
                 pass  # go to default mode with not GPT query if errors occurs
             finally:
                 return kind, input_type
         return None
 
     def help(self):
-        print_text("")
+        print_text("""
+        Perform a semantic search in the Laminar library. Proposes PEs and Workflows if it cannot find a match.
+        """)
 
     def _search(self, query: str, *, kind: str = "auto", input_type: str = "auto", shortlist_n: int = 30,
                 top_k: int = 3, use_gpt_intent: bool = True, suggested_show_code: bool = True):
@@ -216,7 +262,7 @@ class SearchLibraryCommand:
         shortlist, _mode = self._retrieve(query, kind=kind, input_type=input_type, top_n=shortlist_n)
 
         if not shortlist:
-            print("No candidates found (check embeddings/FTS).")
+            print_warning("No candidates found (check embeddings/FTS).")
             return None
 
         best = shortlist[0]
@@ -231,17 +277,29 @@ class SearchLibraryCommand:
                 pe_only, _ = self._retrieve(query, kind="pe", input_type=input_type, top_n=40)
                 proposal = self.connector.propose_workflow_composition("openai", "gpt-4o", query, pe_only, max_fixes=2)
 
-                print("No strong match / uncertain. Proposed WORKFLOW (compose + verify):\n")
-                print("Name:", proposal.get("name"))
-                print("Description:", proposal.get("description"))
-                print("\nWorkflow code:")
+                print_warning("Could not find a strong match in the database. Generating a new workflow:\n")
+                print_status(f"{proposal.get('name')} - {proposal.get('description')}:\n")
                 print_code(proposal.get("workflow_code"))
+
                 if proposal.get("new_pe"):
-                    print("\nAlso proposed a NEW PE needed for this workflow:\n")
-                    print("PE name:", proposal["new_pe"]["name"])
-                    print("PE description:", proposal["new_pe"]["description"])
-                    print("PE code:")
-                    print_code(proposal["new_pe"]["code"])
+                    print_warning("New PEs are required for this workflow:")
+
+                    for pe in proposal["new_pe"]:
+                        name = pe["name"]
+                        desc = pe["description"]
+                        print_text(f"\n{name} : {desc}")
+                        print_code(pe["code"])
+
+                register_workflow_choice = input("Register the new Workflow? (y/N): ") or "N"
+
+                if register_workflow_choice.lower() == "y":
+                    with open("workflow.py", "w") as f:
+                        f.write(proposal["workflow_code"])
+
+                    self.registerInterface.register("workflow workflow.py")
+
+                    os.remove("workflow.py")
+
                 return None
 
             # PE/either: do NOT propose if we already have a clear top result
@@ -250,25 +308,28 @@ class SearchLibraryCommand:
             if best["emb"] < 0.40:
                 proposal = self.connector.propose_new_component(provider="openai", model="gpt-4o", query=query)
 
-                print("No strong match. Proposed new component:\n")
-                print("Type:", proposal["type"])
-                print("Name:", proposal["name"])
-                print("Description:", proposal["description"])
-                print("\nCode:")
-                print_code(proposal["code"])
+                print_warning("Could not find a strong match in the database. Generating a new PE:\n")
+                print_status(f"{proposal.get('name')} - {proposal.get('description')}\n")
+                print_code(proposal.get("code"))
+
+                register_pe_choice = input("Register the new PE? (y/N): ") or "N"
+
+                if register_pe_choice.lower() == "y":
+                    with open("pe.py", "w") as f:
+                        f.write(proposal.get("code"))
+
+                    self.registerInterface.register("pe pe.py")
+
+                    os.remove("pe.py")
                 return None
 
         # GPT rerank if not proposing
         reranked = self.connector.rerank(provider="openai", model="gpt-4o", query=query, candidates=shortlist[:12],
                                          top_k=top_k)
 
-        print("Top results (GPT reranked):\n")
+        print_status("Top results (GPT reranked):\n")
         results = reranked.get("results", [])
-        for r in results:
-            print(f"- [{r['type']}] {r['name']} (score={float(r.get('score', 0.0)):.3f})")
-            print("  why:", r["why"])
-            print("  what:", r["what_it_does"])
-            print()
+        print_text(results, tab=True)
 
         # Suggested candidate
         suggested = shortlist[0]
@@ -279,36 +340,28 @@ class SearchLibraryCommand:
                     suggested = c
                     break
 
-        tags = self._safe_json_loads(suggested.get("tags_json"), [])
+        suggested["tags"] = _safe_json_loads(suggested.get("tags_json"), [])
+        print_status("Suggested candidate:\n")
+        print_text([{
+            "id": suggested["id"],
+            "name": suggested["name"],
+            "score": suggested["score"],
+            "description": suggested["description"],
+            "tags": suggested["tags"],
+        }], tab=True)
 
-        print("Suggested candidate:\n")
-        print(f"- [{suggested['type']}] {suggested['name']}")
-        print(
-            f"  score={suggested['score']:.3f}  (emb={suggested['emb']:.3f}, lex={suggested['lex']:.3f}, tag={suggested['tag']:.3f}, struct={suggested['struct']:.3f})")
-        if tags:
-            print("  tags:", tags)
-        print("  description:", (suggested.get('description') or '').strip() or "(no description)")
         if suggested_show_code:
-            print("\n  code:\n")
-            print(base64.b64decode(suggested.get("code") or ""))
+            workflow_id = suggested.get("id")
+            wf = self.client.get_Workflow(workflow_id)
+            print_status("\nWorkflow code:")
+            print_code(wf[1])
 
         return None
 
     def search_library(self, arg):
-        parser = CustomArgumentParser(exit_on_error=False)
-        parser.add_argument("kind", choices=["workflow", "pe", "both"], default="both")
-        parser.add_argument("input_type", default="auto")
-        parser.add_argument("query")
+        kind = input("Kind (pe or workflow. Default: workflow): ") or "workflow"
+        input_type = input("Input type (auto): ") or "auto"
+        query = input("Query: ")
 
-        try:
-            kind = input("Kind (workflow): ") or "workflow"
-            input_type = input("Input type (auto): ") or "auto"
-            query = input("Query: ")
-
-            self._search(query=query, input_type=input_type, kind=kind, top_k=3, use_gpt_intent=True,
-                         suggested_show_code=True)
-
-        except argparse.ArgumentError as e:
-            print_error(e.message.replace("laminar.py", "semantic_search"))
-        except Exception as e:
-            print_error(f"An error occurred: {e}")
+        self._search(query=query, input_type=input_type, kind=kind, top_k=3, use_gpt_intent=True,
+                     suggested_show_code=True)

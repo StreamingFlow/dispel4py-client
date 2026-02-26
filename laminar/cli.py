@@ -13,7 +13,8 @@ from laminar.clitools.register import RegisterCommand
 from laminar.clitools.remove import RemoveCommand
 from laminar.clitools.run import RunCommand
 from laminar.clitools.update_description import UpdateDescriptionCommand
-from laminar.clitools.search_library import SearchLibraryCommand
+from laminar.clitools.advanced_search import AdvancedSearchCommand
+from laminar.llms.LLMConnector import LLMConnector
 
 
 class LaminarCLI(cmd.Cmd):
@@ -50,12 +51,16 @@ class LaminarCLI(cmd.Cmd):
             clear_terminal()
 
         self.load_modules_on_startup()
-        self.search_command = SearchCommand(self.client)
-        self.register_command = RegisterCommand(self.client, self.loaded_modules)
-        self.remove_command = RemoveCommand(self.client)
-        self.run_command = RunCommand(self.client)
-        self.update_description_command = UpdateDescriptionCommand(self.client)
-        self.search_library_command = SearchLibraryCommand(self.client) #TODO: pass instances of other params
+
+        self.llmConnector = LLMConnector()
+
+        self.search_command = SearchCommand(client=self.client)
+        self.register_command = RegisterCommand(client=self.client, llmConnector=self.llmConnector,
+                                                loaded_modules=self.loaded_modules)
+        self.remove_command = RemoveCommand(client=self.client)
+        self.run_command = RunCommand(client=self.client)
+        self.update_description_command = UpdateDescriptionCommand(client=self.client)
+        self.advanced_search_command = AdvancedSearchCommand(client=self.client, llm_connector=self.llmConnector)
 
     def cmdloop(self, intro=None):
         try:
@@ -196,9 +201,8 @@ class LaminarCLI(cmd.Cmd):
     def help_update_description(self):
         self.update_description_command.help()
 
+    def do_advanced_search(self, arg):
+        self.advanced_search_command.search_library(arg)
 
-    def do_search_library(self, arg):
-        self.search_library_command.search_library(arg)
-
-    def help_search_library(self):
-        self.search_library_command.help()
+    def help_advanced_search(self):
+        self.advanced_search_command.help()

@@ -2,6 +2,7 @@ import argparse
 import shlex
 import ast
 
+from laminar.client.d4pyclient import d4pClient
 from laminar.global_variables import Process
 from laminar.screen_printer import print_error, print_warning, print_text
 from laminar.argument_parser import CustomArgumentParser, type_checker
@@ -9,7 +10,7 @@ from laminar.argument_parser import CustomArgumentParser, type_checker
 
 class RunCommand:
 
-    def __init__(self, client):
+    def __init__(self, client: d4pClient):
         self.client = client
 
     def _run(self,

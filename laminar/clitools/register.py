@@ -47,11 +47,11 @@ WORKFLOW_CONTEXT_QUERIES = [
 
 class RegisterCommand:
 
-    def __init__(self, client: d4pClient, loaded_modules={}):
+    def __init__(self, client: d4pClient, llmConnector: LLMConnector = None,  loaded_modules={}):
         self.client = client
         self.module_counter = 0  # Initialize a counter for module names
         self.loaded_modules = loaded_modules
-        self.AiConnector = LLMConnector()
+        self.AiConnector = llmConnector or LLMConnector()
 
     def _register_pe(self, filepath, provider: str = None, model: str = None):
 

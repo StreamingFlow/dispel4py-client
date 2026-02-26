@@ -1,11 +1,12 @@
 import shlex
 
 from laminar.argument_parser import CustomArgumentParser, type_checker
+from laminar.client.d4pyclient import d4pClient
 from laminar.screen_printer import print_text, print_error, print_warning, print_status
 
 
 class RemoveCommand:
-    def __init__(self, client):
+    def __init__(self, client: d4pClient):
         self.client = client
 
     def _remove_pe(self, pe_id, remove_all=False):

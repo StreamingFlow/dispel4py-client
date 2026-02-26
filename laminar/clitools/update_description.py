@@ -1,13 +1,14 @@
 import shlex
 import argparse
 
+from laminar.client.d4pyclient import d4pClient
 from laminar.screen_printer import print_text, print_status, print_error
 from laminar.argument_parser import CustomArgumentParser, type_checker
 
 
 class UpdateDescriptionCommand:
 
-    def __init__(self, client):
+    def __init__(self, client: d4pClient):
         self.client = client
 
     def help(self):
