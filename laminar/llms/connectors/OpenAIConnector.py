@@ -5,6 +5,7 @@ import re
 import json
 
 from laminar.screen_printer import print_warning, print_text, print_error
+from laminar.workflow_checker import is_valid_workflow_code
 
 
 def safe_json_loads(s: str, default):
@@ -14,47 +15,7 @@ def safe_json_loads(s: str, default):
         return default
 
 
-SINK_HINTS = ["write", "sink", "jsonl", "csv", "parquet", "output"]
-COMMON_PORTS = {"input", "output", "row", "rows"}
-
-
-def contains_sink_step(code: str) -> bool:
-    c = (code or "").lower()
-    return any(h in c for h in SINK_HINTS)
-
-
-def extract_connect_ports(code: str):
-    ports = []
-    for m in re.finditer(r"graph\.connect\(\s*([a-zA-Z_]\w*)\s*,\s*'([^']+)'\s*,\s*([a-zA-Z_]\w*)\s*,\s*'([^']+)'\s*\)",
-                         code):
-        ports.append((m.group(1), m.group(2), m.group(3), m.group(4)))
-    for m in re.finditer(r'graph\.connect\(\s*([a-zA-Z_]\w*)\s*,\s*"([^"]+)"\s*,\s*([a-zA-Z_]\w*)\s*,\s*"([^"]+)"\s*\)',
-                         code):
-        ports.append((m.group(1), m.group(2), m.group(3), m.group(4)))
-    return ports
-
-
-def has_suspicious_ports(code: str) -> bool:
-    for _, outp, _, inp in extract_connect_ports(code):
-        if outp not in COMMON_PORTS:
-            return True
-        if inp not in COMMON_PORTS:
-            return True
-    return False
-
-
-def is_valid_workflow_code(code: str):
-    issues = []
-    if not code or ("WorkflowGraph" not in code) or ("graph.connect" not in code):
-        issues.append("Missing WorkflowGraph or graph.connect")
-    if not contains_sink_step(code):
-        issues.append("Missing sink/write step (workflow should write results)")
-    if has_suspicious_ports(code):
-        issues.append("Uses non-standard ports (likely invented). Prefer 'output'->'input'")
-    return (len(issues) == 0), issues
-
-
-class OpenAIConnector():
+class OpenAIConnector:
 
     def __init__(self):
         self.key = os.environ["OPENAI_API_KEY"] if "OPENAI_API_KEY" in os.environ else None
@@ -161,15 +122,36 @@ class OpenAIConnector():
         {query}
 
         You MUST propose a COMPLETE dispel4py WORKFLOW.
+        
+        Available PEs:
+        {json.dumps(pe_compact, ensure_ascii=False)}
 
         Hard requirements:
+        - Whenever possible, use the available PEs to compose the workflow.
+        - Try to avoid using SimpleFunctionPE, as it cannot store state between iterations.
+        - The first PE must either be a GenericPE or a ProducerPE
+        - Use IterativePE whenever it gets one input and produces one output.
+        - Use ConsumerPE whenever it gets one input and produces no output.
+        - Use ProducerPE whenever it gets no input and produces one output.
+        - Use GenericPE whenever it can have many inputs and outputs.
+        - Always provide the __init__ method
+        - When using GenericPE, allways add input and output with self._add_input and self._add_output in the __init__ method.
+        - When using GenericPE, in the process method, return a dictionary built from all the initiated outputs. For example {{'output': st, 'output_stats' : st[0].stats}}
+        - Never pass arguments to the __init__ method other than self. 
+        - If an input is required for the PE, pass it as an input to the process method. Note that the input variable is a dictionary that has the 'input' key. For example, 
+          if we launch the workflow with dispel4py we would do: dispel4py simple int_ext_graph.py -d '{{\"read\" : [ {{"input" : "coordinates.txt"}} ]}}'
         - Output valid Python code using WorkflowGraph.
+        - For each proposed Processing Element, put the required external imports not only on a file level but also inside the _process() method
+        - Allways put on a file level import, the following imports: from dispel4py.base import GenericPE, IterativePE, ConsumerPE, ProducerPE
         - Must include: graph = WorkflowGraph()
         - Must include at least one: graph.connect(...)
         - Must include a sink/write PE (e.g., WriteJSONL) that is connected.
         - Use standard ports: connect(..., "output", ..., "input") whenever possible.
         - Prefer composing from existing PEs listed below.
         - If new PEs are created, ensure that all of them are being included in the "new_pe" list. 
+        - If a processing element uses routines that requires complete objects, the object needs to be accumulated before being sent or before being used.
+        - If a processing element uses libraries methods that requires array in input the array needs to be accumulated before calling the library method.
+        - the variable that is instance of WorkflowGraph() needs to be called as the workflow name
 
         Return JSON:
         {{
@@ -187,9 +169,6 @@ class OpenAIConnector():
             ..
           ]
         }}
-
-        Available PEs:
-        {json.dumps(pe_compact, ensure_ascii=False)}
         """.strip()
 
         messages = [{"role": "user", "content": base_prompt}]

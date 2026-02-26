@@ -101,7 +101,8 @@ def get_objects(results, extended=False):
                                                              result["lldDescriptionModel"]),
                     "Inputs": result['inputsDescription'],
                     "Outputs": result['outputsDescription'],
-                    "Tags": result['tags']
+                    "Tags": result['tags'],
+                    "Imports" : result['peImports']
                 })
             try:
                 obj = pickle.loads(codecs.decode(result['peCode'].encode(), "base64"))

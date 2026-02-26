@@ -235,20 +235,16 @@ class AdvancedSearchCommand:
                        query: str,
                        *,
                        kind: str = "auto",
-                       input_type: str = "auto",
-                       use_gpt_intent: bool = False) -> tuple[str, str]:
-
-        if use_gpt_intent:
-            try:
-                clf = self.connector.classify("openai", "gpt-4o", query)
-                kind = clf.get("kind", kind)
-                input_type = clf.get("input_type", input_type)
-            except Exception as e:
-                print_warning(f"WARNING: failed to classify user intent with GPT. Using heuristic approach: {e}")
-                pass  # go to default mode with not GPT query if errors occurs
-            finally:
-                return kind, input_type
-        return None
+                       input_type: str = "auto") -> tuple[str, str]:
+        try:
+            clf = self.connector.classify("openai", "gpt-4o", query)
+            kind = clf.get("kind", kind)
+            input_type = clf.get("input_type", input_type)
+        except Exception as e:
+            print_warning(f"WARNING: failed to classify user intent with GPT. Using heuristic approach: {e}")
+            pass  # go to default mode with not GPT query if errors occurs
+        finally:
+            return kind, input_type
 
     def help(self):
         print_text("""
@@ -256,8 +252,8 @@ class AdvancedSearchCommand:
         """)
 
     def _search(self, query: str, *, kind: str = "auto", input_type: str = "auto", shortlist_n: int = 30,
-                top_k: int = 3, use_gpt_intent: bool = True, suggested_show_code: bool = True):
-        kind, input_type = self._detect_inputs(query, kind=kind, input_type=input_type, use_gpt_intent=use_gpt_intent)
+                top_k: int = 3):
+        kind, input_type = self._detect_inputs(query, kind=kind, input_type=input_type)
 
         shortlist, _mode = self._retrieve(query, kind=kind, input_type=input_type, top_n=shortlist_n)
 
@@ -272,6 +268,8 @@ class AdvancedSearchCommand:
         # IMPORTANT: uncertainty based on embedding similarity, not compressed final score
         uncertain = (best["emb"] < 0.55) or (best["emb"] < 0.65 and gap < 0.04)
 
+        print_warning("Top results uncertainty: {}:\n".format(best["emb"]))
+
         if uncertain:
             if kind == "workflow":
                 pe_only, _ = self._retrieve(query, kind="pe", input_type=input_type, top_n=40)
@@ -282,13 +280,13 @@ class AdvancedSearchCommand:
                 print_code(proposal.get("workflow_code"))
 
                 if proposal.get("new_pe"):
-                    print_warning("New PEs are required for this workflow:")
+                    print_warning("\nNew PEs are required for this workflow:")
 
                     for pe in proposal["new_pe"]:
                         name = pe["name"]
                         desc = pe["description"]
-                        print_text(f"\n{name} : {desc}")
-                        print_code(pe["code"])
+                        print_text(f"{name} : {desc}")
+                        #print_code(pe["code"])
 
                 register_workflow_choice = input("Register the new Workflow? (y/N): ") or "N"
 
@@ -350,18 +348,19 @@ class AdvancedSearchCommand:
             "tags": suggested["tags"],
         }], tab=True)
 
-        if suggested_show_code:
-            workflow_id = suggested.get("id")
-            wf = self.client.get_Workflow(workflow_id)
-            print_status("\nWorkflow code:")
-            print_code(wf[1])
+        workflow_id = suggested.get("id")
+        wf = self.client.get_Workflow(workflow_id)
+        print_status("\nWorkflow code:")
+        print_code(wf[1])
 
         return None
 
     def search_library(self, arg):
+
+        #TODO: better cli interface
+
         kind = input("Kind (pe or workflow. Default: workflow): ") or "workflow"
         input_type = input("Input type (auto): ") or "auto"
         query = input("Query: ")
 
-        self._search(query=query, input_type=input_type, kind=kind, top_k=3, use_gpt_intent=True,
-                     suggested_show_code=True)
+        self._search(query=query, input_type=input_type, kind=kind, top_k=3)
