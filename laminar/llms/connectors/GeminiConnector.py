@@ -16,33 +16,23 @@ class GeminiConnector():
         self.client = genai.Client(api_key=self.key)
         self.default_model = "gemini-3-flash-preview"
 
-    def describe(self, query: str, model: str = None, context_queries: list[str] = None) -> dict[
-        str, str | dict[str, str]]:
+    def ask(self,
+            model: str = None,
+            prompt: str = None,
+            system_queries: list[str] = None) -> dict:
+
         if model is None:
             model = self.default_model
         print_warning(f"Using {model} from Gemini for description generation...")
         response = self.client.models.generate_content(
             model=model,
             config=types.GenerateContentConfig(
-                system_instruction="\n".join(context_queries)
+                system_instruction="\n".join(system_queries)
             ),
-            contents=query,
+            contents=prompt,
         )
 
         response = json.loads(response.text)
         response["model"] = model
         response["provider"] = "Gemini"
         return response
-
-    def rerank(self, query: str, candidates: list, top_k: int = 3, context_queries: list[str] = None):
-        raise NotImplementedError
-
-    def propose_workflow_composition(self, model: str = "gpt-4o", query: str = None, pe_candidates: list = None,
-                                 max_fixes: int = 2) -> dict:
-        raise NotImplementedError
-
-    def classify(self, model: str = "gpt-4o", query: str = None) -> dict:
-        return NotImplementedError
-
-    def propose(self, model: str = "gpt-4o", query: str = None):
-        raise NotImplementedError
