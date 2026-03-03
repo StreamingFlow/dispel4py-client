@@ -286,17 +286,26 @@ class AdvancedSearchCommand:
                         name = pe["name"]
                         desc = pe["description"]
                         print_text(f"{name} : {desc}")
-                        #print_code(pe["code"])
+                        # print_code(pe["code"])
 
-                register_workflow_choice = input("Register the new Workflow? (y/N): ") or "N"
+                register_workflow_choice = input(
+                    "Would you like to register / save the workflow? [(R)egister/(S)tore/(N)one]: ") or "N"
 
-                if register_workflow_choice.lower() == "y":
+                if "R" in register_workflow_choice.upper():
                     with open("workflow.py", "w") as f:
                         f.write(proposal["workflow_code"])
 
                     self.registerInterface.register("workflow workflow.py")
 
                     os.remove("workflow.py")
+
+                if "S" in register_workflow_choice.upper():
+                    filepath = input(
+                        "Please input file path and filename to store the workflow code: ") or f"{proposal['name']}.py"
+                    with open(filepath, "w") as f:
+                        f.write(proposal["workflow_code"])
+
+                    print_status(f"Stored workflow code to {filepath}")
 
                 return None
 
@@ -310,15 +319,24 @@ class AdvancedSearchCommand:
                 print_status(f"{proposal.get('name')} - {proposal.get('description')}\n")
                 print_code(proposal.get("code"))
 
-                register_pe_choice = input("Register the new PE? (y/N): ") or "N"
+                register_pe_choice = input(
+                    "Would you like to register / save the proposed PE? [(R)egister/(S)tore/(N)one]: ") or "N"
 
-                if register_pe_choice.lower() == "y":
+                if "R" in register_pe_choice.upper():
                     with open("pe.py", "w") as f:
-                        f.write(proposal.get("code"))
+                        f.write(proposal["code"])
 
                     self.registerInterface.register("pe pe.py")
 
                     os.remove("pe.py")
+
+                if "S" in register_pe_choice.upper():
+                    filepath = input(
+                        "Please input file path and filename to store the PE code: ") or f"{proposal['name']}.py"
+                    with open(filepath, "w") as f:
+                        f.write(proposal["code"])
+
+                    print_status(f"Stored PE code to {filepath}")
                 return None
 
         # GPT rerank if not proposing
@@ -357,7 +375,7 @@ class AdvancedSearchCommand:
 
     def search_library(self, arg):
 
-        #TODO: better cli interface
+        # TODO: better cli interface
 
         kind = input("Kind (pe or workflow. Default: workflow): ") or "workflow"
         input_type = input("Input type (auto): ") or "auto"

@@ -1,7 +1,7 @@
 from laminar.llms.connectors.GeminiConnector import GeminiConnector
 from laminar.llms.connectors.OpenAIConnector import OpenAIConnector
 from laminar.llms.connectors.OpenWebUI import OpenWebUIConnector
-from laminar.screen_printer import print_warning
+from laminar.screen_printer import print_warning, print_error
 import json
 from laminar.workflow_checker import is_valid_workflow_code
 from laminar.llms.queries_templates import request_workflow_context_queries, request_description_queries
@@ -110,7 +110,7 @@ class LLMConnector:
                            f"AVAILABLE PES:\n{json.dumps(pe_compact, ensure_ascii=False)}").strip()
 
         proposal = self.connectors[provider].ask(model=model, prompt=formatted_query)
-        print(proposal)
+        issues = []
         for i in range(max_fixes + 1):
             ok, issues = is_valid_workflow_code(proposal.get("workflow_code", ""))
             if ok:
@@ -130,6 +130,9 @@ class LLMConnector:
             """.strip()
             proposal = self.connectors[provider].ask(model=model, prompt=formatted_query)
 
+        if len(issues) > 0:
+            print_error(
+                "There were some issues that the LLM was not able to solve. Please review manually the generated code")
         return proposal
 
     def propose_new_component(self, provider: str = "openai", model: str = None, query: str = None) -> dict:
