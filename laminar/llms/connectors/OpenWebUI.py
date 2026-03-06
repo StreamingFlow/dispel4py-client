@@ -28,13 +28,16 @@ class OpenWebUIConnector:
         self.default_model = self._get_available_models()
         self.endpoint = f"{self.base_url}/api/chat/completions"
 
-    def describe(self, query: str, model: str = None, context_queries: list[str] = None) -> dict[
+    def ask(self, model: str = None,
+            prompt: str = None,
+            system_queries: list[str] = None) -> dict[
         str, str | dict[str, str]]:
 
         if model is None:
             model = self.default_model
 
-        print_warning(f"Using {model} from OpenWebUI ({self.base_url}) for description generation...")
+        if system_queries is None:
+            system_queries = []
 
         headers = {
             'Authorization': f'Bearer {self.api_key}',
@@ -43,8 +46,8 @@ class OpenWebUIConnector:
         data = {
             "model": model,
             "messages": [{"role": "system", "content": f"{q}"} for q in self.system_queries] + [
-                {"role": "system", "content": f"{q}"} for q in context_queries] + [
-                            {"role": "user", "content": query, }]
+                {"role": "system", "content": f"{q}"} for q in system_queries] + [
+                            {"role": "user", "content": prompt, }]
         }
 
         try:

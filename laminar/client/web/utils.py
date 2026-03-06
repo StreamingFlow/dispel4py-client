@@ -58,7 +58,7 @@ def get_payload(code: any):
     return pickled
 
 
-def get_objects(results):
+def get_objects(results, extended=False):
     objectList = []
     object_description = []
     for index, result in enumerate(results, start=1):
@@ -66,16 +66,21 @@ def get_objects(results):
         if desc is None:
             desc = "-"
         if 'workflowName' in result.keys():
-            object_description.append({
-                "ID": result['workflowId'],
-                "Type": "WF",
-                "Name": result['entryPoint'],
-                "Description": desc,
-                "LLM provider / model": "{} / {}".format(result["lldDescriptionProvider"],
-                                                         result["lldDescriptionModel"]),
-                "Inputs": result['inputsDescription'],
-                "Outputs": result['outputsDescription'],
-            })
+            if extended:
+                result["Type"] = "WF"
+                object_description.append(result)
+            else:
+                object_description.append({
+                    "ID": result['workflowId'],
+                    "Type": "WF",
+                    "Name": result['entryPoint'],
+                    "Description": desc,
+                    "LLM provider / model": "{} / {}".format(result["lldDescriptionProvider"],
+                                                             result["lldDescriptionModel"]),
+                    "Inputs": result['inputsDescription'],
+                    "Outputs": result['outputsDescription'],
+                    "Tags": result['tags']
+                })
             try:
                 obj = pickle.loads(codecs.decode(result['workflowCode'].encode(), "base64"))
                 objectList.append(obj)
@@ -83,16 +88,22 @@ def get_objects(results):
                 print_warning(F"An exception occurred while fetching {result['peName']} : {e}")
                 pass
         else:
-            object_description.append({
-                "ID": result['peId'],
-                "Type": "PE",
-                "Name": result['peName'],
-                "Description": desc,
-                "LLM provider / model": "{} / {}".format(result["lldDescriptionProvider"],
-                                                         result["lldDescriptionModel"]),
-                "Inputs": result['inputsDescription'],
-                "Outputs": result['outputsDescription'],
-            })
+            if extended:
+                result["Type"] = "PE"
+                object_description.append(result)
+            else:
+                object_description.append({
+                    "ID": result['peId'],
+                    "Type": "PE",
+                    "Name": result['peName'],
+                    "Description": desc,
+                    "LLM provider / model": "{} / {}".format(result["lldDescriptionProvider"],
+                                                             result["lldDescriptionModel"]),
+                    "Inputs": result['inputsDescription'],
+                    "Outputs": result['outputsDescription'],
+                    "Tags": result['tags'],
+                    "Imports" : result['peImports']
+                })
             try:
                 obj = pickle.loads(codecs.decode(result['peCode'].encode(), "base64"))
                 objectList.append(obj)

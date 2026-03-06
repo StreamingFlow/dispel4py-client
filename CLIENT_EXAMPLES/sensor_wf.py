@@ -71,7 +71,6 @@ class AggregateDataPE(GenericPE):
 
 # Create PEs
 read = ReadSensorDataPE()
-read.name = 'read'
 normalize_data = NormalizeDataPE()
 alerting = AlertingPE()
 anomaly_detection = AnomalyDetectionPE()

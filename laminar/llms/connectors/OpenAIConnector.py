@@ -1,12 +1,22 @@
+from typing import Any
 import openai
 import os
 import re
 import json
 
-from laminar.screen_printer import print_warning, print_text
+from openai.types.chat import ChatCompletionSystemMessageParam as systemChat, ChatCompletionUserMessageParam as userChat
+
+from laminar.screen_printer import print_warning, print_text, print_error, print_status
 
 
-class OpenAIConnector():
+def safe_json_loads(s: str, default):
+    try:
+        return json.loads(s) if s else default
+    except Exception:
+        return default
+
+
+class OpenAIConnector:
 
     def __init__(self):
         self.key = os.environ["OPENAI_API_KEY"] if "OPENAI_API_KEY" in os.environ else None
@@ -16,24 +26,39 @@ class OpenAIConnector():
         self.client = openai.OpenAI(api_key=self.key)
         self.default_model = "gpt-4o"
 
-    def describe(self, query: str, model: str, context_queries: list[str] = None) -> dict[str, str | dict[str, str]]:
+    def ask(self, model: str = None,
+            prompt: str = None,
+            system_queries: list[str] | None = None) -> dict:
+
         if model is None:
             model = self.default_model
 
-        print_warning(f"Using {model} from OpenAI for description generation...")
-        messages = [{"role": "system", "content": query} for query in context_queries]
-        messages.append({"role": "user", "content": query})
+        messages: list[userChat | systemChat] = [
+            systemChat(role="system", content="return only JSON. DO NOT EXPLAIN.")
+        ]
 
-        response = self.client.chat.completions.create(
+        if system_queries:
+            for prompt in system_queries:
+                messages.append(systemChat(role="system", content=prompt, ))
+
+        messages.append(userChat(role="user", content=f"USER_REQUEST: {prompt}".strip(), ))
+
+        resp = self.client.chat.completions.create(
             model=model,
             messages=messages,
             temperature=0.0 if "nano" not in model else None,
         )
 
-        txt = response.choices[0].message.content.strip()
+        txt = resp.choices[0].message.content.strip()
         txt = re.sub(r"^```json|```$", "", txt, flags=re.I).strip()
-        response = json.loads(txt)
-        response["model"] = model
-        response["provider"] = "OpenAI"
-        return response
 
+        try:
+            result = json.loads(txt)
+        except Exception as e:
+            print_error(f"WARNING: failed to parse JSON: {e}")
+            print_text(txt)
+            raise e
+
+        result["model"] = model
+        result["provider"] = "OpenAI"
+        return result

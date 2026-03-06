@@ -2,11 +2,12 @@ import shlex
 import argparse
 from laminar.argument_parser import CustomArgumentParser
 from laminar.cli import print_text, print_error
+from laminar.client.d4pyclient import d4pClient
 
 
 class SearchCommand:
 
-    def __init__(self, client):
+    def __init__(self, client: d4pClient):
         self.client = client
 
     def help(self):

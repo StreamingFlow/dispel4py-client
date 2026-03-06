@@ -5,8 +5,6 @@ import os
 
 from laminar.client.web.client import *
 import laminar.global_variables as g_vars
-
-import laminar.screen_printer
 from laminar.llms.encoder import LaminarCodeEncoder
 from laminar.screen_printer import print_status, print_text, print_code
 
@@ -44,19 +42,21 @@ class d4pClient:
         """Returns the username of the current user, or None if no user is logged in"""
         return g_vars.CLIENT_AUTH_ID if g_vars.CLIENT_AUTH_ID != "None" else None
 
-    def register_PE(self, pe: g_vars.PE_TYPES, description: str = None, inputDescription: str = None,
-                    outputDescription: str = None, llmProvider: str = None, llmModel: str = None):
+    def register_PE(self, pe: g_vars.PE_TYPES, description: str = None, input_description: str = None,
+                    output_description: str = None, llm_provider: str = None, llm_model: str = None,
+                    tags: list[str] = None):
         """Register a PE with the client service"""
         if not self.encoder:
             self.encoder = LaminarCodeEncoder()
-        data = PERegistrationData(pe=pe, description=description, inputDescription=inputDescription,
-                                  outputDescription=outputDescription, llmModel=llmModel, llmProvider=llmProvider,
-                                  encoder=self.encoder)
+        data = PERegistrationData(pe=pe, description=description, inputDescription=input_description,
+                                  outputDescription=output_description, llmModel=llm_model, llmProvider=llm_provider,
+                                  encoder=self.encoder, tags=tags)
         return self.webclient.register_PE(data)
 
     def register_Workflow(self, workflow: WorkflowGraph, workflow_name: str, description: str = None, module=None,
-                          module_name=None, inputDescription: str = None,
-                          outputDescription: str = None, llmProvider: str = None, llmModel: str = None):
+                          module_name=None, input_description: str = None,
+                          output_description: str = None, llm_provider: str = None, llm_model: str = None,
+                          tags: list[str] = None):
         """Register a Workflow with the client service"""
         print_status(f"Registering workflow: {workflow_name}")
         if not self.encoder:
@@ -64,8 +64,8 @@ class d4pClient:
 
         data = WorkflowRegistrationData(workflow=workflow, workflow_name=workflow_name, entry_point=workflow_name,
                                         description=description, module=module, module_name=module_name,
-                                        inputDescription=inputDescription, outputDescription=outputDescription,
-                                        llmModel=llmModel, llmProvider=llmProvider, encoder=self.encoder)
+                                        inputDescription=input_description, outputDescription=output_description,
+                                        llmModel=llm_model, llmProvider=llm_provider, encoder=self.encoder, tags=tags)
         return self.webclient.register_Workflow(data)
 
     def run(self, workflow: Union[str, int, WorkflowGraph], input=None, process=g_vars.Process,
@@ -236,9 +236,9 @@ class d4pClient:
         """Retrieve all Workflow"""
         return self.webclient.get_Workflows()
 
-    def get_Registry(self):
+    def get_Registry(self, extended: bool = False):
         """Retrieve Registry"""
-        return self.webclient.get_Registry()
+        return self.webclient.get_Registry(extended)
 
     def update_Workflow_Description(self, workflow: Union[str, int], new_description):
         return self.webclient.update_workflow_description(workflow, new_description)
@@ -279,3 +279,6 @@ class d4pClient:
         except Exception as e:
             self.logger.error(f"Error occurred while removing all workflows and/or PEs: {e}")
             return {"ApiError": {"message": str(e)}}
+
+    def lexical_scores(self, kind: str, query: str, limit: int = 50) -> dict:
+        return self.webclient.lexical_scores(kind, query, limit)
