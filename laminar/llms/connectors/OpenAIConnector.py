@@ -38,10 +38,10 @@ class OpenAIConnector:
         ]
 
         if system_queries:
-            for prompt in system_queries:
-                messages.append(systemChat(role="system", content=prompt, ))
+            for q in system_queries:
+                messages.append(systemChat(role="system", content=q))
 
-        messages.append(userChat(role="user", content=f"USER_REQUEST: {prompt}".strip(), ))
+        messages.append(userChat(role="user", content=f"USER_REQUEST: {prompt}".strip()))
 
         resp = self.client.chat.completions.create(
             model=model,
@@ -61,4 +61,5 @@ class OpenAIConnector:
 
         result["model"] = model
         result["provider"] = "OpenAI"
+
         return result

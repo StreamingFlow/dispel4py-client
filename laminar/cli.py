@@ -22,7 +22,7 @@ class LaminarCLI(cmd.Cmd):
     def __init__(self):
         clear_terminal()
         super().__init__()
-        self.prompt = "\033[1m(laminar) > \033[0m"
+        self.prompt = "(laminar) > "
         self.intro = """
         \033[36m
           _                    _                             ____ _     ___ 

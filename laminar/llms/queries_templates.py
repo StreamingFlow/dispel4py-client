@@ -93,3 +93,30 @@ request_description_queries = [
     "Mentions important parameters or configuration options if obvious from the code."
     "The description should be suitable for: semantic similarity search and explaining results to users"
 ]
+
+
+REGISTER_BASE_QUERIES = [
+    "Return JSON only. Do not explain.",
+    """Return JSON only, describing the code, the inputs and the outputs:
+        {{
+            'description': '...',
+            'inputs':  '<input_name>:<description>\n...',
+            'outputs': '<output_name>:<description>\n...',
+            'tags' : ['tag1', 'tag2', ...]
+        }}""",
+    "<description> is a placeholder for the description of the input or output;",
+    "If either no input or output is available, return null;",
+    "Ensure that the description contains all the information and is not verbose or repetitive;",
+    "in the 'description' JSON object that you will return, you need to put the description of the code that has been provided to you;",
+    "If for some reason you are not able to satisfy this request, put in the description the reason why you cannot reply;",
+]
+
+REGISTER_PE_CONTEXT_QUERIES = REGISTER_BASE_QUERIES + [
+    "The <input_name> and <output_name> arguments are placeholders for the processing element channels used to communicate;",
+    "Tags is a list of keywords that describe the Processing element, so that it may be categorized;",
+]
+
+REGISTER_WORKFLOW_CONTEXT_QUERIES = REGISTER_BASE_QUERIES + [
+    "The <input_name> and <output_name> arguments are placeholders for the workflow user inputs and workflow output;",
+    "Tags is a list of keywords that describe the workflow, so that it may be categorized;",
+]

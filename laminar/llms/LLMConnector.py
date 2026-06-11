@@ -40,7 +40,6 @@ class LLMConnector:
 
     def describe(self, component_name: str, kind: str, code: str, model: str = None, provider: str = "openai",
                  context_queries: list[str] = None) -> dict[str, str | list[str]]:
-
         if provider not in self.connectors.keys():
             raise RuntimeError(f"Unknown model {provider}")
 
@@ -48,8 +47,8 @@ class LLMConnector:
             raise RuntimeError(f"Unknown kind {kind}")
 
         description_query = (f"You are documenting dispel4py components for semantic search and retrieval."
-                             f"\nComponent name: {component_name}\nComponent type: {kind}\n\
-                             nWrite a short, structured description that:\n{'\n-'.join(request_description_queries)}"
+                             f"\nComponent name: {component_name}\nComponent type: {kind}\n\n"
+                             f"Write a short, structured description that:\n{'\n-'.join(request_description_queries)}"
                              f"\n\nCODE:\n{str(code)}")
 
         return self.connectors[provider].ask(model=model,

@@ -2,6 +2,7 @@ import subprocess
 import os
 import pickle
 import codecs
+import tempfile
 
 import laminar.global_variables as g_vars
 from laminar.screen_printer import print_warning
@@ -13,22 +14,27 @@ def verify_login(logger):
         exit()
 
 
-def create_import_string(pe_source_code: str):
+def create_import_string(pe_source_code: str) -> str:
     if pe_source_code == "Source code not available":
         return "No imports available"
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False, encoding="utf-8") as tmp:
+            tmp.write(pe_source_code)
+            tmp_path = tmp.name
 
-    # write source code to file
-    text_file = open("../../../imports.py", "w")
-    text_file.write(pe_source_code)
-    text_file.close()
+        output = subprocess.check_output(["findimports", "-n", tmp_path],text=True,)
 
-    # call find imports on file
-    output = subprocess.check_output("findimports -n imports.py", shell=True).decode()
-    pe_imports = output.splitlines()
-    del pe_imports[0]
-    pe_imports = [s.strip().split('.', 1)[0] for s in pe_imports]
-    pe_imports = ','.join(pe_imports)
-    return pe_imports
+        pe_imports = output.splitlines()
+        if pe_imports:
+            pe_imports = pe_imports[1:]
+
+        pe_imports = [s.strip().split(".", 1)[0] for s in pe_imports]
+        return ",".join(pe_imports)
+
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.remove(tmp_path)
 
 
 def serialize_directory(path):
@@ -102,7 +108,7 @@ def get_objects(results, extended=False):
                     "Inputs": result['inputsDescription'],
                     "Outputs": result['outputsDescription'],
                     "Tags": result['tags'],
-                    "Imports" : result['peImports']
+                    "Imports": result['peImports']
                 })
             try:
                 obj = pickle.loads(codecs.decode(result['peCode'].encode(), "base64"))

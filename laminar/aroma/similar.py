@@ -314,7 +314,7 @@ def collect_features_aux(
             append_feature_index(is_init, is_counter, key, feature_list, c)
             count = 0
             for (i, p, p_ast) in reversed(parents):
-                if p != "(#)" and re.match("^\{#*\}$", p) is None:
+                if p != "(#)" and re.match(r"^\{#*\}$", p) is None:
                     count += 1
                     key2 = p + str(i) + ">" + key
                     append_feature_index(is_init, is_counter, key2, feature_list, c)
