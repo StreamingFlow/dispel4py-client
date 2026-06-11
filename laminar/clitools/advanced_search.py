@@ -268,14 +268,13 @@ class AdvancedSearchCommand:
         # IMPORTANT: uncertainty based on embedding similarity, not compressed final score
         uncertain = (best["emb"] < 0.55) or (best["emb"] < 0.65 and gap < 0.04)
 
-        print_warning("Top results uncertainty: {}:\n".format(best["emb"]))
-
         if uncertain:
+            print_warning(
+                f"Could not find a strong match in the database (strongest match: {best['emb']}). Generating a new {kind}:\n")
             if kind == "workflow":
                 pe_only, _ = self._retrieve(query, kind="pe", input_type=input_type, top_n=40)
                 proposal = self.connector.propose_workflow_composition("openai", "gpt-4o", query, pe_only, max_fixes=2)
 
-                print_warning("Could not find a strong match in the database. Generating a new workflow:\n")
                 print_status(f"{proposal.get('name')} - {proposal.get('description')}:\n")
                 print_code(proposal.get("workflow_code"))
 
@@ -289,7 +288,7 @@ class AdvancedSearchCommand:
                         # print_code(pe["code"])
 
                 register_workflow_choice = input(
-                    "Would you like to register / save the workflow? [(R)egister/(S)tore/(N)one]: ") or "N"
+                    "Would you like to register / save to a file the workflow? [(R)egister/(S)save/(N)o - Default No]: ") or "N"
 
                 if "R" in register_workflow_choice.upper():
                     with open("workflow.py", "w") as f:

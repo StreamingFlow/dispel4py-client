@@ -24,7 +24,7 @@ class OpenAIConnector:
             raise RuntimeError("OpenAI API key not set")
 
         self.client = openai.OpenAI(api_key=self.key)
-        self.default_model = "gpt-4o"
+        self.default_model = "gpt-5.4-mini"
 
     def ask(self, model: str = None,
             prompt: str = None,
