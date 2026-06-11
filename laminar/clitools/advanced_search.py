@@ -237,7 +237,7 @@ class AdvancedSearchCommand:
                        kind: str = "auto",
                        input_type: str = "auto") -> tuple[str, str]:
         try:
-            clf = self.connector.classify("openai", "gpt-4o", query)
+            clf = self.connector.classify("openai", query)
             kind = clf.get("kind", kind)
             input_type = clf.get("input_type", input_type)
         except Exception as e:
@@ -273,7 +273,7 @@ class AdvancedSearchCommand:
                 f"Could not find a strong match in the database (strongest match: {best['emb']}). Generating a new {kind}:\n")
             if kind == "workflow":
                 pe_only, _ = self._retrieve(query, kind="pe", input_type=input_type, top_n=40)
-                proposal = self.connector.propose_workflow_composition("openai", "gpt-4o", query, pe_only, max_fixes=2)
+                proposal = self.connector.propose_workflow_composition("openai", query, pe_only, max_fixes=2)
 
                 print_status(f"{proposal.get('name')} - {proposal.get('description')}:\n")
                 print_code(proposal.get("workflow_code"))
@@ -312,7 +312,7 @@ class AdvancedSearchCommand:
             # (If emb is decent, just rerank and show it)
             # Only propose if best emb is truly low
             if best["emb"] < 0.40:
-                proposal = self.connector.propose_new_component(provider="openai", model="gpt-4o", query=query)
+                proposal = self.connector.propose_new_component(provider="openai", query=query)
 
                 print_warning("Could not find a strong match in the database. Generating a new PE:\n")
                 print_status(f"{proposal.get('name')} - {proposal.get('description')}\n")
@@ -339,8 +339,7 @@ class AdvancedSearchCommand:
                 return None
 
         # GPT rerank if not proposing
-        reranked = self.connector.rerank(provider="openai", model="gpt-4o", query=query, candidates=shortlist[:12],
-                                         top_k=top_k)
+        reranked = self.connector.rerank(provider="openai", query=query, candidates=shortlist[:12], top_k=top_k)
 
         print_status("Top results (GPT reranked):\n")
         results = reranked.get("results", [])

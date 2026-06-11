@@ -13,15 +13,11 @@ class OllamaConnector:
         self.default_model = "llama3"
 
     def ask(self,
-            model: str = None,
             prompt: str = None,
             system_queries: list[str] = None) -> dict[
         str, str | dict[str, str]]:
 
-        if model is None:
-            model = self.default_model
-
-        print_warning(f"Using {model} from Ollama ({self.host}) for description generation...")
+        print_warning(f"Using {self.default_model} from Ollama ({self.host}) for description generation...")
 
         messages = []
 
@@ -32,7 +28,7 @@ class OllamaConnector:
         messages.append({"role": "user", "content": prompt})
 
         response = self.client.chat(
-            model=model,
+            model=self.default_model,
             messages=messages,
             options={
                 "temperature": 0.0
@@ -43,7 +39,7 @@ class OllamaConnector:
         txt = re.sub(r"^```json|```$", "", txt, flags=re.I).strip()
 
         parsed = json.loads(txt)
-        parsed["model"] = model
+        parsed["model"] = self.default_model
         parsed["provider"] = "Ollama"
         parsed["host"] = self.host
 

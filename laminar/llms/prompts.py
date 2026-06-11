@@ -4,12 +4,11 @@ from laminar.llms.queries_templates import (
     REQUEST_NEW_WORKFLOW_CONTEXT_QUERIES,
     REQUEST_DESCRIPTION_CONTEXT_QUERIES,
     EVALUATE_QUALITY_REQUESTED_WORKFLOW_CONTEXT_QUERIES,
+    PE_AUTHORING_RULES
 )
 
 
 def _bullets(items: list) -> str:
-    """One clean bullet per requirement; strips the stray indentation that
-    triple-quoted template entries carry."""
     return "\n".join(f"- {str(item).strip()}" for item in items)
 
 
@@ -36,7 +35,7 @@ def rerank_prompt(query: str, compact_candidates: list, top_k: int) -> str:
     )
 
 
-def compose_prompt(query: str, pe_compact: list) -> str:
+def compose_prompt(query: str | None, pe_compact: list) -> str:
     return (
         f"HARD REQUIREMENTS:\n{_bullets(REQUEST_NEW_WORKFLOW_CONTEXT_QUERIES)}\n"
         f"USER QUERY:\n{query}\n"
@@ -44,7 +43,7 @@ def compose_prompt(query: str, pe_compact: list) -> str:
     ).strip()
 
 
-def evaluate_prompt(query: str, proposal: dict) -> str:
+def evaluate_prompt(query: str | None, proposal: dict) -> str:
     return (
         f"EVALUATION INSTRUCTIONS:\n{_bullets(EVALUATE_QUALITY_REQUESTED_WORKFLOW_CONTEXT_QUERIES)}\n"
         f"USER QUERY:\n{query}\n"
@@ -56,29 +55,25 @@ def fix_prompt(issues: list, original_request: str, proposal: dict) -> str:
     return (
         "Your dispel4py workflow proposal has issues that must be fixed.\n\n"
         f"ISSUES TO FIX:\n{json.dumps(issues, ensure_ascii=False)}\n\n"
-        f"ORIGINAL REQUEST (requirements, user query, available PEs):\n{original_request}\n\n"
-        "Keep the skeleton intact: do NOT implement business logic and do NOT remove "
-        "any raise NotImplementedError(...) placeholder or the unreachable "
-        "write/return statements. Only fix the reported issues.\n\n"
+        f"ORIGINAL REQUEST:\n{original_request}\n\n"
         "Return the corrected proposal in the same JSON format as before:\n"
         f"{json.dumps(proposal, ensure_ascii=False)}"
+        f"Remember the HARD RULES: \n {_bullets(REQUEST_NEW_WORKFLOW_CONTEXT_QUERIES)}"
     )
 
 
-def new_component_prompt(query: str) -> str:
+def new_component_prompt(query: str | None) -> str:
     schema = '{"type":"pe"|"workflow","name":"...","description":"...","code":"..."}'
     return (
         f"User request:\n{query}\n\n"
         "No good match exists.\n\n"
         "Propose ONE new component (PE or workflow).\n"
         f"Return JSON: {schema}\n"
-        "Rules:\n"
-        "- If workflow: provide WorkflowGraph code.\n"
-        "- If pe: provide a dispel4py PE class."
+        f"HARD RULES: {_bullets(PE_AUTHORING_RULES)}"
     )
 
 
-def classify_prompt(query: str) -> str:
+def classify_prompt(query: str | None) -> str:
     schema = '{"kind":"pe"|"workflow"|"either","input_type":"text"|"code"}'
     return (
         "Classify the user's intent for searching a small dispel4py library.\n\n"

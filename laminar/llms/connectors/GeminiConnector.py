@@ -17,15 +17,11 @@ class GeminiConnector():
         self.default_model = "gemini-3-flash-preview"
 
     def ask(self,
-            model: str = None,
             prompt: str = None,
             system_queries: list[str] = None) -> dict:
-
-        if model is None:
-            model = self.default_model
-        print_warning(f"Using {model} from Gemini for description generation...")
+        print_warning(f"Using {self.default_model} from Gemini for description generation...")
         response = self.client.models.generate_content(
-            model=model,
+            model=self.default_model,
             config=types.GenerateContentConfig(
                 system_instruction="\n".join(system_queries)
             ),
@@ -33,6 +29,6 @@ class GeminiConnector():
         )
 
         response = json.loads(response.text)
-        response["model"] = model
+        response["model"] = self.default_model
         response["provider"] = "Gemini"
         return response

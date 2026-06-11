@@ -20,7 +20,7 @@ PE_BASE_TYPES = (GenericPE, IterativePE, ProducerPE, ConsumerPE)
 
 class RegisterCommand:
 
-    def __init__(self, client: d4pClient, llmConnector: LLMConnector = None, loaded_modules={}):
+    def __init__(self, client: d4pClient, llmConnector: LLMConnector | None = None, loaded_modules={}):
         self.client = client
         self.module_counter = 0  # Initialize a counter for module names
         self.loaded_modules = loaded_modules
@@ -71,12 +71,12 @@ class RegisterCommand:
             if isinstance(attr, (GenericPE, WorkflowGraph)):
                 setattr(mod, var, None)
 
-    def _register_single_pe(self, key, pe_class, model, provider):
+    def _register_single_pe(self, key, pe_class, provider):
         print_status(f"? {key} - {pe_class.__name__}")
         docstring = self.AiConnector.describe(
             component_name=key, kind="pe",
             code=inspect.getsource(pe_class),
-            model=model, provider=provider,
+            provider=provider,
             context_queries=REGISTER_PE_CONTEXT_QUERIES,
         )
         pe_instance = pe_class()
@@ -91,7 +91,7 @@ class RegisterCommand:
         )
         self._report_result(r)
 
-    def _register_single_workflow(self, key, workflow, mod, module_name, model, provider):
+    def _register_single_workflow(self, key, workflow, mod, module_name, provider):
         source_code = f"entry {key}()\n"
         for pe in workflow.get_contained_objects():
             source_code += inspect.getsource(pe.__class__)
@@ -100,7 +100,7 @@ class RegisterCommand:
         docstring = self.AiConnector.describe(
             component_name=key, kind="workflow",
             code=source_code,
-            model=model, provider=provider,
+            provider=provider,
             context_queries=REGISTER_WORKFLOW_CONTEXT_QUERIES,
         )
         r = self.client.register_Workflow(
@@ -115,7 +115,7 @@ class RegisterCommand:
         )
         self._report_result(r)
 
-    def _register_pe(self, filepath, provider: str = None, model: str = None):
+    def _register_pe(self, filepath, provider: str | None = None):
         provider = provider or "openai"
         print_status(
             f"Registering PE from {filepath} using {provider} for LLM description generation.")
@@ -130,7 +130,7 @@ class RegisterCommand:
 
             for key, pe_class in pes.items():
                 try:
-                    self._register_single_pe(key, pe_class, model, provider)
+                    self._register_single_pe(key, pe_class, provider)
                 except Exception as e:
                     print_error(f"An error occurred during PE registration: {e}")
 
@@ -141,7 +141,7 @@ class RegisterCommand:
         except Exception as e:
             print_error(f"An error occurred: {e}")
 
-    def _register_workflow(self, filepath, provider: str = None, model: str = None):
+    def _register_workflow(self, filepath, provider: str | None = None):
         provider = provider or "openai"
         print_status(
             f"Registering workflow from {filepath} using {provider} for LLM description generation.")
@@ -156,13 +156,13 @@ class RegisterCommand:
 
             for key, pe_class in pes.items():
                 try:
-                    self._register_single_pe(key, pe_class, model, provider)
+                    self._register_single_pe(key, pe_class, provider)
                 except Exception as e:
                     print_error(f"An error occurred during PE registration: {e}")
 
             for key, workflow in workflows.items():
                 self._register_single_workflow(
-                    key, workflow, mod, unique_module_name, model, provider)
+                    key, workflow, mod, unique_module_name, provider)
 
             self._cleanup_module(mod)
 
@@ -186,8 +186,6 @@ class RegisterCommand:
                             - 'pe': Register a single PE.
 
         --provider   The LLM provider to use for description generation. Defaults to OpenAI.
-
-        --model      The model to use for description generation. Defaults to gpt-4o.
         """)
 
     def register(self, args):
@@ -196,13 +194,12 @@ class RegisterCommand:
         parser.add_argument("filepath")
         parser.add_argument("--provider", help="The LLM provider to use for description generation", required=False,
                             default=None)
-        parser.add_argument("--model", help="The model to use for description generation", required=False, default=None)
 
         try:
             args = vars(parser.parse_args(shlex.split(args)))
             if args["type"] == "workflow":
-                self._register_workflow(args["filepath"], model=args["model"], provider=args["provider"])
+                self._register_workflow(args["filepath"], provider=args["provider"])
             else:
-                self._register_pe(args["filepath"], model=args["model"], provider=args["provider"])
+                self._register_pe(args["filepath"], provider=args["provider"])
         except argparse.ArgumentError as e:
             print_error(e.message.replace("register_", ""))

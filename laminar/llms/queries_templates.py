@@ -1,15 +1,6 @@
-REQUEST_NEW_WORKFLOW_CONTEXT_QUERIES = [
-
-    "You MUST propose a COMPLETE dispel4py WORKFLOW. 'Complete' means the graph "
-    "is fully wired and runnable end-to-end. The ONLY thing allowed to remain "
-    "unimplemented is the business logic of a newly created PE (see the new-PE "
-    "rule below); everything else, including all wiring and the sink, must work.",
-
-    "Whenever possible, use the available PEs to compose the workflow.",
+PE_AUTHORING_RULES = [
 
     "Try to avoid using SimpleFunctionPE, as it cannot store state between iterations.",
-
-    "The first PE must either be a GenericPE or a ProducerPE.",
 
     "Use IterativePE whenever it gets one input and produces one output.",
 
@@ -45,11 +36,6 @@ REQUEST_NEW_WORKFLOW_CONTEXT_QUERIES = [
     "AND in graph.connect(). "
     "(d) Every port name must be unique within a PE; an inter-PE name is shared by "
     "exactly the two PEs it connects.",
-
-    "graph.connect() always uses the producer's output port name and the consumer's "
-    "input port name, exactly as declared on those PEs. For single-stream PEs this is "
-    "graph.connect(A, 'output', B, 'input'). For multi-stream GenericPEs use the "
-    "matching unique names, e.g. graph.connect(A, 'A_to_B', B, 'A_to_B').",
 
     "When using GenericPE, propagate a result to the next step with "
     "self.write(<PORT>, <VALUE>), where <PORT> is the exact name of an output port "
@@ -88,34 +74,7 @@ REQUEST_NEW_WORKFLOW_CONTEXT_QUERIES = [
     "Always include at file level: "
     "from dispel4py.base import GenericPE, IterativePE, ConsumerPE, ProducerPE",
 
-    "Always include at file level: from dispel4py.workflow_graph import WorkflowGraph",
-
-    "Must include: YYYY = WorkflowGraph(), where YYYY is the variable holding the "
-    "WorkflowGraph instance and its name reflects the workflow name.",
-
-    "Must include at least one: YYYY.connect(...), on that same WorkflowGraph instance "
-    "YYYY.",
-
-    "Must include a sink/write PE (e.g. WriteJSONL) that is connected. The sink is "
-    "pure boilerplate, so it must be FULLY implemented and runnable; it is never left "
-    "as a NotImplementedError stub.",
-
-    "Prefer composing from existing PEs listed below.",
-
-    "If new PEs are created, include all of them in the 'new_pe' list of the returned "
-    "JSON. This list must NOT appear in the workflow source code.",
-
     "Avoid using yield whenever possible.",
-
-    "Do not rely on print() inside the sink: printed output is not delivered to the "
-    "Laminar client.",
-
-    "Only the sink/write PE returns its result to the Laminar client, by calling "
-    "self.write('output', XXX), where XXX is the variable to propagate to the client "
-    "side. The sink's output port must therefore be named 'output' and declared in its "
-    "__init__.",
-
-    "Output valid Python code using WorkflowGraph.",
 
     "NEW-PE STUBBING RULE (applies ONLY to newly created PEs that contain genuine "
     "business logic; it does NOT apply to reused PEs or to pure-boilerplate PEs such "
@@ -131,11 +90,66 @@ REQUEST_NEW_WORKFLOW_CONTEXT_QUERIES = [
     "now-unreachable write/return statements in the body on purpose: this unreachable "
     "code documents the required wiring and must not be deleted. The exception replaces "
     "ONLY the business logic, never the input/output wiring.",
+]
+
+
+WORKFLOW_GRAPH_RULES = [
+
+    "You MUST propose a COMPLETE dispel4py WORKFLOW. 'Complete' means the graph "
+    "is fully wired but it does not mean it is runnable. The ONLY thing allowed to remain "
+    "unimplemented is the business logic of a newly created PE (see the new-PE "
+    "rule below); everything else, including all wiring and the sink, must work.",
+
+    "Whenever possible, use the available PEs to compose the workflow.",
+
+    "The first PE must either be a GenericPE or a ProducerPE.",
+
+    "graph.connect() always uses the producer's output port name and the consumer's "
+    "input port name, exactly as declared on those PEs. For single-stream PEs this is "
+    "graph.connect(A, 'output', B, 'input'). For multi-stream GenericPEs use the "
+    "matching unique names, e.g. graph.connect(A, 'A_to_B', B, 'A_to_B').",
+
+    "Always include at file level: from dispel4py.workflow_graph import WorkflowGraph",
+
+    "Must include: YYYY = WorkflowGraph(), where YYYY is the variable holding the "
+    "WorkflowGraph instance and its name reflects the workflow name.",
+
+    "Must include at least one: YYYY.connect(...), on that same WorkflowGraph instance "
+    "YYYY.",
+
+    "Must include a sink/write PE (e.g. WriteJSONL) that is connected. The sink is "
+    "pure boilerplate, so it must be FULLY implemented and runnable; it is never left "
+    "as a NotImplementedError stub.",
+
+    "Prefer composing from existing PEs listed below.",
+
+    "Do not rely on print() inside the sink: printed output is not delivered to the "
+    "Laminar client.",
+
+    "Only the sink/write PE returns its result to the Laminar client, by calling "
+    "self.write('output', XXX), where XXX is the variable to propagate to the client "
+    "side. The sink's output port must therefore be named 'output' and declared in its "
+    "__init__.",
+]
+
+
+WORKFLOW_OUTPUT_RULES = [
+
+    "If new PEs are created, include all of them in the 'new_pe' list of the returned "
+    "JSON. This list must NOT appear in the workflow source code.",
+
+    "Output valid Python code using WorkflowGraph.",
 
     "Return JSON with the following format: { \"type\": \"workflow\", \"name\": \"...\", "
     "\"description\": \"...\", \"workflow_code\": \"...\", \"uses_pes\": [\"PE1\",\"PE2\",...], "
     "\"new_pe\": null OR [ { \"name\": \"...\", \"description\": \"...\", \"code\": \"...\" }, ... ] }",
 ]
+
+REQUEST_NEW_WORKFLOW_CONTEXT_QUERIES = (
+    WORKFLOW_GRAPH_RULES
+    + PE_AUTHORING_RULES
+    + WORKFLOW_OUTPUT_RULES
+)
 
 
 EVALUATE_QUALITY_REQUESTED_WORKFLOW_CONTEXT_QUERIES = [
@@ -154,6 +168,16 @@ EVALUATE_QUALITY_REQUESTED_WORKFLOW_CONTEXT_QUERIES = [
     "or break its structure: a step that does not match what the user asked for, the "
     "wrong PE type, missing or mismatched ports, broken data flow, a missing or "
     "unconnected sink, or a result that would never be returned to the client.",
+
+    "Do NOT report as error types mismatch in not implemented process() methods, "
+    "as thy should be implemented by the user. Just report if the output or input "
+    "port names do not match across Processing elements",
+
+    "EXTREMELY IMPORTANT: DO NOT REPORT error related to the fact that code is a template. "
+    "If a function is merely a template this is wanted behaviour.",
+
+    "If new Processing Elements contains implemented code, this is an issue, as they should raise "
+    "a NotImplementedError(...), since the business logic must be provided by the user.",
 
     "Return JSON ONLY, with double-quoted keys and strings, in exactly this shape: "
     '{ "issues": ["issue 1", "issue 2", "..."] }. '
