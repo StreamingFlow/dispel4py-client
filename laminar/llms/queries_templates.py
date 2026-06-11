@@ -92,11 +92,13 @@ PE_AUTHORING_RULES = [
     "ONLY the business logic, never the input/output wiring.",
 ]
 
-
 WORKFLOW_GRAPH_RULES = [
 
-    "You MUST propose a COMPLETE dispel4py WORKFLOW. 'Complete' means the graph "
-    "is fully wired but it does not mean it is runnable. The ONLY thing allowed to remain "
+    "You MUST propose a fully WIRED dispel4py workflow SKELETON. 'Wired' means every PE, "
+    "port, graph.connect() and the sink are present and consistent. The workflow is "
+    "deliberately NOT runnable: each newly created PE MUST raise NotImplementedError as the "
+    "first statement of its process method. Writing working business-logic bodies is a "
+    "FAILURE, not success.  The ONLY thing allowed to remain "
     "unimplemented is the business logic of a newly created PE (see the new-PE "
     "rule below); everything else, including all wiring and the sink, must work.",
 
@@ -132,7 +134,6 @@ WORKFLOW_GRAPH_RULES = [
     "__init__.",
 ]
 
-
 WORKFLOW_OUTPUT_RULES = [
 
     "If new PEs are created, include all of them in the 'new_pe' list of the returned "
@@ -146,11 +147,10 @@ WORKFLOW_OUTPUT_RULES = [
 ]
 
 REQUEST_NEW_WORKFLOW_CONTEXT_QUERIES = (
-    WORKFLOW_GRAPH_RULES
-    + PE_AUTHORING_RULES
-    + WORKFLOW_OUTPUT_RULES
+        WORKFLOW_GRAPH_RULES
+        + PE_AUTHORING_RULES
+        + WORKFLOW_OUTPUT_RULES
 )
-
 
 EVALUATE_QUALITY_REQUESTED_WORKFLOW_CONTEXT_QUERIES = [
     "You are a strict reviewer of dispel4py workflows. You are given the user query "
@@ -176,6 +176,8 @@ EVALUATE_QUALITY_REQUESTED_WORKFLOW_CONTEXT_QUERIES = [
     "EXTREMELY IMPORTANT: DO NOT REPORT error related to the fact that code is a template. "
     "If a function is merely a template this is wanted behaviour.",
 
+    "This warning: 'The workflow is only a skeleton', is not an error but a wanted feature",
+
     "If new Processing Elements contains implemented code, this is an issue, as they should raise "
     "a NotImplementedError(...), since the business logic must be provided by the user.",
 
@@ -186,7 +188,6 @@ EVALUATE_QUALITY_REQUESTED_WORKFLOW_CONTEXT_QUERIES = [
     '{ "issues": [] }. '
     "Output nothing except this JSON object (no prose, no markdown, no code fences).",
 ]
-
 
 REQUEST_DESCRIPTION_CONTEXT_QUERIES = [
     "Explicitly states whether this is a Processing Element (PE) or a workflow.",
