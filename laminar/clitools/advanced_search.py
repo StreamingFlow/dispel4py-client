@@ -446,10 +446,17 @@ class AdvancedSearchCommand:
             "tags": suggested["tags"],
         }], tab=True)
 
-        workflow_id = suggested.get("id")
-        wf = self.client.get_Workflow(workflow_id)
-        print_status("\nWorkflow code:")
-        print_code(wf[1])
+        result_id = suggested.get("id")
+        results = []
+        tmp = self.client.get_Workflow(result_id)
+        if tmp:
+            results.append(tmp)
+        tmp = self.client.get_PE(result_id)
+        if tmp:
+            results.append(tmp)
+
+        print_status("\nSource code:")
+        print_code(results[0][1])
 
         return None
 
@@ -530,6 +537,9 @@ class SearchTUI(App):
         height: 3;
         border: round $accent;
     }
+    #prompt:disabled {
+        opacity: 0.7;
+    }
     """
 
     BINDINGS = [
@@ -543,7 +553,7 @@ class SearchTUI(App):
         self.command = command
         self._answers: "queue.Queue[object]" = queue.Queue()
         self._awaiting = False
-
+        self._busy_placeholder = "Working on it..."
 
     def compose(self) -> "ComposeResult":
         yield Header(show_clock=True)
@@ -562,7 +572,7 @@ class SearchTUI(App):
 
     def on_mount(self) -> None:
         self.title = "Laminar - Advanced Search"
-        self.query_one("#prompt", PromptArea).focus()
+        self._set_busy()
         self.run_session()
 
     @work(thread=True, exclusive=True)
@@ -609,7 +619,6 @@ class SearchTUI(App):
     def _append(self, renderable) -> None:
         out = self.query_one("#output", VerticalScroll)
         out.mount(Static(renderable))
-        # scroll once the new line has been laid out
         self.call_after_refresh(out.scroll_end, animate=False)
 
     def _emit_output(self, args, style):
@@ -627,20 +636,48 @@ class SearchTUI(App):
         if code is None or code == "":
             codelog.write(Text("(no code)", style="dim italic"))
             return
-        # Render the highlight across the full panel width (not just the
-        # longest code line) by expanding to the panel's inner width.
         width = codelog.content_size.width or codelog.size.width
         codelog.write(
-            Syntax(str(code), "python", theme="monokai",
-                   line_numbers=True, word_wrap=False, indent_guides=True),
-            expand=True, width=width or None,
+            Syntax(
+                str(code),
+                "python",
+                theme="monokai",
+                line_numbers=True,
+                word_wrap=False,
+                indent_guides=True,
+            ),
+            expand=True,
+            width=width or None,
         )
+
+    def _set_busy(self, message: str = None):
+        """Disable the prompt while work is in progress."""
+        inp = self.query_one("#prompt", PromptArea)
+        message = message or self._busy_placeholder
+        self._awaiting = False
+        inp.disabled = True
+        inp.border_title = "Input"
+
+        # TextArea may not support placeholder in all Textual versions,
+        # so fall back to showing the message as the text itself.
+        if hasattr(inp, "placeholder"):
+            inp.placeholder = message
+            inp.text = ""
+        else:
+            inp.text = message
 
     def _set_prompt(self, prompt: str):
         clean = (prompt or "").strip()
         if clean:
             self._append(Text(clean, style="bold cyan"))
+
         inp = self.query_one("#prompt", PromptArea)
+        inp.disabled = False
+
+        if hasattr(inp, "placeholder"):
+            inp.placeholder = ""
+
+        inp.text = ""
         inp.border_title = (clean[:48] + "...") if len(clean) > 48 else (clean or "Input")
         inp.focus()
         self._awaiting = True
@@ -648,24 +685,20 @@ class SearchTUI(App):
     def on_prompt_area_submitted(self, message: "PromptArea.Submitted") -> None:
         if not self._awaiting:
             return
+
         text = message.value
-        self._awaiting = False
-        inp = self.query_one("#prompt", PromptArea)
-        inp.text = ""  # also triggers the box to shrink back to one row
-        inp.border_title = "Input"
         self._append(Text(f"> {text}", style="bright_white"))
+        self._set_busy()
         self._answers.put(text)
 
     def _new_round(self):
-        out = self.query_one("#output", VerticalScroll)
-        out.remove_children()
-        self.query_one("#right", RichLog).clear()
         self._append(Text("New search - answer the prompts below.", style="dim italic"))
 
     # -- actions ---------------------------------------------------------
     def action_clear(self):
         self.query_one("#output", VerticalScroll).remove_children()
         self.query_one("#right", RichLog).clear()
+        pass
 
     def action_request_quit(self):
         self._answers.put(_SHUTDOWN)  # unblock the worker if it's in input()
