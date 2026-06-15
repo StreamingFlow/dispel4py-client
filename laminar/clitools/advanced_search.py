@@ -1,16 +1,98 @@
 import base64
 import json
 import argparse
+import threading
+import queue
+import traceback
 import numpy as np
 import os
 
+from rich.pretty import Pretty
+from rich.syntax import Syntax
+from rich.text import Text
+from textual import work
+from textual.app import App, ComposeResult
+from textual.containers import Horizontal, Vertical, VerticalScroll
+from textual.message import Message
+from textual.widgets import Footer, Header, RichLog, Static, TextArea
+
 from laminar.argument_parser import CustomArgumentParser
-from laminar.cli import print_text, print_error
+from laminar.cli import print_text as _orig_print_text, print_error as _orig_print_error
 from laminar.client.d4pyclient import d4pClient
 from laminar.llms.LLMConnector import LLMConnector
 from laminar.llms.encoder import LaminarCodeEncoder
-from laminar.screen_printer import print_code, print_warning, print_status
+from laminar.screen_printer import (
+    print_code as _orig_print_code,
+    print_warning as _orig_print_warning,
+    print_status as _orig_print_status,
+)
 from laminar.clitools.register import RegisterCommand
+
+# --------------------------------------------------------------------------- #
+#  Output routing
+#
+#  The class below calls print_text/print_status/print_warning/print_error/
+#  print_code and input() exactly as it always has. The names are rebound here
+#  to thin routers: when a TUI session is active (_ACTIVE_SINK is set) they feed
+#  the on-screen panels; otherwise they fall straight through to the original
+#  laminar helpers / builtin input(). No method body in the class changes, and
+#  with no TUI session the behaviour is identical to before.
+# --------------------------------------------------------------------------- #
+
+_ACTIVE_SINK = None  # set to the running SearchTUI during a session
+
+
+def print_text(*args, **kwargs):
+    sink = _ACTIVE_SINK
+    if sink is not None:
+        sink.sink_text(*args, **kwargs)
+    else:
+        _orig_print_text(*args, **kwargs)
+
+
+def print_error(*args, **kwargs):
+    sink = _ACTIVE_SINK
+    if sink is not None:
+        sink.sink_error(*args, **kwargs)
+    else:
+        _orig_print_error(*args, **kwargs)
+
+
+def print_status(*args, **kwargs):
+    sink = _ACTIVE_SINK
+    if sink is not None:
+        sink.sink_status(*args, **kwargs)
+    else:
+        _orig_print_status(*args, **kwargs)
+
+
+def print_warning(*args, **kwargs):
+    sink = _ACTIVE_SINK
+    if sink is not None:
+        sink.sink_warning(*args, **kwargs)
+    else:
+        _orig_print_warning(*args, **kwargs)
+
+
+def print_code(code=None, *args, **kwargs):
+    sink = _ACTIVE_SINK
+    if sink is not None:
+        sink.sink_code(code)
+    else:
+        _orig_print_code(code, *args, **kwargs)
+
+
+_builtin_input = input  # capture before shadowing the module-level name
+
+
+def input(prompt=""):  # noqa: A001 - intentionally shadows builtin in this module
+    sink = _ACTIVE_SINK
+    if sink is not None:
+        return sink.sink_ask(str(prompt))
+    return _builtin_input(prompt)
+
+
+_SHUTDOWN = object()  # pushed into the answer queue to unblock input() on quit
 
 
 def cosine(a: np.ndarray, b: np.ndarray) -> float:
@@ -371,12 +453,220 @@ class AdvancedSearchCommand:
 
         return None
 
-    def search_library(self, arg):
-
-        # TODO: better cli interface
-
+    def _run_query(self):
         kind = input("Kind (pe or workflow. Default: workflow): ") or "workflow"
         input_type = input("Input type (auto): ") or "auto"
         query = input("Query: ")
 
         self._search(query=query, input_type=input_type, kind=kind, top_k=3)
+
+    def search_library(self, arg):
+        SearchTUI(self).run()
+
+
+
+class PromptArea(TextArea):
+    """Bottom input box. Submits on Enter and grows vertically (up to
+    MAX_ROWS) as the typed text wraps onto more visual lines."""
+
+    MAX_ROWS = 8
+
+    class Submitted(Message):
+        def __init__(self, value: str):
+            self.value = value
+            super().__init__()
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("soft_wrap", True)
+        kwargs.setdefault("show_line_numbers", False)
+        super().__init__(*args, **kwargs)
+
+    def on_mount(self) -> None:
+        self._resize()
+
+    async def _on_key(self, event) -> None:
+        # Enter submits instead of inserting a newline.
+        if event.key == "enter":
+            event.prevent_default()
+            event.stop()
+            self.post_message(self.Submitted(self.text))
+            return
+        await super()._on_key(event)
+
+    def on_text_area_changed(self, _event) -> None:
+        self._resize()
+
+    def _resize(self) -> None:
+        rows = max(1, min(self.wrapped_document.height, self.MAX_ROWS))
+        self.styles.height = rows + 2  # + top/bottom border
+
+class SearchTUI(App):
+    """Split-pane UI that drives AdvancedSearchCommand. The command's own
+    print_*/input calls are routed here via the module-level routers above
+    (this app registers itself as _ACTIVE_SINK for the session)."""
+
+    CSS = """
+    Screen { background: $surface; }
+
+    #body { height: 1fr; }
+
+    #left  { width: 55%; height: 1fr; }
+    #right { width: 45%; height: 1fr; }
+
+    #output {
+        height: 1fr;
+        border: round $primary;
+        padding: 0 1;
+        background: $panel;
+        /* keep the newest output (the current question) next to the input */
+        align-vertical: bottom;
+    }
+    #right {
+        border: round $secondary;
+        padding: 0 1;
+        background: $panel;
+    }
+    #prompt {
+        height: 3;
+        border: round $accent;
+    }
+    """
+
+    BINDINGS = [
+        ("ctrl+l", "clear", "Clear panels"),
+        ("ctrl+q", "request_quit", "Quit"),
+        ("ctrl+c", "request_quit", "Quit"),
+    ]
+
+    def __init__(self, command: "AdvancedSearchCommand"):
+        super().__init__()
+        self.command = command
+        self._answers: "queue.Queue[object]" = queue.Queue()
+        self._awaiting = False
+
+
+    def compose(self) -> "ComposeResult":
+        yield Header(show_clock=True)
+        with Horizontal(id="body"):
+            with Vertical(id="left"):
+                out = VerticalScroll(id="output")
+                out.border_title = "Search output"
+                yield out
+                prompt = PromptArea(id="prompt")
+                prompt.border_title = "Input"
+                yield prompt
+            code = RichLog(id="right", wrap=False, highlight=False, markup=False)
+            code.border_title = "Source code"
+            yield code
+        yield Footer()
+
+    def on_mount(self) -> None:
+        self.title = "Laminar - Advanced Search"
+        self.query_one("#prompt", PromptArea).focus()
+        self.run_session()
+
+    @work(thread=True, exclusive=True)
+    def run_session(self) -> None:
+        global _ACTIVE_SINK
+        _ACTIVE_SINK = self
+        try:
+            while True:
+                self.call_from_thread(self._new_round)
+                try:
+                    self.command._run_query()
+                except EOFError:
+                    break  # app is quitting
+                except Exception:
+                    for ln in traceback.format_exc().splitlines():
+                        self.call_from_thread(self._emit_output, (ln,), "bold red")
+        finally:
+            _ACTIVE_SINK = None
+
+    # -- sink API called by the module-level routers (worker thread) -----
+    def sink_text(self, *args, **kwargs):
+        self.call_from_thread(self._emit_output, args, None)
+
+    def sink_status(self, *args, **kwargs):
+        self.call_from_thread(self._emit_output, args, "bold green")
+
+    def sink_warning(self, *args, **kwargs):
+        self.call_from_thread(self._emit_output, args, "bold yellow")
+
+    def sink_error(self, *args, **kwargs):
+        self.call_from_thread(self._emit_output, args, "bold red")
+
+    def sink_code(self, code):
+        self.call_from_thread(self._emit_code, code)
+
+    def sink_ask(self, prompt: str) -> str:
+        self.call_from_thread(self._set_prompt, prompt)
+        answer = self._answers.get()  # blocks the worker thread
+        if answer is _SHUTDOWN:
+            raise EOFError
+        return answer
+
+    # -- widget mutations (UI thread) ------------------------------------
+    def _append(self, renderable) -> None:
+        out = self.query_one("#output", VerticalScroll)
+        out.mount(Static(renderable))
+        # scroll once the new line has been laid out
+        self.call_after_refresh(out.scroll_end, animate=False)
+
+    def _emit_output(self, args, style):
+        if not args:
+            self._append(Text(""))
+            return
+        for a in args:
+            if isinstance(a, str):
+                self._append(Text(a.rstrip("\n"), style=style) if style else Text(a.rstrip("\n")))
+            else:
+                self._append(Pretty(a))
+
+    def _emit_code(self, code):
+        codelog = self.query_one("#right", RichLog)
+        if code is None or code == "":
+            codelog.write(Text("(no code)", style="dim italic"))
+            return
+        # Render the highlight across the full panel width (not just the
+        # longest code line) by expanding to the panel's inner width.
+        width = codelog.content_size.width or codelog.size.width
+        codelog.write(
+            Syntax(str(code), "python", theme="monokai",
+                   line_numbers=True, word_wrap=False, indent_guides=True),
+            expand=True, width=width or None,
+        )
+
+    def _set_prompt(self, prompt: str):
+        clean = (prompt or "").strip()
+        if clean:
+            self._append(Text(clean, style="bold cyan"))
+        inp = self.query_one("#prompt", PromptArea)
+        inp.border_title = (clean[:48] + "...") if len(clean) > 48 else (clean or "Input")
+        inp.focus()
+        self._awaiting = True
+
+    def on_prompt_area_submitted(self, message: "PromptArea.Submitted") -> None:
+        if not self._awaiting:
+            return
+        text = message.value
+        self._awaiting = False
+        inp = self.query_one("#prompt", PromptArea)
+        inp.text = ""  # also triggers the box to shrink back to one row
+        inp.border_title = "Input"
+        self._append(Text(f"> {text}", style="bright_white"))
+        self._answers.put(text)
+
+    def _new_round(self):
+        out = self.query_one("#output", VerticalScroll)
+        out.remove_children()
+        self.query_one("#right", RichLog).clear()
+        self._append(Text("New search - answer the prompts below.", style="dim italic"))
+
+    # -- actions ---------------------------------------------------------
+    def action_clear(self):
+        self.query_one("#output", VerticalScroll).remove_children()
+        self.query_one("#right", RichLog).clear()
+
+    def action_request_quit(self):
+        self._answers.put(_SHUTDOWN)  # unblock the worker if it's in input()
+        self.exit()
