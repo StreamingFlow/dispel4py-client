@@ -24,29 +24,26 @@ class OpenAIConnector:
             raise RuntimeError("OpenAI API key not set")
 
         self.client = openai.OpenAI(api_key=self.key)
-        self.default_model = "gpt-4o"
+        self.default_model = "gpt-5.4-mini"
 
-    def ask(self, model: str = None,
-            prompt: str = None,
+    def ask(self,
+            prompt: str | None = None,
             system_queries: list[str] | None = None) -> dict:
-
-        if model is None:
-            model = self.default_model
 
         messages: list[userChat | systemChat] = [
             systemChat(role="system", content="return only JSON. DO NOT EXPLAIN.")
         ]
 
         if system_queries:
-            for prompt in system_queries:
-                messages.append(systemChat(role="system", content=prompt, ))
+            for q in system_queries:
+                messages.append(systemChat(role="system", content=q))
 
-        messages.append(userChat(role="user", content=f"USER_REQUEST: {prompt}".strip(), ))
+        messages.append(userChat(role="user", content=f"USER_REQUEST: {prompt}".strip()))
 
         resp = self.client.chat.completions.create(
-            model=model,
+            model=self.default_model,
             messages=messages,
-            temperature=0.0 if "nano" not in model else None,
+            temperature=0.0 if "nano" not in self.default_model else None,
         )
 
         txt = resp.choices[0].message.content.strip()
@@ -59,6 +56,7 @@ class OpenAIConnector:
             print_text(txt)
             raise e
 
-        result["model"] = model
+        result["model"] = self.default_model
         result["provider"] = "OpenAI"
+
         return result

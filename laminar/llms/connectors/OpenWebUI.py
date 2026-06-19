@@ -28,13 +28,10 @@ class OpenWebUIConnector:
         self.default_model = self._get_available_models()
         self.endpoint = f"{self.base_url}/api/chat/completions"
 
-    def ask(self, model: str = None,
-            prompt: str = None,
+    def ask(self,
+            prompt: str | None = None,
             system_queries: list[str] = None) -> dict[
         str, str | dict[str, str]]:
-
-        if model is None:
-            model = self.default_model
 
         if system_queries is None:
             system_queries = []
@@ -44,7 +41,7 @@ class OpenWebUIConnector:
             'Content-Type': 'application/json'
         }
         data = {
-            "model": model,
+            "model": self.default_model,
             "messages": [{"role": "system", "content": f"{q}"} for q in self.system_queries] + [
                 {"role": "system", "content": f"{q}"} for q in system_queries] + [
                             {"role": "user", "content": prompt, }]
@@ -58,7 +55,7 @@ class OpenWebUIConnector:
             content = data["choices"][0]["message"]["content"]
 
             parsed = json.loads(content)
-            parsed["model"] = model
+            parsed["model"] = self.default_model
             parsed["provider"] = "OpenWebUI"
 
             return parsed
