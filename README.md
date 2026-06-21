@@ -304,6 +304,11 @@ API usage, is available in the project wiki:
 The user manual provides step-by-step instructions for running workflows, managing Processing Elements, and
 integrating Laminar into scripts and Jupyter notebooks.
 
+
+> [!WARNING]  
+> Wiki contains the documentation for Laminar2.0. We are currently working on
+> Bringing it up to date for Laminar3.0
+
 ## Team
 
 | Name                      | Role            | Affiliation                                | Contact                            |
