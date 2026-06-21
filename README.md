@@ -1,8 +1,11 @@
-# Laminar 3.0 Client
+# Laminar - Serverless dispel4py workflows
 
 ![Laminar Logo](logo.webp)
 
 ## Overview
+
+
+[![Python](https://img.shields.io/badge/python-3.11_|_3.12_|_3.13-blue?logo=python&logoColor=white)](https://www.python.org)
 
 The Laminar Client is the primary user-facing component of the **Laminar** framework. It provides a unified
 interface for registering, managing, searching, and executing [dispel4py](https://github.com/StreamingFlow/dispel4py)
@@ -18,7 +21,11 @@ In addition to workflow management, the client now integrates **Large Language M
 throughout the development lifecycle: automatically describing and tagging components at registration time, powering
 semantic search and code recommendation, and even composing brand-new workflows from a natural-language request.
 
-## What's New
+### Bibliography
+- [![Laminar](https://img.shields.io/badge/Laminar-10.1145%2F3624062.362428-orange)](https://doi.org/10.1145/3624062.362428)
+- [![Laminar2.0](https://img.shields.io/badge/Laminar2.0-10.1109%2FSCW63240.2024.00261-orange)](https://doi.org/10.1109/SCW63240.2024.00261)
+
+## Laminar 3.0: What's New
  
 If you have used an earlier version of the client, the most important changes are:
  
@@ -47,7 +54,7 @@ pipelines.
 
 ## Getting Started
 
-Before running the Laminar Client, pleas eensure that you have a running dispel4py-server instance.
+Before running the Laminar Client, please ensure that you have a running dispel4py-server instance.
 
 ### Clone the Repository
 
