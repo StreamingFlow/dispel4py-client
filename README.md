@@ -310,8 +310,7 @@ integrating Laminar into scripts and Jupyter notebooks.
 > Bringing it up to date for Laminar3.0
 
 ## Team
-
-| Name                      | Role            | Affiliation                                | Contact                            |
-| ------------------------- | --------------- | ------------------------------------------ | ---------------------------------- |
-| Rosa Filgueira            | Main developer  | EPCC, University of Edinburgh              | `r.filgueira@epcc.ed.ac.uk`        |
-| Marco Edoardo Santimaria  | Contributor     | University of Turin                        | `marcoedoardo.santimaria@unito.it` |
+| Name                      | Role            | Affiliation                                | Homepage                                                                       |
+| ------------------------- | --------------- | ------------------------------------------ | ------------------------------------------------------------------------------ |
+| Rosa Filgueira            | Main developer  | EPCC, University of Edinburgh              | [Homepage](https://www.epcc.ed.ac.uk/about-us/our-team/dr-rosa-filgueira)      |
+| Marco Edoardo Santimaria  | Contributor     | University of Turin                        | [Homepage](https://alpha.di.unito.it/marco-santimaria/)                        |
