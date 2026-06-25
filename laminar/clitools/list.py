@@ -7,7 +7,7 @@ from rich.panel import Panel
 from rich.table import Table
 
 from textual.app import App, ComposeResult
-from textual.containers import Horizontal, VerticalScroll
+from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.widgets import DataTable, Footer, Header, Input, Static
 
 # Field order for the detail view: (label, dict-key).
@@ -71,9 +71,10 @@ def _matches(obj: dict[str, Any], query: str) -> bool:
 class _RegistryBrowser(App):
 
     CSS = """
-    #search { dock: top; }
     Horizontal { height: 1fr; }
-    DataTable { width: 45%; border-right: solid $accent; }
+    #left-pane { width: 45%; border-right: solid $accent; }
+    #search { dock: top; }
+    DataTable { width: 100%; height: 1fr; }
     #detail-pane { width: 55%; }
     #detail { padding: 1 2; }
     """
@@ -91,9 +92,10 @@ class _RegistryBrowser(App):
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=False)
-        yield Input(placeholder="Search type / name / id / tags…", id="search")
         with Horizontal():
-            yield DataTable(id="list", cursor_type="row", zebra_stripes=True)
+            with Vertical(id="left-pane"):
+                yield Input(placeholder="Search type / name / id / tags…", id="search")
+                yield DataTable(id="list", cursor_type="row", zebra_stripes=True)
             with VerticalScroll(id="detail-pane"):
                 yield Static(id="detail")
         yield Footer()
@@ -140,18 +142,22 @@ class _RegistryBrowser(App):
         self.query_one(DataTable).focus()
 
 
+def _build_app(objects: Sequence[dict[str, Any]]) -> _RegistryBrowser:
+    """Build (but don't run) the browser app — handy for testing."""
+    return _RegistryBrowser(objects)
+
+
 class ListCommand:
 
     def __init__(self, client: Any, console: Optional[Console] = None) -> None:
         self.client = client
         self.console = console or Console()
 
-    # --- public API -------------------------------------------------------
     def help(self) -> None:
-        """Print usage information and keybindings for the list command."""
         body = Table.grid(padding=(0, 2))
         body.add_column(style="bold yellow", justify="right", no_wrap=True)
         body.add_column()
+        body.add_row("Browse interactively the list of registered objects.")
         body.add_row("↑ / ↓ / click", "move through the list; detail shows on the right")
         body.add_row("/", "focus the search box")
         body.add_row("type", "filter by type / name / id / tags")
@@ -161,7 +167,7 @@ class ListCommand:
         self.console.print(
             Panel(
                 body,
-                title="[bold]list[/bold]  —  browse the object registry",
+                title="[bold]list[/bold]",
                 title_align="left",
                 subtitle="[dim]PE (green) and WF (magenta) objects[/dim]",
                 subtitle_align="left",
@@ -182,10 +188,5 @@ class ListCommand:
             self.console.print("[dim]No objects in the registry.[/dim]")
             return
 
-        self._build_app(description).run()
-
-    # --- internal ---------------------------------------------------------
-    def _build_app(self, objects: Sequence[dict[str, Any]]) -> _RegistryBrowser:
-        """Build (but don't run) the browser app — handy for testing."""
-        return _RegistryBrowser(objects)
+        _build_app(description).run()
 

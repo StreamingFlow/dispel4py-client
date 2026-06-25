@@ -186,7 +186,8 @@ class RegisterCommand:
             print_error(f"Error: directory {path} is not a directory")
             return
 
-        files = [str(p) for p in Path(path).rglob("*") if p.is_file()]
+
+        files = [str(p) for p in Path(path).rglob("*.py") if p.is_file()]
 
         print_status(f"Trying to register {len(files)} files")
 
