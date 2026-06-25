@@ -1,27 +1,24 @@
+import argparse
 import base64
 import json
-import argparse
-import threading
-import queue
-import traceback
 import numpy as np
 import os
-
+import queue
+import threading
+import traceback
 from numpy.random import _generator
 from rich.pretty import Pretty
 from rich.syntax import Syntax
-from rich.text import Text
 from rich.table import Table
+from rich.text import Text
 from textual import work
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.message import Message
 from textual.widgets import Footer, Header, RichLog, Static, TextArea
 
-from laminar.argument_parser import CustomArgumentParser
-from laminar.llms.prompts import refine_prompt
-from laminar.screen_printer import print_text as _orig_print_text, print_error as _orig_print_error
 from laminar.client.d4pyclient import d4pClient
+from laminar.clitools.register import RegisterCommand
 from laminar.llms.LLMConnector import LLMConnector
 from laminar.llms.encoder import LaminarCodeEncoder
 from laminar.screen_printer import (
@@ -29,7 +26,7 @@ from laminar.screen_printer import (
     print_warning as _orig_print_warning,
     print_status as _orig_print_status,
 )
-from laminar.clitools.register import RegisterCommand
+from laminar.screen_printer import print_text as _orig_print_text, print_error as _orig_print_error
 
 _ACTIVE_SINK = None  # set to the running SearchTUI during a session
 
@@ -195,7 +192,6 @@ class AdvancedSearchCommand:
         }
 
     def _workflow_structure_score(self, query: str, pe_list_json: str, pe_tags_by_name: dict) -> float:
-
         def _extract_requested_caps(q: str) -> set:
             q = (q or "").lower()
             request = set()
