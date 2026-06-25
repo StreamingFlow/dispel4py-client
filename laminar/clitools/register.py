@@ -1,9 +1,11 @@
 import importlib.util
+import os.path
 import time
 import sys
 import shlex
 import argparse
 import inspect
+from pathlib import Path
 
 from dispel4py.base import GenericPE, IterativePE, ProducerPE, ConsumerPE
 from dispel4py.workflow_graph import WorkflowGraph
@@ -173,6 +175,27 @@ class RegisterCommand:
         except Exception as e:
             print_error(f"An error occurred: {e}: {type(e).__name__}")
 
+
+    def _register_directory(self, path):
+
+        if not os.path.exists(path):
+            print_warning(f"Error: directory {path} does not exist")
+            return
+
+        if not os.path.isdir(path):
+            print_error(f"Error: directory {path} is not a directory")
+            return
+
+        files = [str(p) for p in Path(path).rglob("*") if p.is_file()]
+
+        print_status(f"Trying to register {len(files)} files")
+
+        for file in files:
+            try:
+                self._register_workflow(file)
+            except Exception as e:
+                print_warning(f"File {file} could not be registered: {e}")
+
     def help(self):
         print_status("""
         Registers a new object within the Laminar registry.
@@ -181,16 +204,18 @@ class RegisterCommand:
         Usage: register <type> <filepath>
 
         type          The category of object to register.
-                            - 'workflow': Register a workflow, as well as all the 
-                                          PEs that comprises the workflow within Laminar.,
-                            - 'pe': Register a single PE.
+                            - 'workflow':   Register a workflow, as well as all the 
+                                            PEs that comprises the workflow within Laminar.,
+                            - 'pe':         Register a single PE.
+                            - 'directory':  Register recursively all files within a directory 
+                                            if they contain valid Dispel4py components.
 
         --provider   The LLM provider to use for description generation. Defaults to OpenAI.
         """)
 
     def register(self, args):
         parser = CustomArgumentParser(exit_on_error=False)
-        parser.add_argument("type", choices=["workflow", "pe"])
+        parser.add_argument("type", choices=["workflow", "pe", "directory"])
         parser.add_argument("filepath")
         parser.add_argument("--provider", help="The LLM provider to use for description generation", required=False,
                             default=None)
@@ -199,6 +224,8 @@ class RegisterCommand:
             args = vars(parser.parse_args(shlex.split(args)))
             if args["type"] == "workflow":
                 self._register_workflow(args["filepath"], provider=args["provider"])
+            elif args["type"] == "directory":
+                self._register_directory(args["filepath"])
             else:
                 self._register_pe(args["filepath"], provider=args["provider"])
         except argparse.ArgumentError as e:

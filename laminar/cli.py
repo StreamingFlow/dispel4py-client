@@ -12,6 +12,7 @@ from laminar.clitools.search import SearchCommand
 from laminar.clitools.register import RegisterCommand
 from laminar.clitools.remove import RemoveCommand
 from laminar.clitools.run import RunCommand
+from laminar.clitools.list import ListCommand
 from laminar.clitools.update_description import UpdateDescriptionCommand
 from laminar.clitools.advanced_search import AdvancedSearchCommand
 from laminar.llms.LLMConnector import LLMConnector
@@ -53,6 +54,8 @@ class LaminarCLI(cmd.Cmd):
         self.load_modules_on_startup()
 
         self.llmConnector = LLMConnector()
+
+        self.list_command = ListCommand(client=self.client)
 
         self.search_command = SearchCommand(client=self.client)
         self.register_command = RegisterCommand(client=self.client, llmConnector=self.llmConnector,
@@ -151,15 +154,10 @@ class LaminarCLI(cmd.Cmd):
         print_text("Exits the Laminar CLI")
 
     def do_list(self, arg):
-        try:
-            description, registry = self.client.get_Registry()
-            if description:
-                print_text(description, tab=True)
-        except Exception as e:
-            print_error(f"An error occurred: {e}")
+       self.list_command.list()
 
     def help_list(self):
-        print_text("Lists all registered PEs and workflows")
+        self.list_command.help()
 
     def help_remove(self):
         self.remove_command.help()
