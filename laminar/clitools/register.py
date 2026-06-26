@@ -10,6 +10,7 @@ import subprocess
 import shutil
 import os
 import configparser
+from os import getcwd
 from pathlib import Path
 
 from dispel4py.base import GenericPE, IterativePE, ProducerPE, ConsumerPE
@@ -250,12 +251,16 @@ class RegisterCommand:
         print_status(
             f"Registering workflow from {filepath} using {provider} for LLM description generation.")
 
+        current_working_dir = getcwd()
+        os.chdir(Path(filepath).parent)
+
         try:
             mod, unique_module_name = self._load_module(filepath)
             pes, workflows = self._discover_components(mod)
 
             if not pes and not workflows:
                 print_warning("Could not find any PEs or Workflows")
+                os.chdir(current_working_dir)
                 return
 
             for key, pe_class in pes.items():
@@ -284,6 +289,8 @@ class RegisterCommand:
             print_error("Target file has invalid python syntax")
         except Exception as e:
             print_error(f"An error occurred: {e}: {type(e).__name__}")
+        finally:
+            os.chdir(current_working_dir)
 
     def _register_directory(self, path):
 
@@ -295,8 +302,7 @@ class RegisterCommand:
             print_error(f"Error: directory {path} is not a directory")
             return
 
-        files = [str(p) for p in Path(path).rglob("*.py") if p.is_file()]
-
+        files = [str(p.absolute()) for p in Path(path).rglob("*.py") if p.is_file()]
         print_status(f"Trying to register {len(files)} files")
 
         for file in files:
