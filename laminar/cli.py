@@ -75,6 +75,7 @@ class LaminarCLI(cmd.Cmd):
         # Load modules from the registry
         workflows = self.client.get_Workflows()
         for workflow in workflows:
+
             module_source_code = workflow['moduleSourceCode']
             if module_source_code:
                 if workflow['moduleName']:
@@ -83,9 +84,13 @@ class LaminarCLI(cmd.Cmd):
                     module_name = "tmp"
                 spec = importlib.util.spec_from_loader(module_name, loader=None)
                 mod = importlib.util.module_from_spec(spec)
-                exec(module_source_code, mod.__dict__)
-                sys.modules[module_name] = mod
-                self.loaded_modules[module_name] = mod
+                try:
+                    exec(module_source_code, mod.__dict__)
+                    sys.modules[module_name] = mod
+                    self.loaded_modules[module_name] = mod
+                except Exception as e:
+                    print_warning(f"An error occurred: {e}")
+                    pass
 
     def do_search(self, arg):
         self.search_command.search(arg)

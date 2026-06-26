@@ -10,6 +10,10 @@ from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.widgets import DataTable, Footer, Header, Input, Static
 
+
+from laminar.client.d4pyclient import d4pClient
+from laminar.screen_printer import print_error
+
 # Field order for the detail view: (label, dict-key).
 _FIELDS: Sequence[tuple[str, str]] = (
     ("ID", "ID"),
@@ -49,7 +53,7 @@ def _object_panel(obj: dict[str, Any]) -> Panel:
 
     return Panel(
         grid,
-        title=f"[bold]{obj.get('Name', '<unnamed>')}[/bold]  [{color}]{obj_type}[/{color}]",
+        title=f"[{color}]{'Processing Element' if obj_type == 'PE' else 'Workflow'}[/{color}]: [bold]{obj.get('Name', '<unnamed>')}[/bold]",
         title_align="left",
         border_style=color,
         padding=(1, 2),
@@ -149,7 +153,7 @@ def _build_app(objects: Sequence[dict[str, Any]]) -> _RegistryBrowser:
 
 class ListCommand:
 
-    def __init__(self, client: Any, console: Optional[Console] = None) -> None:
+    def __init__(self, client: d4pClient, console: Optional[Console] = None) -> None:
         self.client = client
         self.console = console or Console()
 
@@ -181,7 +185,7 @@ class ListCommand:
         try:
             description, _registry = self.client.get_Registry()
         except Exception as e:  # mirror your existing print_error flow
-            self.console.print(f"[red]An error occurred:[/red] {e}")
+            print_error(f"[red]An error occurred:[/red] {e}:", True)
             return
 
         if not description:

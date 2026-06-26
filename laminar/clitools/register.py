@@ -6,6 +6,10 @@ import shlex
 import argparse
 import inspect
 import re
+import subprocess
+import shutil
+import os
+import configparser
 from pathlib import Path
 
 from dispel4py.base import GenericPE, IterativePE, ProducerPE, ConsumerPE
@@ -26,6 +30,46 @@ from laminar.llms.queries_templates import (
 PE_BASE_TYPES = (GenericPE, IterativePE, ProducerPE, ConsumerPE)
 
 
+def _pip_install(package: str) -> bool:
+
+
+    def _detect_uv():
+        """Return (use_uv: bool, reason: str)."""
+        if os.environ.get("UV"):
+            return True
+
+        cfg = Path(sys.prefix) / "pyvenv.cfg"
+        if cfg.is_file():
+            parser = configparser.ConfigParser()
+            try:
+                parser.read_string("[v]\n" + cfg.read_text())
+                if parser.has_option("v", "uv"):
+                    return True
+            except configparser.Error:
+                pass
+
+        here = Path(os.getcwd()).resolve()
+        for d in (here, *here.parents):
+            if (d / "uv.lock").is_file():
+                return True
+            pyproject = d / "pyproject.toml"
+            if pyproject.is_file() and "[tool.uv]" in pyproject.read_text(errors="ignore"):
+                return True
+
+        return False
+
+    use_uv = _detect_uv()
+    command = ["uv", "pip", "install", package] if use_uv and shutil.which("uv") else [sys.executable, "-m", "pip", "install", package]
+
+    try:
+        subprocess.run(command,check=True, capture_output=True, text=True,)
+    except subprocess.CalledProcessError as e:
+        print_error(f"pip failed to install '{package}':\n{e.stderr.strip()}", _traceback=False)
+        return False
+    importlib.invalidate_caches()  # let the running interpreter see the new package
+    return True
+
+
 class RegisterCommand:
 
     def __init__(self, client: d4pClient, llmConnector: LLMConnector | None = None, loaded_modules={}):
@@ -36,16 +80,28 @@ class RegisterCommand:
         self._seen_workflow_names = set()
 
     def _load_module(self, filepath):
-        """Import the file at `filepath` under a unique name and track it."""
         unique_module_name = f"module_name_{int(time.time())}_{self.module_counter}"
         self.module_counter += 1
 
         spec = importlib.util.spec_from_file_location(unique_module_name, filepath)
         mod = importlib.util.module_from_spec(spec)
-        sys.modules[unique_module_name] = mod  # Ensure module is in sys.modules
-        spec.loader.exec_module(mod)
-        self.loaded_modules[unique_module_name] = mod  # Store the loaded module
+        sys.modules[unique_module_name] = mod
 
+        # Allow sibling imports (`from domain import ...`, `from whiten import ...`).
+        pkg_dir = str(Path(filepath).resolve().parent)
+        added = pkg_dir not in sys.path
+        if added:
+            sys.path.insert(0, pkg_dir)
+        try:
+            spec.loader.exec_module(mod)
+        finally:
+            if added:
+                try:
+                    sys.path.remove(pkg_dir)
+                except ValueError:
+                    pass
+
+        self.loaded_modules[unique_module_name] = mod
         return mod, unique_module_name
 
     @staticmethod
@@ -216,6 +272,11 @@ class RegisterCommand:
                     print_error(f"An error occurred during workflow registration: {e}")
 
             self._cleanup_module(mod)
+
+        except ModuleNotFoundError as e:
+            if e.name and _pip_install(e.name):
+                return self._register_workflow(filepath, provider)
+            print_warning(f"Skipping {filepath}: requires '{e.name}', which can not installed automatically.")
 
         except FileNotFoundError:
             print_error(f"Could not find file at {filepath}")

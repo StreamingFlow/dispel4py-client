@@ -91,7 +91,8 @@ def get_objects(results, extended=False):
                 obj = pickle.loads(codecs.decode(result['workflowCode'].encode(), "base64"))
                 objectList.append(obj)
             except Exception as e:
-                print_warning(F"An exception occurred while fetching {result['peName']} : {e}")
+                if result:
+                    print_warning(F"An exception occurred while fetching workflow {result['workflowName']} : {e}")
                 pass
         else:
             if extended:
@@ -114,7 +115,7 @@ def get_objects(results, extended=False):
                 obj = pickle.loads(codecs.decode(result['peCode'].encode(), "base64"))
                 objectList.append(obj)
             except Exception as e:
-                print_warning(F"An exception occurred while fetching {result['peId']} : {e}")
+                print_warning(F"An exception occurred while fetching Processing Element {result['peName']} : {e}")
                 pass
 
     return object_description, objectList
