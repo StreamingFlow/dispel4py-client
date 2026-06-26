@@ -4,7 +4,8 @@ from laminar.llms.queries_templates import (
     REQUEST_NEW_WORKFLOW_CONTEXT_QUERIES,
     REQUEST_DESCRIPTION_CONTEXT_QUERIES,
     EVALUATE_QUALITY_REQUESTED_WORKFLOW_CONTEXT_QUERIES,
-    PE_AUTHORING_RULES
+    PE_AUTHORING_RULES,
+    NAME_WORKFLOW_QUERY
 )
 
 
@@ -80,3 +81,7 @@ def classify_prompt(query: str | None) -> str:
         f"Return JSON:\n{schema}\n\n"
         f"User input:\n{query}"
     )
+
+
+def give_name_prompt(source_code: str) -> str:
+    return NAME_WORKFLOW_QUERY.format(code=source_code)

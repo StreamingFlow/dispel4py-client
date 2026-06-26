@@ -223,3 +223,21 @@ REGISTER_WORKFLOW_CONTEXT_QUERIES = REGISTER_BASE_QUERIES + [
     "The <input_name> and <output_name> arguments are placeholders for the workflow user inputs and workflow output;",
     "Tags is a list of keywords that describe the workflow, so that it may be categorized;",
 ]
+
+
+NAME_WORKFLOW_QUERY = """You are naming a Dispel4py workflow based on its source code.
+
+The code below contains the workflow's processing elements (PEs) and their logic.
+Propose ONE concise, descriptive name that reflects what the workflow does.
+
+Rules:
+- Respond with JSON ONLY — no quotes, no explanation, no surrounding text. 
+- format of output data should be {{'name' : '<response>'}}, where <response> is the proposed name
+- Use snake_case and a valid Python identifier (letters, digits, underscores; must not start with a digit).
+- Be specific to the workflow's purpose; avoid generic names such as "workflow", "graph", or "workflow_graph".
+
+Workflow code:
+{code}
+"""
+
+NAME_WORKFLOW_CONTEXT_QUERY = ["naming a dispel4py workflow from its processing elements and purpose"]

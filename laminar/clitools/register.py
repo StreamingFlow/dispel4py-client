@@ -5,6 +5,7 @@ import sys
 import shlex
 import argparse
 import inspect
+import re
 from pathlib import Path
 
 from dispel4py.base import GenericPE, IterativePE, ProducerPE, ConsumerPE
@@ -15,7 +16,12 @@ from laminar.llms.LLMConnector import LLMConnector
 from laminar.screen_printer import print_status, print_warning, print_error
 from laminar.argument_parser import CustomArgumentParser
 
-from laminar.llms.queries_templates import REGISTER_PE_CONTEXT_QUERIES, REGISTER_WORKFLOW_CONTEXT_QUERIES
+from laminar.llms.queries_templates import (
+    REGISTER_PE_CONTEXT_QUERIES,
+    REGISTER_WORKFLOW_CONTEXT_QUERIES,
+    NAME_WORKFLOW_QUERY,
+    NAME_WORKFLOW_CONTEXT_QUERY,
+)
 
 PE_BASE_TYPES = (GenericPE, IterativePE, ProducerPE, ConsumerPE)
 
@@ -26,7 +32,8 @@ class RegisterCommand:
         self.client = client
         self.module_counter = 0  # Initialize a counter for module names
         self.loaded_modules = loaded_modules
-        self.AiConnector = llmConnector or LLMConnector()
+        self.connector = llmConnector or LLMConnector()
+        self._seen_workflow_names = set()
 
     def _load_module(self, filepath):
         """Import the file at `filepath` under a unique name and track it."""
@@ -73,9 +80,44 @@ class RegisterCommand:
             if isinstance(attr, (GenericPE, WorkflowGraph)):
                 setattr(mod, var, None)
 
+    @staticmethod
+    def _sanitize_workflow_name(raw):
+        text = str(raw or "").strip()
+        if not text:
+            return ""
+        # Take the first non-empty line and strip quoting / markdown fences.
+        text = text.splitlines()[0].strip().strip("`'\"")
+        text = re.sub(r"\s+", "_", text)            # spaces -> underscores
+        text = re.sub(r"[^0-9A-Za-z_]", "", text)   # drop non-identifier chars
+        if text and text[0].isdigit():              # identifiers can't start with a digit
+            text = f"wf_{text}"
+        return text
+
+    def _deduplicate_name(self, name):
+        """Ensure `name` is unique among names generated in this command."""
+        candidate, suffix = name, 2
+        while candidate in self._seen_workflow_names:
+            candidate = f"{name}_{suffix}"
+            suffix += 1
+        self._seen_workflow_names.add(candidate)
+        return candidate
+
+    def _generate_workflow_name(self, source_code, fallback):
+        name = ""
+        try:
+            raw = self.connector.propose_name(source_code=source_code, system_queries= NAME_WORKFLOW_CONTEXT_QUERY)
+            name = self._sanitize_workflow_name(raw)
+        except Exception as e:
+            print_warning(f"Could not generate a workflow name via the LLM: {type(e).__name__}: {e}")
+
+        if not name:
+            name = self._sanitize_workflow_name(fallback) or "workflow"
+
+        return self._deduplicate_name(name)
+
     def _register_single_pe(self, key, pe_class, provider):
         print_status(f"? {key} - {pe_class.__name__}")
-        docstring = self.AiConnector.describe(
+        docstring = self.connector.describe(
             component_name=key, kind="pe",
             code=inspect.getsource(pe_class),
             provider=provider,
@@ -94,19 +136,23 @@ class RegisterCommand:
         self._report_result(r)
 
     def _register_single_workflow(self, key, workflow, mod, module_name, provider):
-        source_code = f"entry {key}()\n"
-        for pe in workflow.get_contained_objects():
-            source_code += inspect.getsource(pe.__class__)
+        pe_sources = "".join(
+            inspect.getsource(pe.__class__)
+            for pe in workflow.get_contained_objects()
+        )
 
-        print_status(f"? {key} - {type(workflow).__name__}")
-        docstring = self.AiConnector.describe(
-            component_name=key, kind="workflow",
+        workflow_name = self._generate_workflow_name(pe_sources, fallback=key)
+        source_code = f"entry {workflow_name}()\n{pe_sources}"
+
+        print_status(f"? {workflow_name} - {type(workflow).__name__}")
+        docstring = self.connector.describe(
+            component_name=workflow_name, kind="workflow",
             code=source_code,
             provider=provider,
             context_queries=REGISTER_WORKFLOW_CONTEXT_QUERIES,
         )
         r = self.client.register_Workflow(
-            workflow=workflow, workflow_name=key,
+            workflow=workflow, workflow_name=workflow_name,
             description=docstring["description"],
             module=mod, module_name=module_name,
             input_description=docstring["inputs"],
@@ -163,8 +209,11 @@ class RegisterCommand:
                     print_error(f"An error occurred during PE registration: {e}")
 
             for key, workflow in workflows.items():
-                self._register_single_workflow(
-                    key, workflow, mod, unique_module_name, provider)
+                try:
+                    self._register_single_workflow(
+                        key, workflow, mod, unique_module_name, provider)
+                except Exception as e:
+                    print_error(f"An error occurred during workflow registration: {e}")
 
             self._cleanup_module(mod)
 
@@ -175,7 +224,6 @@ class RegisterCommand:
         except Exception as e:
             print_error(f"An error occurred: {e}: {type(e).__name__}")
 
-
     def _register_directory(self, path):
 
         if not os.path.exists(path):
@@ -185,7 +233,6 @@ class RegisterCommand:
         if not os.path.isdir(path):
             print_error(f"Error: directory {path} is not a directory")
             return
-
 
         files = [str(p) for p in Path(path).rglob("*.py") if p.is_file()]
 
@@ -223,6 +270,8 @@ class RegisterCommand:
 
         try:
             args = vars(parser.parse_args(shlex.split(args)))
+            self._seen_workflow_names.clear()
+
             if args["type"] == "workflow":
                 self._register_workflow(args["filepath"], provider=args["provider"])
             elif args["type"] == "directory":
