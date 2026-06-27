@@ -72,6 +72,11 @@ def _pip_install(package: str) -> bool:
 
 
 class RegisterCommand:
+    _PLACEHOLDER_CANDIDATES = (1, "placeholder", 1.0, True, [], {}, None)
+    _ANNOTATION_DEFAULTS = {
+        int: 1, float: 1.0, str: "placeholder", bool: True,
+        list: [], dict: {}, tuple: (),
+    }
 
     def __init__(self, client: d4pClient, llmConnector: LLMConnector | None = None, loaded_modules={}):
         self.client = client
@@ -79,6 +84,46 @@ class RegisterCommand:
         self.loaded_modules = loaded_modules
         self.connector = llmConnector or LLMConnector()
         self._seen_workflow_names = set()
+
+    @staticmethod
+    def _required_params(pe_class):
+        try:
+            sig = inspect.signature(pe_class)  # already excludes `self`
+        except (ValueError, TypeError):
+            return None
+        required = []
+        for p in sig.parameters.values():
+            if p.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
+                continue
+            if p.default is inspect.Parameter.empty:
+                required.append(p)
+        return required
+
+    def _instantiate_pe(self, pe_class):
+        try:
+            return pe_class()
+        except TypeError:
+            pass
+
+        required = self._required_params(pe_class)
+        if not required:
+            return pe_class()
+
+        last_err = None
+        for candidate in self._PLACEHOLDER_CANDIDATES:
+            args, kwargs = [], {}
+            for p in required:
+                value = (self._ANNOTATION_DEFAULTS.get(p.annotation, candidate)
+                         if p.annotation is not inspect.Parameter.empty else candidate)
+                if p.kind == inspect.Parameter.KEYWORD_ONLY:
+                    kwargs[p.name] = value
+                else:
+                    args.append(value)
+            try:
+                return pe_class(*args, **kwargs)
+            except Exception as e:
+                last_err = e
+        raise last_err
 
     def _load_module(self, filepath):
         unique_module_name = f"module_name_{int(time.time())}_{self.module_counter}"
@@ -180,7 +225,7 @@ class RegisterCommand:
             provider=provider,
             context_queries=REGISTER_PE_CONTEXT_QUERIES,
         )
-        pe_instance = pe_class()
+        pe_instance = self._instantiate_pe(pe_class)
         r = self.client.register_PE(
             pe_instance,
             description=docstring["description"],
