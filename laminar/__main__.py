@@ -1,6 +1,6 @@
 import argparse
 import os
-
+import sys
 import pwinput
 
 from laminar.screen_printer import print_status, print_text, print_error
@@ -59,8 +59,25 @@ def main():
         print_status(f"Successfully stored PE to {new_filename}")
 
     else:
-        from laminar.cli import LaminarCLI
-        LaminarCLI().cmdloop()
+        from laminar.cli import LaminarShell, ShellSession, _run_handoff_tool
+        from laminar.clitools.login import run_login
+
+        from laminar.client.d4pyclient import d4pClient
+
+        client = d4pClient()
+        if client.get_login() is None:
+            if not run_login(client):
+                print_error("Login cancelled.")
+                sys.exit(0)
+
+        session = ShellSession(client)
+        while True:
+            result = LaminarShell(session).run()
+            if not result:  # None -> quit
+                break
+            if result[0] == "run":
+                _, name, rest = result
+                _run_handoff_tool(session, name, rest)
 
 
 if __name__ == "__main__":

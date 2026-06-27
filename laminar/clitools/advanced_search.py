@@ -17,7 +17,7 @@ from textual.message import Message
 from textual.widgets import Footer, Header, RichLog, Static, TextArea
 
 from laminar.argument_parser import CustomArgumentParser
-from laminar.cli import print_text as _orig_print_text, print_error as _orig_print_error
+from laminar.screen_printer import print_text as _orig_print_text, print_error as _orig_print_error
 from laminar.client.d4pyclient import d4pClient
 from laminar.llms.LLMConnector import LLMConnector
 from laminar.llms.encoder import LaminarCodeEncoder
