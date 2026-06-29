@@ -10,6 +10,7 @@ import os
 from rich.pretty import Pretty
 from rich.syntax import Syntax
 from rich.text import Text
+from rich.table import Table
 from textual import work
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical, VerticalScroll
@@ -27,17 +28,6 @@ from laminar.screen_printer import (
     print_status as _orig_print_status,
 )
 from laminar.clitools.register import RegisterCommand
-
-# --------------------------------------------------------------------------- #
-#  Output routing
-#
-#  The class below calls print_text/print_status/print_warning/print_error/
-#  print_code and input() exactly as it always has. The names are rebound here
-#  to thin routers: when a TUI session is active (_ACTIVE_SINK is set) they feed
-#  the on-screen panels; otherwise they fall straight through to the original
-#  laminar helpers / builtin input(). No method body in the class changes, and
-#  with no TUI session the behaviour is identical to before.
-# --------------------------------------------------------------------------- #
 
 _ACTIVE_SINK = None  # set to the running SearchTUI during a session
 
@@ -93,6 +83,43 @@ def input(prompt=""):  # noqa: A001 - intentionally shadows builtin in this modu
 
 
 _SHUTDOWN = object()  # pushed into the answer queue to unblock input() on quit
+
+
+def _fmt_cell(value) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, float):
+        return f"{value:.4f}"
+    if isinstance(value, (list, tuple, set)):
+        return ", ".join(str(v) for v in value)
+    if isinstance(value, dict):
+        return ", ".join(f"{k}={v}" for k, v in value.items())
+    return str(value)
+
+
+def _rows_to_table(rows) -> Table:
+    if isinstance(rows, dict):
+        rows = [rows]
+    columns = []
+    for row in rows:  # union of keys, first-seen order
+        for key in row.keys():
+            if key not in columns:
+                columns.append(key)
+    table = Table(show_header=True, header_style="bold magenta",
+                  expand=True, show_lines=True)
+    for col in columns:
+        table.add_column(str(col), overflow="fold")  # long text wraps, not overflows
+    for row in rows:
+        table.add_row(*(_fmt_cell(row.get(col)) for col in columns))
+    return table
+
+
+def _is_table_like(value) -> bool:
+    if isinstance(value, dict):
+        return bool(value)
+    if isinstance(value, list) and value:
+        return all(isinstance(item, dict) for item in value)
+    return False
 
 
 def cosine(a: np.ndarray, b: np.ndarray) -> float:
@@ -333,10 +360,9 @@ class AdvancedSearchCommand:
         Perform a semantic search in the Laminar library. Proposes PEs and Workflows if it cannot find a match.
         """)
 
-    def _search(self, query: str, *, kind: str = "auto", input_type: str = "auto", shortlist_n: int = 30,
-                top_k: int = 3):
+    def _search(self, query: str, *, kind: str = "auto", input_type: str = "auto",
+                shortlist_n: int = 30, top_k: int = 3, silent: bool = False):
         kind, input_type = self._detect_inputs(query, kind=kind, input_type=input_type)
-
         shortlist, _mode = self._retrieve(query, kind=kind, input_type=input_type, top_n=shortlist_n)
 
         if not shortlist:
@@ -350,84 +376,24 @@ class AdvancedSearchCommand:
         # IMPORTANT: uncertainty based on embedding similarity, not compressed final score
         uncertain = (best["emb"] < 0.55) or (best["emb"] < 0.65 and gap < 0.04)
 
-        if uncertain:
-            print_warning(
-                f"Could not find a strong match in the database (strongest match: {best['emb']}). Generating a new {kind}:\n")
-            if kind == "workflow":
-                pe_only, _ = self._retrieve(query, kind="pe", input_type=input_type, top_n=40)
-                proposal = self.connector.propose_workflow_composition("openai", query, pe_only, max_fixes=2)
+        # Only bail out (-> generation) when the match is genuinely weak. A
+        # PE/either that is "uncertain" but still has a decent embedding (>= 0.40)
+        # is good enough to surface, matching the original behaviour.
+        if uncertain and (kind == "workflow" or best["emb"] < 0.40):
+            if not silent:
+                print_warning(
+                    f"Could not find a strong match in the database "
+                    f"(strongest match: {best['emb']}).")
+            return None
 
-                print_status(f"{proposal.get('name')} - {proposal.get('description')}:\n")
-                print_code(proposal.get("workflow_code"))
-
-                if proposal.get("new_pe"):
-                    print_warning("\nNew PEs are required for this workflow:")
-
-                    for pe in proposal["new_pe"]:
-                        name = pe["name"]
-                        desc = pe["description"]
-                        print_text(f"{name} : {desc}")
-                        # print_code(pe["code"])
-
-                register_workflow_choice = input(
-                    "Would you like to register / save to a file the workflow? [(R)egister/(S)save/(N)o - Default No]: ") or "N"
-
-                if "R" in register_workflow_choice.upper():
-                    with open("workflow.py", "w") as f:
-                        f.write(proposal["workflow_code"])
-
-                    self.registerInterface.register("workflow workflow.py")
-
-                    os.remove("workflow.py")
-
-                if "S" in register_workflow_choice.upper():
-                    filepath = input(
-                        "Please input file path and filename to store the workflow code: ") or f"{proposal['name']}.py"
-                    with open(filepath, "w") as f:
-                        f.write(proposal["workflow_code"])
-
-                    print_status(f"Stored workflow code to {filepath}")
-
-                return None
-
-            # PE/either: do NOT propose if we already have a clear top result
-            # (If emb is decent, just rerank and show it)
-            # Only propose if best emb is truly low
-            if best["emb"] < 0.40:
-                proposal = self.connector.propose_new_component(provider="openai", query=query)
-
-                print_warning("Could not find a strong match in the database. Generating a new PE:\n")
-                print_status(f"{proposal.get('name')} - {proposal.get('description')}\n")
-                print_code(proposal.get("code"))
-
-                register_pe_choice = input(
-                    "Would you like to register / save the proposed PE? [(R)egister/(S)tore/(N)one]: ") or "N"
-
-                if "R" in register_pe_choice.upper():
-                    with open("pe.py", "w") as f:
-                        f.write(proposal["code"])
-
-                    self.registerInterface.register("pe pe.py")
-
-                    os.remove("pe.py")
-
-                if "S" in register_pe_choice.upper():
-                    filepath = input(
-                        "Please input file path and filename to store the PE code: ") or f"{proposal['name']}.py"
-                    with open(filepath, "w") as f:
-                        f.write(proposal["code"])
-
-                    print_status(f"Stored PE code to {filepath}")
-                return None
-
-        # GPT rerank if not proposing
-        reranked = self.connector.rerank(provider="openai", query=query, candidates=shortlist[:12], top_k=top_k)
-
-        print_status("Top results (GPT reranked):\n")
+        # Confident enough. Rerank (part of search) to pick the single best
+        # ("suggested") candidate; display is then handed off to _present.
+        reranked = self.connector.rerank(provider="openai", query=query,
+                                         candidates=shortlist[:12], top_k=top_k)
         results = reranked.get("results", [])
-        print_text(results, tab=True)
 
-        # Suggested candidate
+        # Best suggested = the first reranked result mapped back to its shortlist
+        # row; fall back to the top-scored row if rerank returned nothing.
         suggested = shortlist[0]
         if results:
             top = results[0]
@@ -437,6 +403,17 @@ class AdvancedSearchCommand:
                     break
 
         suggested["tags"] = _safe_json_loads(suggested.get("tags_json"), [])
+
+        if not silent:
+            self._present(results, suggested)
+
+        return shortlist
+
+    def _present(self, results: list, suggested: dict):
+
+        print_status("Top results (GPT reranked):\n")
+        print_text(results, tab=True)
+
         print_status("Suggested candidate:\n")
         print_text([{
             "id": suggested["id"],
@@ -446,30 +423,111 @@ class AdvancedSearchCommand:
             "tags": suggested["tags"],
         }], tab=True)
 
-        result_id = suggested.get("id")
-        results = []
-        tmp = self.client.get_Workflow(result_id)
-        if tmp:
-            results.append(tmp)
-        tmp = self.client.get_PE(result_id)
-        if tmp:
-            results.append(tmp)
+        source = self._get_source(suggested.get("id"), suggested.get("type"))
+        if source is not None:
+            print_status("\nSource code:")
+            print_code(source)
 
-        print_status("\nSource code:")
-        print_code(results[0][1])
+    def _generate(self, query: str, *, kind: str = "auto", input_type: str = "auto",
+                  pe_top_n: int = 40, silent: bool = False):
 
+        kind, input_type = self._detect_inputs(query, kind=kind, input_type=input_type)
+
+        if kind == "workflow":
+            pe_only, _ = self._retrieve(query, kind="pe", input_type=input_type, top_n=pe_top_n)
+            proposal = self.connector.propose_workflow_composition("openai", query, pe_only, max_fixes=2)
+
+            print_status(f"{proposal.get('name')} - {proposal.get('description')}:\n")
+            print_code(proposal.get("workflow_code"))
+
+            if proposal.get("new_pe"):
+                print_warning("\nNew PEs are required for this workflow:")
+                for pe in proposal["new_pe"]:
+                    print_text(f"{pe['name']} : {pe['description']}")
+
+            self._register_or_store(
+                code=proposal["workflow_code"],
+                component_type="workflow",
+                default_name=proposal.get("name", "workflow"),
+                silent=silent,
+            )
+            return proposal
+
+        # PE / either
+        proposal = self.connector.propose_new_component(provider="openai", query=query)
+
+        print_warning("Generating a new PE:\n")
+        print_status(f"{proposal.get('name')} - {proposal.get('description')}\n")
+        print_code(proposal.get("code"))
+
+        self._register_or_store(
+            code=proposal["code"],
+            component_type="pe",
+            default_name=proposal.get("name", "pe"),
+            silent=silent,
+        )
+        return proposal
+
+    def _search_or_generate(self, query: str, *, kind: str = "auto", input_type: str = "auto",
+                            shortlist_n: int = 30, top_k: int = 3, silent: bool = False):
+
+        kind, input_type = self._detect_inputs(query, kind=kind, input_type=input_type)
+
+        match = self._search(query, kind=kind, input_type=input_type,
+                             shortlist_n=shortlist_n, top_k=top_k, silent=silent)
+        if match is not None:
+            return match
+
+        return self._generate(query, kind=kind, input_type=input_type, silent=silent)
+
+    def _get_source(self, result_id, kind: str = None):
+
+        if kind == "pe":
+            getters = (self.client.get_PE, self.client.get_Workflow)
+        elif kind == "workflow":
+            getters = (self.client.get_Workflow, self.client.get_PE)
+        else:
+            getters = (self.client.get_Workflow, self.client.get_PE)
+
+        for getter in getters:
+            tmp = getter(result_id)
+            if tmp:
+                return tmp[1]
         return None
+
+    def _register_or_store(self, *, code: str, component_type: str,
+                           default_name: str, silent: bool = False):
+        if silent:
+            return
+
+        choice = (input(
+            f"Would you like to register / save the proposed {component_type}? "
+            f"[(R)egister/(S)tore/(N)o - Default No]: ") or "N").upper()
+
+        if "R" in choice:
+            tmp_path = f"{component_type}.py"
+            with open(tmp_path, "w") as f:
+                f.write(code)
+            self.registerInterface.register(f"{component_type} {tmp_path}")
+            os.remove(tmp_path)
+
+        if "S" in choice:
+            filepath = input(
+                f"Please input file path and filename to store the {component_type} code: "
+            ) or f"{default_name}.py"
+            with open(filepath, "w") as f:
+                f.write(code)
+            print_status(f"Stored {component_type} code to {filepath}")
 
     def _run_query(self):
         kind = input("Kind (pe or workflow. Default: workflow): ") or "workflow"
         input_type = input("Input type (auto): ") or "auto"
         query = input("Query: ")
 
-        self._search(query=query, input_type=input_type, kind=kind, top_k=3)
+        self._search_or_generate(query=query, input_type=input_type, kind=kind, top_k=3)
 
     def search_library(self, arg):
         SearchTUI(self).run()
-
 
 
 class PromptArea(TextArea):
@@ -506,6 +564,7 @@ class PromptArea(TextArea):
     def _resize(self) -> None:
         rows = max(1, min(self.wrapped_document.height, self.MAX_ROWS))
         self.styles.height = rows + 2  # + top/bottom border
+
 
 class SearchTUI(App):
     """Split-pane UI that drives AdvancedSearchCommand. The command's own
@@ -628,6 +687,8 @@ class SearchTUI(App):
         for a in args:
             if isinstance(a, str):
                 self._append(Text(a.rstrip("\n"), style=style) if style else Text(a.rstrip("\n")))
+            elif _is_table_like(a):
+                self._append(_rows_to_table(a))  # <- new branch
             else:
                 self._append(Pretty(a))
 
