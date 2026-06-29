@@ -10,6 +10,7 @@ import subprocess
 import shutil
 import os
 import configparser
+import cloudpickle
 from os import getcwd
 from pathlib import Path
 
@@ -148,6 +149,7 @@ class RegisterCommand:
                     pass
 
         self.loaded_modules[unique_module_name] = mod
+        cloudpickle.register_pickle_by_value(mod)
         return mod, unique_module_name
 
     @staticmethod
@@ -177,6 +179,10 @@ class RegisterCommand:
     @staticmethod
     def _cleanup_module(mod):
         """Drop references to instantiated PEs / workflows on the module."""
+        try:
+            cloudpickle.unregister_pickle_by_value(mod)
+        except (ValueError, KeyError):
+            pass
         for var in dir(mod):
             attr = getattr(mod, var)
             if isinstance(attr, (GenericPE, WorkflowGraph)):
@@ -391,4 +397,5 @@ class RegisterCommand:
             else:
                 self._register_pe(args["filepath"], provider=args["provider"])
         except argparse.ArgumentError as e:
+            print_error(e.message.replace("register_", ""))
             print_error(e.message.replace("register_", ""))

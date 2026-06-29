@@ -1,6 +1,6 @@
 import subprocess
 import os
-import pickle
+import cloudpickle as pickle
 import codecs
 import tempfile
 
@@ -145,7 +145,6 @@ def format_ast_pe_results(similarPEs, response):
 
 
 def format_ast_workflow_results(similarWorkflows):
-    formatted_workflows = []
     formatted_workflows = []
     for wf in similarWorkflows:
         wfId = wf[0]
