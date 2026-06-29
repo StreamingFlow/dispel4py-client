@@ -188,9 +188,6 @@ class ListCommand:
             print_error(f"[red]An error occurred:[/red] {e}:", True)
             return
 
-        if not description:
-            self.console.print("[dim]No objects in the registry.[/dim]")
-            return
 
         _build_app(description).run()
 

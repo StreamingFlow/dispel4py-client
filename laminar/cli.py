@@ -1,43 +1,3 @@
-"""
-Textual shell for the Laminar CLI.
-
-Replaces the cmd.Cmd-based ``LaminarCLI`` with a Textual ``App`` while reusing
-every existing command class unchanged, matching the style already used by
-``clitools/list.py`` and ``clitools/advanced_search.py``.
-
-Why the structure looks the way it does
----------------------------------------
-A Textual ``App`` cannot launch another Textual ``App().run()`` while it is
-running: ``App.run()`` calls ``asyncio.run()``, which fails inside the host's
-already-running event loop, and ``App.suspend()`` (meant for external programs
-like an editor) is not exception-safe, so the failure leaves the driver
-suspended and the terminal hung.
-
-So commands fall into two groups:
-
-* INLINE (search, run, register, describe, update_description,
-  code_recommendation, help) only print. They run inside the shell, in a
-  worker thread, with their ``screen_printer`` / ``print()`` output streamed
-  into the transcript pane. No nesting.
-
-* HANDOFF (list, advanced_search -- themselves full Textual apps; remove --
-  uses ``input()``) need the whole terminal. The shell *exits* with the
-  requested command; an outer loop in ``run_cli`` runs that tool at the top
-  level (a fresh ``App().run()`` -- no nesting, same process, same client),
-  then relaunches the shell and replays the transcript.
-
-The shared ``ShellSession`` keeps the client, the built command objects, the
-loaded modules and the transcript across relaunches, so re-entering the shell
-is instant (no re-login, no re-fetch).
-
-Entry point::
-
-    from laminar.shell import run_cli
-    run_cli()
-
-Requires: pip install textual
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -90,7 +50,7 @@ _KIND = {
     "update_description": "inline",
     "list": "handoff",
     "advanced_search": "handoff",
-    "remove": "handoff",  # uses input() for confirmation
+    "remove": "inline",
 }
 
 _INLINE_BLURB = {
@@ -351,6 +311,8 @@ class LaminarShell(App):
             self._cmd_describe(rest)
         elif name == "code_recommendation":
             self._cmd_code_recommendation(rest)
+        elif name == "remove":
+            s.remove_command.remove(rest)
         elif name == "help":
             self._cmd_help(rest)
 
