@@ -529,11 +529,8 @@ class AdvancedSearchCommand:
                                         default_name=default_name)
 
     def _run_query(self):
-        kind = input("Kind (pe or workflow. Default: workflow): ") or "workflow"
-        input_type = input("Input type (auto): ") or "auto"
         query = input("Query: ")
-
-        self._search_or_generate(query=query, input_type=input_type, kind=kind, top_k=3)
+        self._search_or_generate(query=query, input_type="auto", kind="", top_k=3)
 
     def search_library(self, arg):
         SearchTUI(self).run()
