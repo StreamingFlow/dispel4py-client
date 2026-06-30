@@ -194,19 +194,21 @@ class AdvancedSearchCommand:
             "write": ["write", "jsonl", "export", "output"]
         }
 
-    def _extract_requested_caps(self, query: str) -> set:
-        q = (query or "").lower()
-        req = set()
-
-        for k in self._CAP_HINTS.keys():
-            if k in q:
-                req.add(k)
-        if "cross" in q and "correlation" in q:
-            req.add("cross_correlation")
-        return req
 
     def _workflow_structure_score(self, query: str, pe_list_json: str, pe_tags_by_name: dict) -> float:
-        req = self._extract_requested_caps(query)
+
+        def _extract_requested_caps( q: str) -> set:
+            q = (q or "").lower()
+            request = set()
+
+            for k in self._CAP_HINTS.keys():
+                if k in q:
+                    request.add(k)
+            if "cross" in q and "correlation" in q:
+                request.add("cross_correlation")
+            return request
+
+        req = _extract_requested_caps(query)
         if not req:
             return 0.0
         pe_list = _safe_json_loads(pe_list_json, [])
