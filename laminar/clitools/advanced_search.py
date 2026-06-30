@@ -7,6 +7,7 @@ import traceback
 import numpy as np
 import os
 
+from numpy.random import _generator
 from rich.pretty import Pretty
 from rich.syntax import Syntax
 from rich.text import Text
@@ -18,6 +19,7 @@ from textual.message import Message
 from textual.widgets import Footer, Header, RichLog, Static, TextArea
 
 from laminar.argument_parser import CustomArgumentParser
+from laminar.llms.prompts import refine_prompt
 from laminar.screen_printer import print_text as _orig_print_text, print_error as _orig_print_error
 from laminar.client.d4pyclient import d4pClient
 from laminar.llms.LLMConnector import LLMConnector
@@ -445,13 +447,14 @@ class AdvancedSearchCommand:
                 for pe in proposal["new_pe"]:
                     print_text(f"{pe['name']} : {pe['description']}")
 
-            self._register_or_store(
-                code=proposal["workflow_code"],
-                component_type="workflow",
-                default_name=proposal.get("name", "workflow"),
-                silent=silent,
-            )
-            return proposal
+            if self._save_or_refine(code=proposal["workflow_code"],
+                                    component_type="workflow", default_name=proposal.get("name", "workflow"),
+                                    silent=silent):
+                refinement_query = input("Provide additional information about the new workflow:")
+                query = refine_prompt(proposal["workflow_code"], refinement_query, kind)
+                return self._generate(query, kind=kind, input_type=input_type, pe_top_n=pe_top_n)
+            else:
+                return proposal
 
         # PE / either
         proposal = self.connector.propose_new_component(provider="openai", query=query)
@@ -460,13 +463,13 @@ class AdvancedSearchCommand:
         print_status(f"{proposal.get('name')} - {proposal.get('description')}\n")
         print_code(proposal.get("code"))
 
-        self._register_or_store(
-            code=proposal["code"],
-            component_type="pe",
-            default_name=proposal.get("name", "pe"),
-            silent=silent,
-        )
-        return proposal
+        if self._save_or_refine(code=proposal["code"], component_type="pe",
+                                default_name=proposal.get("name", "pe"), silent=silent, ):
+            refinement_query = input("Provide additional information about the new Processing Element:")
+            query = refine_prompt(proposal["code"], refinement_query, kind)
+            return self._generate(query, kind=kind, input_type=input_type, pe_top_n=pe_top_n)
+        else:
+            return proposal
 
     def _search_or_generate(self, query: str, *, kind: str = "auto", input_type: str = "auto",
                             shortlist_n: int = 30, top_k: int = 3, silent: bool = False):
@@ -495,29 +498,33 @@ class AdvancedSearchCommand:
                 return tmp[1]
         return None
 
-    def _register_or_store(self, *, code: str, component_type: str,
-                           default_name: str, silent: bool = False):
+    def _save_or_refine(self, *, code: str, component_type: str,
+                        default_name: str, silent: bool = False) -> bool:
+        """Return true if another refinement is required, starting the loop again"""
+
         if silent:
-            return
+            return False
 
         choice = (input(
-            f"Would you like to register / save the proposed {component_type}? "
-            f"[(R)egister/(S)tore/(N)o - Default No]: ") or "N").upper()
+            f"Would you like to refine / save the proposed {component_type}? "
+            f"[(R)efine/(S)ave/(E)xit - Default Exit]: ") or "E").upper()
 
-        if "R" in choice:
-            tmp_path = f"{component_type}.py"
-            with open(tmp_path, "w") as f:
-                f.write(code)
-            self.registerInterface.register(f"{component_type} {tmp_path}")
-            os.remove(tmp_path)
-
-        if "S" in choice:
+        if "R" in choice or "refine" in choice:
+            return True
+        elif "S" in choice or "save" in choice:
             filepath = input(
-                f"Please input file path and filename to store the {component_type} code: "
+                f"Please input file path and filename to save the {component_type} code: "
             ) or f"{default_name}.py"
             with open(filepath, "w") as f:
                 f.write(code)
             print_status(f"Stored {component_type} code to {filepath}")
+            return False
+        elif "E" in choice or "exit" in choice:
+            return False
+        else:
+            print_warning(f"Unknown option: {choice}")
+            return self._save_or_refine(code=code, component_type=component_type, silent=silent,
+                                        default_name=default_name)
 
     def _run_query(self):
         kind = input("Kind (pe or workflow. Default: workflow): ") or "workflow"

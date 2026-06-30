@@ -85,3 +85,11 @@ def classify_prompt(query: str | None) -> str:
 
 def give_name_prompt(source_code: str) -> str:
     return NAME_WORKFLOW_QUERY.format(code=source_code)
+
+def refine_prompt(source_code: str, refinement_query: str, component:str) -> str:
+    return (
+        f"This proposed {component} was generated:"
+        f"{source_code}\n\n"
+        f"However user requested theese changes: {refinement_query}\n\n"
+        f"Update the {component} accordingly."
+    )
