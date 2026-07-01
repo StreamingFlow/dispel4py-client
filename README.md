@@ -61,6 +61,7 @@ Before running the Laminar Client, please ensure that you have a running dispel4
 ```bash
 git clone https://github.com/StreamingFlow/dispel4py-client.git
 cd dispel4py-client
+git submodule update --init --recursive
 ```
 
 ### Python Environment
