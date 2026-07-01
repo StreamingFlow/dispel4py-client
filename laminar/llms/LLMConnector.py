@@ -42,6 +42,10 @@ class LLMConnector:
             prompt=prompt, system_queries=system_queries
         )
 
+    def propose_name(self, source_code, system_queries: list[str], provider : str = "openai"):
+        query = prompts.give_name_prompt(source_code=source_code)
+        return self._ask(provider, query, system_queries=system_queries)["name"]
+
     def describe(self, component_name: str, kind: str, code: str,
                  provider: str = "openai", context_queries: list[str] = None) -> dict:
         if kind not in ("pe", "workflow"):

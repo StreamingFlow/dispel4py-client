@@ -4,7 +4,8 @@ from laminar.llms.queries_templates import (
     REQUEST_NEW_WORKFLOW_CONTEXT_QUERIES,
     REQUEST_DESCRIPTION_CONTEXT_QUERIES,
     EVALUATE_QUALITY_REQUESTED_WORKFLOW_CONTEXT_QUERIES,
-    PE_AUTHORING_RULES
+    PE_AUTHORING_RULES,
+    NAME_WORKFLOW_QUERY
 )
 
 
@@ -79,4 +80,16 @@ def classify_prompt(query: str | None) -> str:
         "Classify the user's intent for searching a small dispel4py library.\n\n"
         f"Return JSON:\n{schema}\n\n"
         f"User input:\n{query}"
+    )
+
+
+def give_name_prompt(source_code: str) -> str:
+    return NAME_WORKFLOW_QUERY.format(code=source_code)
+
+def refine_prompt(source_code: str, refinement_query: str, component:str) -> str:
+    return (
+        f"This proposed {component} was generated:"
+        f"{source_code}\n\n"
+        f"However user requested theese changes: {refinement_query}\n\n"
+        f"Update the {component} accordingly."
     )

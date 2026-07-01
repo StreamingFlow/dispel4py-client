@@ -72,18 +72,17 @@ class RemoveCommand:
         parser = CustomArgumentParser(exit_on_error=False)
         parser.add_argument("type", help="Type of object to remove", choices=["workflow", "pe", "all"])
         parser.add_argument("id", type=type_checker, default=-1, nargs='?')
+        parser.add_argument("--yes", action="store_true",
+                            help="Do not prompt for confirmation when removing all registry.", default=False)
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
 
             remove_all = args["id"] == "all" or args["type"] == "all"
 
-            if remove_all:
-                confirmation = input(
-                    f"Are you sure you want to remove all {args["type"] if "all" not in args["type"] else "objects"}? [Y/N]: ")
-                if confirmation.lower() != 'y':
-                    print_warning("Operation cancelled by user.")
-                    return
-            elif args["id"] == -1:
+            if remove_all and not args["yes"]:
+                print_error("You need to add --yes when removing all registry.")
+                return
+            elif args["id"] == -1 and args["type"] != "all":
                 print_warning("No valid object ID was provided")
                 return
 

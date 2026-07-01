@@ -1,6 +1,6 @@
 import subprocess
 import os
-import pickle
+import cloudpickle as pickle
 import codecs
 import tempfile
 
@@ -91,7 +91,8 @@ def get_objects(results, extended=False):
                 obj = pickle.loads(codecs.decode(result['workflowCode'].encode(), "base64"))
                 objectList.append(obj)
             except Exception as e:
-                print_warning(F"An exception occurred while fetching {result['peName']} : {e}")
+                if result:
+                    print_warning(F"An exception occurred while fetching workflow {result['workflowName']} : {e}")
                 pass
         else:
             if extended:
@@ -114,7 +115,7 @@ def get_objects(results, extended=False):
                 obj = pickle.loads(codecs.decode(result['peCode'].encode(), "base64"))
                 objectList.append(obj)
             except Exception as e:
-                print_warning(F"An exception occurred while fetching {result['peId']} : {e}")
+                print_warning(F"An exception occurred while fetching Processing Element {result['peName']} : {e}")
                 pass
 
     return object_description, objectList
@@ -144,7 +145,6 @@ def format_ast_pe_results(similarPEs, response):
 
 
 def format_ast_workflow_results(similarWorkflows):
-    formatted_workflows = []
     formatted_workflows = []
     for wf in similarWorkflows:
         wfId = wf[0]
