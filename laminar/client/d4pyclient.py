@@ -1,10 +1,3 @@
-"""High-level Laminar client.
-
-``d4pClient`` is the main entry point most users interact with.  It wraps
-:class:`laminar.client.web.client.WebClient` and turns user-friendly arguments
-into the data-transfer objects the server expects.
-"""
-
 import logging
 import os
 import re
@@ -31,7 +24,6 @@ _TYPES = Literal["pe", "workflow", "both"]
 _QUERY_TYPES = Literal["text", "code"]
 _E_TYPES = Literal["llm", "spt"]
 
-# Valid (query_type -> embedding_type) combinations for semantic search.
 _VALID_COMBINATIONS = {"text": ["llm"], "code": ["llm", "spt"]}
 
 
@@ -47,9 +39,6 @@ class d4pClient:
         if user_name is not None and user_password is not None:
             self.login(user_name, user_password)
 
-    # ------------------------------------------------------------------ #
-    # Internal helpers
-    # ------------------------------------------------------------------ #
     def _get_encoder(self) -> LaminarCodeEncoder:
         """Lazily build (and cache) the code/text encoder."""
         if self.encoder is None:
@@ -61,9 +50,6 @@ class d4pClient:
         options = get_args(_TYPES)
         assert search_type in options, f"'{search_type}' is not in {options}"
 
-    # ------------------------------------------------------------------ #
-    # Authentication
-    # ------------------------------------------------------------------ #
     def register(self, user_name: str, user_password: str):
         """Register a user with the Registry service."""
         data = AuthenticationData(user_name=user_name, user_password=user_password)
@@ -78,9 +64,6 @@ class d4pClient:
         """Return the current username, or ``None`` if nobody is logged in."""
         return g_vars.CLIENT_AUTH_ID if g_vars.CLIENT_AUTH_ID != "None" else None
 
-    # ------------------------------------------------------------------ #
-    # Registration
-    # ------------------------------------------------------------------ #
     def register_PE(self, pe: g_vars.PE_TYPES, description: str = None,
                     input_description: str = None, output_description: str = None,
                     llm_provider: str = None, llm_model: str = None,
@@ -109,9 +92,6 @@ class d4pClient:
         )
         return self.webclient.register_Workflow(data)
 
-    # ------------------------------------------------------------------ #
-    # Execution
-    # ------------------------------------------------------------------ #
     def run(self, workflow: Union[str, int, WorkflowGraph], input=None,
             process: g_vars.Process = g_vars.Process.SIMPLE,
             resources: list[str] = None, verbose: bool = True):
@@ -144,9 +124,6 @@ class d4pClient:
         """Alternative for ``client.run(process=Process.DYNAMIC)``."""
         return self.run(workflow, input, g_vars.Process.DYNAMIC, resources, verbose)
 
-    # ------------------------------------------------------------------ #
-    # Retrieval
-    # ------------------------------------------------------------------ #
     def get_PE(self, pe: Union[str, int], describe: bool = False):
         """Retrieve a PE from the registry."""
         data = self.webclient.get_PE(pe)
@@ -174,9 +151,6 @@ class d4pClient:
         """Retrieve the full Registry."""
         return self.webclient.get_Registry(extended)
 
-    # ------------------------------------------------------------------ #
-    # Description / display
-    # ------------------------------------------------------------------ #
     def describe(self, obj: any, sc, include_source_code: bool = False):
         """Describe a PE or Workflow object.
 
@@ -231,9 +205,6 @@ class d4pClient:
             print_status("\n PE Source Code:\n")
             print_code(sc)
 
-    # ------------------------------------------------------------------ #
-    # Search
-    # ------------------------------------------------------------------ #
     def search_Registry_Semantic(self, search: str, search_type: _TYPES = "pe"):
         """Semantic (text-embedding) search of the registry."""
         self._validate_search_type(search_type)
@@ -266,18 +237,12 @@ class d4pClient:
         """Return full-text-search scores keyed by ``(kind, id)``."""
         return self.webclient.lexical_scores(kind, query, limit)
 
-    # ------------------------------------------------------------------ #
-    # Descriptions
-    # ------------------------------------------------------------------ #
     def update_Workflow_Description(self, workflow: Union[str, int], new_description):
         return self.webclient.update_workflow_description(workflow, new_description)
 
     def update_PE_Description(self, pe: Union[str, int], new_description):
         return self.webclient.update_pe_description(pe, new_description)
 
-    # ------------------------------------------------------------------ #
-    # Removal
-    # ------------------------------------------------------------------ #
     def remove_PE(self, pe: Union[str, int]):
         """Remove a PE from the Registry."""
         return self.webclient.remove_PE(pe)

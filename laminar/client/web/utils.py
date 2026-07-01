@@ -1,8 +1,4 @@
 """Shared helpers for the Laminar web client.
-
-This module intentionally keeps *no* network logic: it only contains
-serialization helpers, small formatting utilities and the exception types
-used across the ``laminar.client.web`` package.
 """
 
 import codecs
@@ -36,9 +32,6 @@ __all__ = [
 ]
 
 
-# --------------------------------------------------------------------------- #
-# Exceptions
-# --------------------------------------------------------------------------- #
 class LaminarError(Exception):
     """Base class for all Laminar client errors."""
 
@@ -65,9 +58,6 @@ def verify_login(logger=None):
         )
 
 
-# --------------------------------------------------------------------------- #
-# (De)serialization
-# --------------------------------------------------------------------------- #
 def get_payload(obj) -> str:
     """Pickle ``obj`` and encode it as a base64 string (server wire format)."""
     return codecs.encode(pickle.dumps(obj), "base64").decode()
@@ -98,9 +88,6 @@ def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
     return float(np.dot(a, b) / denom) if denom else 0.0
 
 
-# --------------------------------------------------------------------------- #
-# Source-code helpers
-# --------------------------------------------------------------------------- #
 def create_import_string(pe_source_code: str) -> str:
     """Return a comma-separated list of top-level imports found in the source."""
     if not pe_source_code or pe_source_code == "Source code not available":
@@ -151,9 +138,6 @@ def serialize_directory(path) -> str:
     return get_payload(data)
 
 
-# --------------------------------------------------------------------------- #
-# Result formatting
-# --------------------------------------------------------------------------- #
 def _describe_common(result: dict, desc: str) -> dict:
     """Fields shared by the PE and workflow summary rows."""
     return {

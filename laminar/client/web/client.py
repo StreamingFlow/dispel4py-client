@@ -1,8 +1,4 @@
 """HTTP client for the Laminar registry / execution server.
-
-``WebClient`` wraps the REST API exposed by the Laminar server.  It is used by
-:class:`laminar.client.d4pyclient.d4pClient`; end users normally go through that
-higher-level class rather than this one.
 """
 
 import json
@@ -49,10 +45,6 @@ HTTP_TIMEOUT = 30
 # Working directory used by the Aroma AST feature extractor.
 AROMA_WORKING_DIR = "../../Aroma"
 
-
-# --------------------------------------------------------------------------- #
-# Small request helpers
-# --------------------------------------------------------------------------- #
 def _api_error(payload) -> Union[str, None]:
     """Return the error message if ``payload`` is an ApiError dict, else None."""
     if isinstance(payload, dict) and "ApiError" in payload:
@@ -65,9 +57,6 @@ class WebClient:
     def __init__(self):
         self.encoder = None
 
-    # ------------------------------------------------------------------ #
-    # Internal utilities
-    # ------------------------------------------------------------------ #
     def _get_encoder(self) -> LaminarCodeEncoder:
         """Lazily build (and cache) the code/text encoder."""
         if self.encoder is None:
@@ -95,9 +84,6 @@ class WebClient:
         except ValueError:
             return None
 
-    # ------------------------------------------------------------------ #
-    # Authentication
-    # ------------------------------------------------------------------ #
     def register_user(self, user_data: AuthenticationData):
         payload = self._request_json(
             "POST", g_vars.URL_REGISTER_USER,
@@ -123,9 +109,6 @@ class WebClient:
         logger.info("Successfully logged in: " + payload["userName"])
         return payload["userName"]
 
-    # ------------------------------------------------------------------ #
-    # Registration
-    # ------------------------------------------------------------------ #
     def register_PE(self, pe_payload: PERegistrationData):
         verify_login()
         response = self._request(
@@ -205,9 +188,6 @@ class WebClient:
                 ),
             )
 
-    # ------------------------------------------------------------------ #
-    # Execution
-    # ------------------------------------------------------------------ #
     def run(self, execution_payload: ExecutionData, verbose: bool = True):
         """Execute a workflow, streaming server-sent events.
 
@@ -267,9 +247,6 @@ class WebClient:
             for f in open_files:
                 f.close()
 
-    # ------------------------------------------------------------------ #
-    # Retrieval
-    # ------------------------------------------------------------------ #
     def get_PE(self, pe: Union[int, str]):
         verify_login()
         url = self._pe_url(g_vars.URL_GET_PE_NAME, g_vars.URL_GET_PE_ID, pe)
@@ -352,9 +329,6 @@ class WebClient:
                 pe_ids.append(result["peId"])
         return workflow_ids, pe_ids
 
-    # ------------------------------------------------------------------ #
-    # Removal
-    # ------------------------------------------------------------------ #
     def remove_PE(self, pe: Union[int, str]):
         verify_login()
         url = self._pe_url(g_vars.URL_REMOVE_PE_NAME, g_vars.URL_REMOVE_PE_ID, pe)
@@ -384,9 +358,6 @@ class WebClient:
             logger.error(_api_error(payload) or f"Failed to remove {label}: {obj_id}")
         return payload
 
-    # ------------------------------------------------------------------ #
-    # Descriptions
-    # ------------------------------------------------------------------ #
     def update_workflow_description(self, workflow, new_description):
         return self._update_description(
             g_vars.URL_UPDATE_WORKFLOW_DESC_ID, workflow, new_description, "workflow"
@@ -412,9 +383,6 @@ class WebClient:
             return f"Successfully updated the description of {label} ID: {obj_id}"
         raise LaminarError(f"Failed to update {label} description: {response.text}")
 
-    # ------------------------------------------------------------------ #
-    # Search
-    # ------------------------------------------------------------------ #
     def search(self, search_payload: SearchData):
         """Literal (keyword) search."""
         verify_login()
@@ -451,7 +419,6 @@ class WebClient:
             return self._search_llm(items, search_dict["search"], query_type, search_type)
         return self._search_ast(items, search_dict["search"], search_type)
 
-    # -- LLM (embedding cosine-similarity) search ---------------------- #
     def _search_llm(self, items, query, query_type, search_type):
         encoder = self._get_encoder()
         is_code = query_type == "code"
@@ -486,7 +453,6 @@ class WebClient:
 
         return [load_payload(item[code_key]) for _, item in top if item.get(code_key)]
 
-    # -- AST (Aroma structural) search --------------------------------- #
     def _search_ast(self, items, query, search_type):
         ast_embeddings = []
         for pe in items:
@@ -533,9 +499,6 @@ class WebClient:
         print(df[["workflowId", "workflowName", "description", "occurrences"]])
         return [load_payload(code) for code in df["workflowCode"]]
 
-    # ------------------------------------------------------------------ #
-    # Lexical (full-text) scoring
-    # ------------------------------------------------------------------ #
     def lexical_scores(self, kind: str, query: str, limit: int = 50) -> dict:
         q = self._prepare_fts_query(query)
         if not q:
@@ -567,9 +530,6 @@ class WebClient:
         tokens = [t for t in re.findall(r"[a-zA-Z0-9_]+", (q or "").lower()) if len(t) > 2]
         return " OR ".join(tokens[:12]) if tokens else ""
 
-    # ------------------------------------------------------------------ #
-    # URL helpers
-    # ------------------------------------------------------------------ #
     @staticmethod
     def _pe_url(name_template, id_template, pe):
         if isinstance(pe, str):
