@@ -194,10 +194,9 @@ class AdvancedSearchCommand:
             "write": ["write", "jsonl", "export", "output"]
         }
 
-
     def _workflow_structure_score(self, query: str, pe_list_json: str, pe_tags_by_name: dict) -> float:
 
-        def _extract_requested_caps( q: str) -> set:
+        def _extract_requested_caps(q: str) -> set:
             q = (q or "").lower()
             request = set()
 
@@ -366,7 +365,10 @@ class AdvancedSearchCommand:
 
     def _search(self, query: str, *, kind: str = "auto", input_type: str = "auto",
                 shortlist_n: int = 30, top_k: int = 3, silent: bool = False):
-        kind, input_type = self._detect_inputs(query, kind=kind, input_type=input_type)
+
+        if kind == "auto" or input_type == "auto":
+            kind, input_type = self._detect_inputs(query, kind=kind, input_type=input_type)
+
         shortlist, _mode = self._retrieve(query, kind=kind, input_type=input_type, top_n=shortlist_n)
 
         if not shortlist:
@@ -435,7 +437,8 @@ class AdvancedSearchCommand:
     def _generate(self, query: str, *, kind: str = "auto", input_type: str = "auto",
                   pe_top_n: int = 40, silent: bool = False):
 
-        kind, input_type = self._detect_inputs(query, kind=kind, input_type=input_type)
+        if kind == "auto" or input_type == "auto":
+            kind, input_type = self._detect_inputs(query, kind=kind, input_type=input_type)
 
         if kind == "workflow":
             pe_only, _ = self._retrieve(query, kind="pe", input_type=input_type, top_n=pe_top_n)
