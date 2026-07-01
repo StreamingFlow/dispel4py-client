@@ -39,10 +39,9 @@ class d4pClient:
         if user_name is not None and user_password is not None:
             self.login(user_name, user_password)
 
-    def _get_encoder(self) -> LaminarCodeEncoder:
-        """Lazily build (and cache) the code/text encoder."""
+    def _get_encoder(self, ensure_models: bool = True) -> LaminarCodeEncoder:
         if self.encoder is None:
-            self.encoder = LaminarCodeEncoder()
+            self.encoder = LaminarCodeEncoder(ensure_models=ensure_models)
         return self.encoder
 
     @staticmethod

@@ -8,7 +8,6 @@ from typing import Optional
 
 from rich.table import Table
 from rich.text import Text
-
 from textual import on, work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -67,8 +66,8 @@ class ShellSession:
     def __init__(self, client: d4pClient) -> None:
         self.client = client
         self.loaded_modules: dict = {}
-        self.transcript: list[str] = []   # ANSI lines, replayed on relaunch
-        self.history: list[str] = []      # command history
+        self.transcript: list[str] = []  # ANSI lines, replayed on relaunch
+        self.history: list[str] = []  # command history
         self.initialized = False
         # command objects (built once, on first launch)
         self.llmConnector: Optional[LLMConnector] = None
@@ -85,9 +84,12 @@ class ShellSession:
         if len(self.transcript) > _TRANSCRIPT_CAP:
             del self.transcript[:-_TRANSCRIPT_CAP]
 
-    def init_commands(self) -> None:
-        """Build command objects and replay load_modules_on_startup() once."""
+    def init_commands(self, status_cb=None) -> None:
+        from laminar.llms.model_manager import ensure_models_available
+        ensure_models_available(status_cb=status_cb)
+
         self.llmConnector = LLMConnector()
+        encoder = self.client._get_encoder(ensure_models=False)
         self.list_command = ListCommand(client=self.client)
         self.search_command = SearchCommand(client=self.client)
         self.register_command = RegisterCommand(
@@ -97,7 +99,7 @@ class ShellSession:
         self.run_command = RunCommand(client=self.client)
         self.update_description_command = UpdateDescriptionCommand(client=self.client)
         self.advanced_search_command = AdvancedSearchCommand(
-            client=self.client, llm_connector=self.llmConnector)
+            client=self.client, encoder=encoder, llm_connector=self.llmConnector)
         self._load_modules_on_startup()
         self.initialized = True
 
@@ -185,14 +187,14 @@ class LaminarShell(App):
 
         log = self.query_one(RichLog)
         if self.session.transcript:
-            for line in self.session.transcript:   # replay (no re-append)
+            for line in self.session.transcript:  # replay (no re-append)
                 log.write(Text.from_ansi(line))
         else:
             self.write_line(_BANNER)
             log.write("")
 
         if self.session.initialized:
-            self._finish_startup()
+            self._finish_startup(ok=True, announce=False)
         else:
             self._startup()
 
@@ -201,19 +203,32 @@ class LaminarShell(App):
 
     @work(thread=True, exclusive=True)
     def _startup(self) -> None:
-        self.call_from_thread(self.write_line, "Loading modules from registry\u2026")
-        try:
-            self.session.init_commands()
-        except Exception as exc:  # noqa: BLE001
-            self.call_from_thread(self.write_line, f"\033[33m[startup] {exc}\033[0m")
-        self.call_from_thread(self._finish_startup)
+        def status(msg: str) -> None:
+            self.call_from_thread(self.write_line, msg)
 
-    def _finish_startup(self) -> None:
+        status("Loading modules from registry\u2026")
+        ok = True
+        try:
+            self.session.init_commands(status_cb=status)
+        except Exception as exc:  # noqa: BLE001
+            ok = False
+            self.call_from_thread(self.write_line, f"\033[31m[startup] {exc}\033[0m")
+        self.call_from_thread(self._finish_startup, ok, True)
+
+    def _finish_startup(self, ok: bool = True, announce: bool = False) -> None:
         cmd = self.query_one("#command", Input)
+        if not (ok and self.session.initialized):
+            cmd.placeholder = "Startup failed \u2014 commands disabled"
+            cmd.disabled = True
+            self.write_line(
+                "\033[31mStartup did not complete: the required encoder models are not "
+                "available, so commands are disabled. Check your network "
+                "connection and restart Laminar.\033[0m")
+            return
         cmd.placeholder = "Type a command \u2014 try `help`"
         cmd.disabled = False
         cmd.focus()
-        if not self.session.initialized:
+        if announce:
             self.write_line("Ready. Type `help` to list commands.")
 
     # -- transcript helpers (UI thread) -------------------------------------
@@ -419,4 +434,3 @@ def _run_handoff_tool(session: ShellSession, name: str, rest: str) -> None:
         except EOFError:
             pass
     session.note(f"\033[2m(returned from {name})\033[0m")
-

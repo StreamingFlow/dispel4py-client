@@ -70,6 +70,19 @@ def main():
                 print_error("Login cancelled.")
                 sys.exit(0)
 
+        # Download the Hugging Face models up front
+        from laminar.llms.model_manager import ensure_models_available, ModelSetupError
+        print_status("Preparing language models (first run may download several hundred MB)…")
+        try:
+            ensure_models_available(status_cb=print_status)
+        except ModelSetupError as exc:
+            print_error(f"Could not prepare the required models: {exc}",
+                        _traceback=False)
+            print_error("Laminar cannot start without them. Check your network "
+                        "connection and try again.", _traceback=False)
+            sys.exit(1)
+        print_status("Models ready.")
+
         session = ShellSession(client)
         while True:
             result = LaminarShell(session).run()

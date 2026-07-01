@@ -45,6 +45,7 @@ HTTP_TIMEOUT = 30
 # Working directory used by the Aroma AST feature extractor.
 AROMA_WORKING_DIR = "../../Aroma"
 
+
 def _api_error(payload) -> Union[str, None]:
     """Return the error message if ``payload`` is an ApiError dict, else None."""
     if isinstance(payload, dict) and "ApiError" in payload:
@@ -57,10 +58,9 @@ class WebClient:
     def __init__(self):
         self.encoder = None
 
-    def _get_encoder(self) -> LaminarCodeEncoder:
-        """Lazily build (and cache) the code/text encoder."""
+    def _get_encoder(self, ensure_models: bool = True) -> LaminarCodeEncoder:
         if self.encoder is None:
-            self.encoder = LaminarCodeEncoder()
+            self.encoder = LaminarCodeEncoder(ensure_models=ensure_models)
         return self.encoder
 
     @staticmethod

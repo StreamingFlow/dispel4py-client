@@ -1,14 +1,26 @@
-import torch
-from transformers import AutoModel, AutoTokenizer
-import torch.nn.functional as functional
-import numpy as np
 import base64
 import binascii
 
+import numpy as np
+import torch
+import torch.nn.functional as functional
+from transformers import AutoModel, AutoTokenizer
+
+from laminar.llms.model_manager import (
+    TEXT_MODEL_NAME,
+    CODE_MODEL_NAME,
+    ensure_models_available,
+)
+
+
 class LaminarCodeEncoder:
 
-    def __init__(self, text_model_name="sentence-transformers/all-MiniLM-L6-v2",
-                 code_model_name="microsoft/codebert-base"):
+    def __init__(self, text_model_name=TEXT_MODEL_NAME,
+                 code_model_name=CODE_MODEL_NAME,
+                 ensure_models: bool = True,
+                 status_cb=None):
+        if ensure_models:
+            ensure_models_available(status_cb=status_cb)
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.text_tok = AutoTokenizer.from_pretrained(text_model_name)
@@ -49,7 +61,6 @@ class LaminarCodeEncoder:
                     return value
             return value
 
-
         s = (s or "").strip()
         if not s:
             return np.zeros((768,), dtype=np.float32)  # CodeBERT hidden size
@@ -65,4 +76,3 @@ class LaminarCodeEncoder:
         code_embedding = self.embed_code(query) if input_type in ("code", "mixed") else None
 
         return desc_embedding, code_embedding
-
