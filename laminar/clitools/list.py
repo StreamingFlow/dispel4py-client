@@ -185,7 +185,7 @@ class ListCommand:
         try:
             description, _registry = self.client.get_Registry()
         except Exception as e:  # mirror your existing print_error flow
-            print_error(f"[red]An error occurred:[/red] {e}:", True)
+            print_error(f"[red]An error occurred:[/red] {e}:")
             return
 
 

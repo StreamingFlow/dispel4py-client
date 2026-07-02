@@ -94,11 +94,10 @@ class LLMConnector:
 
             proposal = self._ask(provider, prompts.fix_prompt(issues, original_request, proposal))
 
-        print_error(f"There were {len(issues)} issue(s) the LLM could not resolve after {max_fixes} fix attempt(s).",
-                    _traceback=False)
+        print_error(f"There were {len(issues)} issue(s) the LLM could not resolve after {max_fixes} fix attempt(s).")
         for issue in issues:
-            print_error(f"\t • {issue}", _traceback=False)
-        print_error("Please review the generated code manually.\n", _traceback=False)
+            print_error(f"\t • {issue}")
+        print_error("Please review the generated code manually.\n")
 
         return proposal
 

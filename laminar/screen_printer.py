@@ -44,8 +44,8 @@ def print_status(status):
     console.print(f"[bold green]{status}[/bold green]")
 
 
-def print_error(error, _traceback=True):
-    if _traceback:
+def print_error(error):
+    if "LAMINAR_DBG" in os.environ and os.environ["LAMINAR_DBG"].upper() == "ON":
         console.print(f"{traceback.format_exc()}")
     console.print(f"[bold red]ERR: {error}[/bold red]")
 

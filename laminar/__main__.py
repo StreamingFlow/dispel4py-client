@@ -46,8 +46,7 @@ def main():
         if converted.pe is None:
             print_error(
                 "Could not convert: the function must take at most 1 parameter "
-                "and return at most 1 value (Producer/Iterative/Consumer).",
-                _traceback=False)
+                "and return at most 1 value (Producer/Iterative/Consumer).")
             exit(-1)
 
         print_text(converted.pe)

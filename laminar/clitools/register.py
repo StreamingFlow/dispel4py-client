@@ -66,7 +66,7 @@ def _pip_install(package: str) -> bool:
     try:
         subprocess.run(command,check=True, capture_output=True, text=True,)
     except subprocess.CalledProcessError as e:
-        print_error(f"pip failed to install '{package}':\n{e.stderr.strip()}", _traceback=False)
+        print_error(f"pip failed to install '{package}':\n{e.stderr.strip()}")
         return False
     importlib.invalidate_caches()  # let the running interpreter see the new package
     return True
