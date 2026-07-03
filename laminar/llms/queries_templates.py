@@ -102,7 +102,9 @@ WORKFLOW_GRAPH_RULES = [
     "unimplemented is the business logic of a newly created PE (see the new-PE "
     "rule below); everything else, including all wiring and the sink, must work.",
 
-    "Whenever possible, use the available PEs to compose the workflow.",
+    "Whenever possible, use the available PEs to compose the workflow. suh PEs must be included in the proposed "
+    "workflow, copying them line by line, and not importing them from an 'available_pes' "
+    "module, as there is no such thing.",
 
     "The first PE must either be a GenericPE or a ProducerPE.",
 
@@ -223,7 +225,6 @@ REGISTER_WORKFLOW_CONTEXT_QUERIES = REGISTER_BASE_QUERIES + [
     "The <input_name> and <output_name> arguments are placeholders for the workflow user inputs and workflow output;",
     "Tags is a list of keywords that describe the workflow, so that it may be categorized;",
 ]
-
 
 NAME_WORKFLOW_QUERY = """You are naming a Dispel4py workflow based on its source code.
 
