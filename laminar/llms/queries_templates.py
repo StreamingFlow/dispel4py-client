@@ -113,6 +113,11 @@ WORKFLOW_GRAPH_RULES = [
     "graph.connect(A, 'output', B, 'input'). For multi-stream GenericPEs use the "
     "matching unique names, e.g. graph.connect(A, 'A_to_B', B, 'A_to_B').",
 
+    "WorkflowGraph.connect is the only way to add PEs to a Dispel4py workflow. Calling connect will "
+    "automatically register an instance of a processing element in the processed workflow. different "
+    "connections (edges) starting from the same instance of a PE generates a broadcast pattern. "
+    "Different connect to the same instance of Processing Elements implements a gather pattern.",
+
     "Always include at file level: from dispel4py.workflow_graph import WorkflowGraph",
 
     "Must include: YYYY = WorkflowGraph(), where YYYY is the variable holding the "
@@ -121,7 +126,8 @@ WORKFLOW_GRAPH_RULES = [
     "Must include at least one: YYYY.connect(...), on that same WorkflowGraph instance "
     "YYYY.",
 
-    "Must include a sink/write PE (e.g. WriteJSONL) that is connected. The sink is "
+    "Must include, unless user explicitly stated that it is not required, a sink/write PE "
+    "(e.g. WriteJSONL) that is connected. The sink is "
     "pure boilerplate, so it must be FULLY implemented and runnable; it is never left "
     "as a NotImplementedError stub.",
 
