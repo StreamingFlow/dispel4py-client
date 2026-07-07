@@ -131,7 +131,7 @@ class Vocab:
         return self.words[i - 1 - config.NUM_FEATURE_MIN]
 
     def add_and_get_index(self, word):
-        if not (word in self.vocab):
+        if word not in self.vocab:
             self.words.append(word)
             self.vocab[word] = [0, len(self.vocab) + 1 + config.NUM_FEATURE_MIN]
         value = self.vocab[word]
@@ -450,7 +450,7 @@ def sample_n_records(records, n):
     for j in range(10000):
         if len(ret_indices) < n:
             i = random.randint(0, len(records) - 1)
-            if not (i in ret_indices):
+            if i not in ret_indices:
                 record = get_record_part(records[i])
                 if record != None:
                     ret_indices.append(i)
@@ -794,7 +794,7 @@ def print_match_index(query_record, candidate_records):
     elif ret > 0:
         print(f"Matched original method. Rank = {ret}")
     else:
-        print(f"Matched original method perfectly.")
+        print("Matched original method perfectly.")
 
 
 #### Interface methods ####

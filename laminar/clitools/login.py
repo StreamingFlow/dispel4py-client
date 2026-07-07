@@ -113,7 +113,7 @@ class LoginApp(App):
     def _authenticate(self, username: str, password: str) -> None:
         try:
             self.client.login(username, password)
-            ok = self.client.get_login() is not None
+            ok = self.client.getLogin() is not None
         except Exception as exc:  # noqa: BLE001 - surface any client error to the user
             self.call_from_thread(self._on_failure, f"Login error: {exc}")
             return

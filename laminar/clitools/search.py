@@ -45,8 +45,8 @@ class SearchCommand:
             args = vars(parser.parse_args(shlex.split(arg)))
 
             feedback = (
-                self.client.search_Registry_Literal(args["search_term"], args["object"]) if args["type"] == "literal"
-                else self.client.search_Registry_Semantic(args["search_term"], args["object"])
+                self.client.searchRegistryLiteral(args["search_term"], args["object"]) if args["type"] == "literal"
+                else self.client.searchRegistrySemantic(args["search_term"], args["object"])
             )
 
             print_text(feedback, tab=True)

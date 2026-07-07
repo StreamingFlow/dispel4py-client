@@ -1,9 +1,7 @@
-import re
 import ast
+import re
 
 from laminar.screen_printer import print_warning
-
-import ast
 
 
 class JSONSerializableChecker(ast.NodeVisitor):

@@ -1,12 +1,13 @@
 import json
 import os
-import traceback
-import tabulate
-from rich import pretty, print
-from rich.console import Console
-from rich.syntax import Syntax
 import shutil
 import textwrap
+import traceback
+
+import tabulate
+from rich import pretty
+from rich.console import Console
+from rich.syntax import Syntax
 from tabulate import tabulate
 
 console = Console()

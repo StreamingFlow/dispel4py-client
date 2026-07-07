@@ -377,7 +377,9 @@ client.run_multiprocess(graph, input=[{"input": 'Copy-Uniq-OpStationList-Network
 for i in range(3):
     print(f"({i+1}/3)",end=" ",flush=True)
     start = time.time()
-    client.run(graph, input=[{"input": 'Copy-Uniq-OpStationList-NetworkStation.txt'}], resources=["AK_inventory.xml", "Copy-Uniq-OpStationList-NetworkStation.txt", "stream_AK_BMR_0.mseed"], verbose=False)
+    client.run(graph, wf_inputs=[{"input": 'Copy-Uniq-OpStationList-NetworkStation.txt'}],
+               resources=["AK_inventory.xml", "Copy-Uniq-OpStationList-NetworkStation.txt", "stream_AK_BMR_0.mseed"],
+               verbose=False)
     test_data["simple"].append(time.time() - start)
     print("simple...", end=" ",flush=True)
 
@@ -387,7 +389,9 @@ for i in range(3):
     print("multi...", end=" ",flush=True)
 
     start = time.time()
-    client.run_dynamic(graph, input=[{"input": 'Copy-Uniq-OpStationList-NetworkStation.txt'}], resources=["AK_inventory.xml", "Copy-Uniq-OpStationList-NetworkStation.txt", "stream_AK_BMR_0.mseed"], verbose=False)
+    client.runDynamic(graph, workflow_inputs=[{"input": 'Copy-Uniq-OpStationList-NetworkStation.txt'}],
+                      resources=["AK_inventory.xml", "Copy-Uniq-OpStationList-NetworkStation.txt",
+                                 "stream_AK_BMR_0.mseed"], verbose=False)
     test_data["redis"].append(time.time() - start)
     print("redis...", end="\n",flush=True)
 

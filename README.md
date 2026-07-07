@@ -151,17 +151,17 @@ client.login("username", "password")
 
 # Register the workflow. If no description is provided, Laminar generates one
 # automatically using the configured LLM provider.
-client.register_Workflow(graph, "graph_sample")
+client.registerWorkflow(graph, "graph_sample")
 
 # Search the registry
-client.search_Registry_Literal("prime", "pe")          # keyword search
-client.search_Registry_Semantic("checks prime numbers", "pe")  # semantic search
-client.code_Recommendation("random.randint(1, 1000)", "pe")    # code -> matches
+client.searchRegistryLiteral("prime", "pe")  # keyword search
+client.searchRegistrySemantic("checks prime numbers", "pe")  # semantic search
+client.codeRecommendation("random.randint(1, 1000)", "pe")  # code -> matches
 
 # Execute the workflow
-client.run(graph, input=100)               # SIMPLE: sequential
+client.run(graph, wf_inputs=100)  # SIMPLE: sequential
 client.run_multiprocess(graph, input=100)  # MULTI: multiprocessing
-client.run_dynamic(graph, input=100)       # DYNAMIC: Redis-based
+client.runDynamic(graph, workflow_inputs=100)  # DYNAMIC: Redis-based
 ```
 
 ### Running Client-Based Examples

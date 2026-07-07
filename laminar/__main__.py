@@ -64,7 +64,7 @@ def main():
         from laminar.client.d4pyclient import d4pClient
 
         client = d4pClient()
-        if client.get_login() is None:
+        if client.getLogin() is None:
             if not run_login(client):
                 print_error("Login cancelled.")
                 sys.exit(0)

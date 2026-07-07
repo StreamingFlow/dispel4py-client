@@ -1,15 +1,17 @@
-from dispel4py.base import *
 import configparser
+import os
+import tempfile
 from enum import Enum
+from typing import Union
 
+from dispel4py.base import *
 
-
-CLIENT_AUTH_ID: str = "None"
 
 class Process(Enum):
     SIMPLE = 1
     MULTI = 2
     DYNAMIC = 3
+
 
 try:
     config = configparser.ConfigParser()
@@ -19,6 +21,7 @@ try:
         raise "No base URL error"
 except:
     from laminar.screen_printer import print_warning
+
     print_warning("Server URL not configured using default value: http://127.0.0.1:8080")
     BASE_URL = "http://127.0.0.1:8080"
 
@@ -28,7 +31,7 @@ URL_REGISTRY_ALL: str = BASE_URL_REGISTER + "/all"
 
 URL_REGISTER_PE: str = BASE_URL_REGISTER + "/pe/add"
 
-URL_GET_PE_NAME: str = BASE_URL_REGISTER  + "/pe/name/"
+URL_GET_PE_NAME: str = BASE_URL_REGISTER + "/pe/name/"
 
 URL_GET_PE_ID: str = BASE_URL_REGISTER + "/pe/id/"
 
@@ -64,7 +67,7 @@ URL_RESOURCE: str = BASE_URL + "/execution/{}/resource"
 
 URL_REGISTER_USER: str = BASE_URL + "/auth/register"
 
-URL_LOGIN_USER: str =  BASE_URL + "/auth/login"
+URL_LOGIN_USER: str = BASE_URL + "/auth/login"
 
 URL_SEARCH: str = BASE_URL_REGISTER + "/search/{}/type/{}"
 
@@ -76,10 +79,16 @@ URL_SEARCH_PE: str = BASE_URL_REGISTER + "/pe/search"
 
 URL_SEARCH_WORKFLOW: str = BASE_URL_REGISTER + "/workflow/search"
 
-PE_TYPES = (BasePE,IterativePE,ProducerPE,ConsumerPE,SimpleFunctionPE,CompositePE,GenericPE)
+PE_TYPES = (BasePE, IterativePE, ProducerPE, ConsumerPE, SimpleFunctionPE, CompositePE, GenericPE)
+
+ProcessingElementTypes = Union[BasePE, IterativePE, ProducerPE, ConsumerPE, SimpleFunctionPE, CompositePE, GenericPE]
+
+HTTP_TIMEOUT = 30
 
 headers = {
-            'Content-Type':'application/json', 
-            'Accept':'application/json'
-          }
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+}
 
+AROMA_WORKING_DIR = os.path.join(tempfile.gettempdir(), "Aroma")
+os.makedirs(AROMA_WORKING_DIR, exist_ok=True)

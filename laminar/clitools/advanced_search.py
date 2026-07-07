@@ -1,12 +1,7 @@
-import argparse
-import base64
 import json
 import numpy as np
-import os
 import queue
-import threading
 import traceback
-from numpy.random import _generator
 from rich.pretty import Pretty
 from rich.syntax import Syntax
 from rich.table import Table
@@ -234,12 +229,12 @@ class AdvancedSearchCommand:
                   top_n: int = 30):
         w_desc, w_code = hybrid_weights(input_type)
         q_text, q_code = self.encoder.embed_query(query, input_type)
-        lex = self.client.lexical_scores(kind, query, limit=120)
+        lex = self.client.lexicalScores(kind, query, limit=120)
 
         # tags for structure
         pe_tags_by_name = {}
 
-        registry, _ = self.client.get_Registry(extended=True)
+        registry, _ = self.client.getRegistry(extended=True)
 
         pe_rows = [itm for itm in registry if itm["Type"] == "PE"]
         wf_rows = [itm for itm in registry if itm["Type"] == "WF"]
@@ -314,10 +309,10 @@ class AdvancedSearchCommand:
                 emb = 0.0
                 wsum = 0.0
                 if w_desc > 0 and s_desc >= 0:
-                    emb += w_desc * s_desc;
+                    emb += w_desc * s_desc
                     wsum += w_desc
                 if w_code > 0 and s_code >= 0:
-                    emb += w_code * s_code;
+                    emb += w_code * s_code
                     wsum += w_code
                 emb = emb / wsum if wsum > 0 else max(s_desc, s_code)
 
@@ -487,11 +482,11 @@ class AdvancedSearchCommand:
     def _get_source(self, result_id, kind: str = None):
 
         if kind == "pe":
-            getters = (self.client.get_PE, self.client.get_Workflow)
+            getters = (self.client.getPE, self.client.getWorkflow)
         elif kind == "workflow":
-            getters = (self.client.get_Workflow, self.client.get_PE)
+            getters = (self.client.getWorkflow, self.client.getPE)
         else:
-            getters = (self.client.get_Workflow, self.client.get_PE)
+            getters = (self.client.getWorkflow, self.client.getPE)
 
         for getter in getters:
             tmp = getter(result_id)

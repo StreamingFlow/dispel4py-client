@@ -39,8 +39,8 @@ class SearchData(SerializableDTO):
 
 
 class ExecutionData(SerializableDTO):
-    def __init__(self, *, workflow_id: int, workflow_name: str,
-                 workflow_code: WorkflowGraph, input: any, process, resources: list[str]):
+    def __init__(self, *, workflow_id: int | None, workflow_name: str | None,
+                 workflow_code: WorkflowGraph | None, input: any, process, resources: list[str]):
         self.workflow_id = workflow_id
         self.workflow_name = workflow_name
         self.input = get_payload(input)
@@ -51,7 +51,7 @@ class ExecutionData(SerializableDTO):
         self.process = process.value if isinstance(process, Enum) else int(process)
 
     @staticmethod
-    def _collect_imports(workflow_code: WorkflowGraph) -> str:
+    def _collect_imports(workflow_code: WorkflowGraph | None) -> str:
         if workflow_code is None:
             return ""
         parts = []

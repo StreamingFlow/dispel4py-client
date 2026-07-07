@@ -11,7 +11,7 @@ class RemoveCommand:
 
     def _remove_pe(self, pe_id, remove_all=False):
         if remove_all:
-            response = self.client.remove_All(type="pe")
+            response = self.client.removeAll(object_type="pe")
             if response is None:
                 print_error("No response from server.")
             elif 'ApiError' in response:
@@ -20,7 +20,7 @@ class RemoveCommand:
                 print_text(response)
         else:
             try:
-                response = self.client.remove_PE(pe_id)
+                response = self.client.removePE(pe_id)
                 if isinstance(response, dict) and 'ApiError' in response:
                     print_error(f"Error: {response['ApiError']['message']}.")
                 else:
@@ -37,7 +37,7 @@ class RemoveCommand:
 
     def _remove_workflow(self, workflow_id, remove_all=False):
         if remove_all:
-            response = self.client.remove_All(type="workflow")
+            response = self.client.removeAll(object_type="workflow")
             if response is None:
                 print_error("No response from server.")
             elif 'ApiError' in response:
@@ -46,7 +46,7 @@ class RemoveCommand:
                 print_status(response)
 
         else:
-            response = self.client.remove_Workflow(workflow_id)
+            response = self.client.removeWorkflow(workflow_id)
             if isinstance(response, dict) and 'ApiError' in response:
                 print_error(f"Error: {response['ApiError']['message']}")
             else:

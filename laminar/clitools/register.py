@@ -292,7 +292,7 @@ class RegisterCommand:
             context_queries=REGISTER_PE_CONTEXT_QUERIES,
         )
         pe_instance = self._instantiate_pe(pe_class)
-        r = self.client.register_PE(
+        r = self.client.registerPE(
             pe_instance,
             description=docstring["description"],
             input_description=docstring["inputs"],
@@ -318,7 +318,7 @@ class RegisterCommand:
             provider=provider,
             context_queries=REGISTER_WORKFLOW_CONTEXT_QUERIES,
         )
-        r = self.client.register_Workflow(
+        r = self.client.registerWorkflow(
             workflow=workflow, workflow_name=workflow_name,
             description=docstring["description"],
             module=mod, module_name=module_name,
