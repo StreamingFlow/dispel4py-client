@@ -1,7 +1,8 @@
 import json
-import numpy as np
 import queue
 import traceback
+
+import numpy as np
 from rich.pretty import Pretty
 from rich.syntax import Syntax
 from rich.table import Table
@@ -16,6 +17,7 @@ from laminar.client.d4pyclient import d4pClient
 from laminar.clitools.register import RegisterCommand
 from laminar.llms.LLMConnector import LLMConnector
 from laminar.llms.encoder import LaminarCodeEncoder
+from laminar.llms.prompts import refine_prompt
 from laminar.screen_printer import (
     print_code as _orig_print_code,
     print_warning as _orig_print_warning,
