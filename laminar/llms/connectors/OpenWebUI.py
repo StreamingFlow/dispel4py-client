@@ -2,7 +2,7 @@ import os
 import json
 import requests
 
-from laminar.screen_printer import print_warning, print_text, print_error
+from laminar.screen_printer import print_error
 
 
 class OpenWebUIConnector:

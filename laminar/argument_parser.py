@@ -1,14 +1,11 @@
 import argparse
-import sys
-
-import argparse
-import sys
 
 
 def type_checker(value):
     if value.isdigit():
         return int(value)
     return value
+
 
 class CustomArgumentParser(argparse.ArgumentParser):
     def __init__(self, *args, **kwargs):

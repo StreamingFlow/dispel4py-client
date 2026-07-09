@@ -1,4 +1,3 @@
-from typing import Any
 import openai
 import os
 import re
@@ -6,7 +5,7 @@ import json
 
 from openai.types.chat import ChatCompletionSystemMessageParam as systemChat, ChatCompletionUserMessageParam as userChat
 
-from laminar.screen_printer import print_warning, print_text, print_error, print_status
+from laminar.screen_printer import print_text, print_error
 
 
 def safe_json_loads(s: str, default):

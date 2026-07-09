@@ -44,20 +44,6 @@ class ServerConnectionError(LaminarError):
     """Raised when the Laminar server cannot be reached."""
 
 
-def verify_login(logger=None):
-    """Ensure a user is logged in.
-
-    Historically this called ``exit()``, which kills the interpreter (and any
-    hosting Jupyter kernel).  It now raises :class:`NotAuthenticatedError`
-    instead so callers can handle it gracefully.  The ``logger`` argument is
-    accepted for backwards compatibility and ignored.
-    """
-    if getattr(g_vars, "CLIENT_AUTH_ID", "None") == "None":
-        raise NotAuthenticatedError(
-            "You must be logged in to perform this operation."
-        )
-
-
 def get_payload(obj) -> str:
     """Pickle ``obj`` and encode it as a base64 string (server wire format)."""
     return codecs.encode(pickle.dumps(obj), "base64").decode()

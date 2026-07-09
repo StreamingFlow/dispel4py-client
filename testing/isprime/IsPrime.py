@@ -65,7 +65,7 @@ for inputValue in test_data.keys():
     for i in range(3):
         print(f"input {inputValue} ({i+1}/3)",end=" ",flush=True)
         start = time.time()
-        client.run(graph,input=inputValue,verbose=False)
+        client.run(graph, wf_inputs=inputValue, verbose=False)
         test_data[inputValue]["simple"].append(time.time() - start)
         print("simple...", end=" ",flush=True)
 
@@ -75,7 +75,7 @@ for inputValue in test_data.keys():
         print("multi...", end=" ",flush=True)
 
         start = time.time()
-        client.run_dynamic(graph,input=inputValue,verbose=False)
+        client.runDynamic(graph, workflow_inputs=inputValue, verbose=False)
         test_data[inputValue]["redis"].append(time.time() - start)
         print("redis...", end="\n",flush=True)
 

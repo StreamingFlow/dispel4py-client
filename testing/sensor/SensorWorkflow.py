@@ -85,4 +85,4 @@ client.login("rosa", "1234") # Provide login details here
 
 input=[{"input": 'sensor_data_1000.json'}]
 resources=["./sensor_data_1000.json"]
-client.run_dynamic(sensorWorkflow, input=input, resources=resources, verbose=False)
+client.runDynamic(sensorWorkflow, workflow_inputs=input, resources=resources, verbose=False)

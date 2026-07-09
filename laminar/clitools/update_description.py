@@ -27,9 +27,9 @@ class UpdateDescriptionCommand:
             args = vars(parser.parse_args(shlex.split(arg)))
             update_target = args["object"]
             feedback = (
-                self.client.update_Workflow_Description(args["id"],
-                                                        args["new_description"]) if update_target == "workflow" else
-                self.client.update_PE_Description(args["id"], args["new_description"])
+                self.client.updateWorkflowDescription(args["id"],
+                                                      args["new_description"]) if update_target == "workflow" else
+                self.client.updatePEDescription(args["id"], args["new_description"])
             )
             print_status(feedback)
         except argparse.ArgumentError as e:

@@ -102,7 +102,9 @@ WORKFLOW_GRAPH_RULES = [
     "unimplemented is the business logic of a newly created PE (see the new-PE "
     "rule below); everything else, including all wiring and the sink, must work.",
 
-    "Whenever possible, use the available PEs to compose the workflow.",
+    "Whenever possible, use the available PEs to compose the workflow. suh PEs must be included in the proposed "
+    "workflow, copying them line by line, and not importing them from an 'available_pes' "
+    "module, as there is no such thing.",
 
     "The first PE must either be a GenericPE or a ProducerPE.",
 
@@ -110,6 +112,11 @@ WORKFLOW_GRAPH_RULES = [
     "input port name, exactly as declared on those PEs. For single-stream PEs this is "
     "graph.connect(A, 'output', B, 'input'). For multi-stream GenericPEs use the "
     "matching unique names, e.g. graph.connect(A, 'A_to_B', B, 'A_to_B').",
+
+    "WorkflowGraph.connect is the only way to add PEs to a Dispel4py workflow. Calling connect will "
+    "automatically register an instance of a processing element in the processed workflow. different "
+    "connections (edges) starting from the same instance of a PE generates a broadcast pattern. "
+    "Different connect to the same instance of Processing Elements implements a gather pattern.",
 
     "Always include at file level: from dispel4py.workflow_graph import WorkflowGraph",
 
@@ -119,7 +126,8 @@ WORKFLOW_GRAPH_RULES = [
     "Must include at least one: YYYY.connect(...), on that same WorkflowGraph instance "
     "YYYY.",
 
-    "Must include a sink/write PE (e.g. WriteJSONL) that is connected. The sink is "
+    "Must include, unless user explicitly stated that it is not required, a sink/write PE "
+    "(e.g. WriteJSONL) that is connected. The sink is "
     "pure boilerplate, so it must be FULLY implemented and runnable; it is never left "
     "as a NotImplementedError stub.",
 
@@ -223,7 +231,6 @@ REGISTER_WORKFLOW_CONTEXT_QUERIES = REGISTER_BASE_QUERIES + [
     "The <input_name> and <output_name> arguments are placeholders for the workflow user inputs and workflow output;",
     "Tags is a list of keywords that describe the workflow, so that it may be categorized;",
 ]
-
 
 NAME_WORKFLOW_QUERY = """You are naming a Dispel4py workflow based on its source code.
 

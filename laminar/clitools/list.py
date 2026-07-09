@@ -183,7 +183,7 @@ class ListCommand:
     def list(self) -> None:
         """Fetch the registry and open the interactive browser."""
         try:
-            description, _registry = self.client.get_Registry()
+            description, _registry = self.client.getRegistry()
         except Exception as e:  # mirror your existing print_error flow
             print_error(f"[red]An error occurred:[/red] {e}:")
             return

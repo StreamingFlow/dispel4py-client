@@ -1,4 +1,3 @@
-import argparse
 import shlex
 import ast
 
@@ -30,8 +29,8 @@ class RunCommand:
 
             run_type = Process.MULTI if multi else Process.DYNAMIC if dynamic else Process.SIMPLE
 
-            feedback = self.client.run(workflow_id, input=input_val, verbose=verbose, resources=resources,
-                                       process=run_type)
+            feedback = self.client.run(workflow_id, wf_inputs=input_val, process=run_type, resources=resources,
+                                       verbose=verbose)
             if feedback is not False:
                 print_text(feedback)
             else:
@@ -40,8 +39,8 @@ class RunCommand:
             input_val = input_data if rawinput or input_data is None else ast.literal_eval(input_data)
 
             run_type = Process.MULTI if multi else Process.DYNAMIC if dynamic else Process.SIMPLE
-            feedback = self.client.run(workflow_id, input=input_val, verbose=verbose, resources=resources,
-                                       process=run_type)
+            feedback = self.client.run(workflow_id, wf_inputs=input_val, process=run_type, resources=resources,
+                                       verbose=verbose)
 
             if feedback is not False:
                 print_text(feedback)

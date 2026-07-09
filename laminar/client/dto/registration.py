@@ -10,9 +10,9 @@ from laminar.aroma.similar import setup_features
 from laminar.client.dto.base import SerializableDTO
 from laminar.client.web.utils import create_import_string, get_payload
 from laminar.conversion import ConvertPy
+from laminar.global_variables import ProcessingElementTypes, AROMA_WORKING_DIR
 from laminar.llms.encoder import LaminarCodeEncoder
 
-AROMA_WORKING_DIR = "../../Aroma"
 SOURCE_UNAVAILABLE = "Source code not available"
 
 
@@ -34,7 +34,7 @@ def _dedent(code: str) -> str:
 
 
 class PERegistrationData(SerializableDTO):
-    def __init__(self, *, pe: type, pe_name: str = None, pe_code: any = None,
+    def __init__(self, *, pe: ProcessingElementTypes, pe_name: str = None, pe_code: any = None,
                  description: str = None, inputDescription: str = None,
                  outputDescription: str = None, llmProvider: str = None,
                  llmModel: str = None, tags: list[str] = None,

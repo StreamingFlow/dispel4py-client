@@ -104,7 +104,7 @@ class ShellSession:
         self.initialized = True
 
     def _load_modules_on_startup(self) -> None:
-        for workflow in self.client.get_Workflows():
+        for workflow in self.client.getWorkflows():
             src = workflow["moduleSourceCode"]
             if not src:
                 continue
@@ -181,7 +181,7 @@ class LaminarShell(App):
 
     def on_mount(self) -> None:
         self.title = "Laminar CLI"
-        self.sub_title = f"Logged in as {self.session.client.get_login()}"
+        self.sub_title = f"Logged in as {self.session.client.getLogin()}"
         self._console_width = max(40, self.size.width - 6)
         self._hist_idx = len(self.session.history)
 
@@ -340,8 +340,8 @@ class LaminarShell(App):
                             help="Include the source code in the description")
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
-            data = (self.session.client.get_PE(args["identifier"])
-                    or self.session.client.get_Workflow(args["identifier"]))
+            data = (self.session.client.getPE(args["identifier"])
+                    or self.session.client.getWorkflow(args["identifier"]))
             if data:
                 obj, sc = data[0], data[1]
                 print_text([{"description": data[4]}], tab=True)
@@ -358,7 +358,7 @@ class LaminarShell(App):
         parser.add_argument("--embedding_type", choices=["llm", "spt"], default="spt")
         try:
             args = vars(parser.parse_args(shlex.split(arg)))
-            feedback = self.session.client.code_Recommendation(
+            feedback = self.session.client.codeRecommendation(
                 args["code_snippet"], args["search_type"], args["embedding_type"])
             print_text(feedback)
         except argparse.ArgumentError as e:
