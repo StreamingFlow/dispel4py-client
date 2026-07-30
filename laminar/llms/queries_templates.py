@@ -198,12 +198,37 @@ EVALUATE_QUALITY_REQUESTED_WORKFLOW_CONTEXT_QUERIES = [
 ]
 
 REQUEST_DESCRIPTION_CONTEXT_QUERIES = [
-    "Explicitly states whether this is a Processing Element (PE) or a workflow.",
-    "Clearly describes its role in a data-processing pipeline.",
-    "Mentions expected inputs and outputs.",
-    "Uses consistent technical vocabulary (e.g. filtering, transformation, signal processing, orchestration).",
-    "Mentions important parameters or configuration options if obvious from the code."
-    "The description should be suitable for: semantic similarity search and explaining results to users"
+    "You are to describe either a Dispel4py workflow or a Dispel4py Processing Element (PE).",
+    "The description must be suitable for semantic similarity search and for explaining results to users.",
+    "The 'inputs' field is an array of strings. Each string names an expected input and its type, "
+    "for example \"signal: numpy.ndarray\". Use an empty array [] if the component takes no inputs.",
+    "The 'outputs' field is an array of strings. Each string names a produced output and its type, "
+    "for example \"filtered_signal: numpy.ndarray\". Use an empty array [] if the component produces no outputs.",
+    "The 'tags' field is an array of short keyword strings for retrieval, drawn from consistent technical "
+    "vocabulary (e.g. filtering, transformation, signal processing, orchestration).",
+    "The 'description' field is a single JSON string containing plain text. It is organised into four "
+    "sections, each introduced by a plain-text heading written in uppercase on its own line: "
+    "COMPONENT TYPE, SUMMARY, ROLE, PARAMETERS. Separate the sections with newline escapes (\\n). "
+    "Use no markdown, no JSON sub-keys and no bullet points: under each heading the content is written "
+    "as flowing prose sentences.",
+    "Under COMPONENT TYPE, state explicitly whether the component is a Processing Element (PE) or a workflow.",
+    "Under SUMMARY, give a one- or two-sentence overview of the component.",
+    "Under ROLE, explain the component's function within a data-processing pipeline, describing in words "
+    "the data it consumes and produces so the section is self-contained.",
+    "Under PARAMETERS, state the configuration options evident from the code, or state explicitly that "
+    "the component takes no parameters.",
+    "Use consistent technical vocabulary throughout (filtering, transformation, signal processing, "
+    "orchestration).",
+    "Return ONLY a valid JSON object, with no markdown fences and no text before or after it.",
+    """
+    Return exactly this JSON structure:
+    {{
+        "inputs": ["<name: type>", "..."],
+        "outputs": ["<name: type>", "..."],
+        "tags": ["<keyword>", "..."],
+        "description": "COMPONENT TYPE\\n<prose>\\n\\nSUMMARY\\n<prose>\\n\\nROLE\\n<prose>\\n\\nPARAMETERS\\n<prose>"
+    }}
+    """,
 ]
 
 REGISTER_BASE_QUERIES = [

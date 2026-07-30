@@ -33,6 +33,30 @@ def _dedent(code: str) -> str:
     return "\n".join(line[min_indent:] for line in lines)
 
 
+def _normalize_description(value) -> str | None:
+    if value is None or isinstance(value, str):
+        return value
+    if isinstance(value, dict):
+        return "\n".join(f"{key}: {description}" for key, description in value.items())
+    if isinstance(value, (list, tuple, set)):
+        return "\n".join(str(item) for item in value)
+    return str(value)
+
+
+def _normalize_tags(tags) -> list[str] | None:
+    if tags is None:
+        return None
+    if isinstance(tags, str):
+        try:
+            parsed = json.loads(tags)
+        except json.JSONDecodeError:
+            parsed = tags.split(",")
+        tags = parsed if isinstance(parsed, list) else [parsed]
+    elif not isinstance(tags, (list, tuple, set)):
+        tags = [tags]
+    return [str(tag).strip() for tag in tags if str(tag).strip()]
+
+
 class PERegistrationData(SerializableDTO):
     def __init__(self, *, pe: ProcessingElementTypes, pe_name: str = None, pe_code: any = None,
                  description: str = None, inputDescription: str = None,
@@ -48,8 +72,8 @@ class PERegistrationData(SerializableDTO):
 
         self.llmProvider = llmProvider
         self.llmModel = llmModel
-        self.inputDescription = inputDescription
-        self.outputDescription = outputDescription
+        self.inputDescription = _normalize_description(inputDescription)
+        self.outputDescription = _normalize_description(outputDescription)
         self.pe_name = pe_class.__name__
         self.pe_code = get_payload(pe)
         self.description = description
@@ -57,7 +81,7 @@ class PERegistrationData(SerializableDTO):
         self.pe_imports = create_import_string(pe_source_code)
         self.code_embedding = np.array_str(encoder.embed_code(pe_process_source_code))
         self.desc_embedding = np.array_str(encoder.embed_text(self.description))
-        self.tags = tags
+        self.tags = _normalize_tags(tags)
         self.astEmbedding = self._build_ast_embedding(pe_source_code, pe_process_source_code)
 
     @staticmethod
@@ -102,11 +126,11 @@ class WorkflowRegistrationData(SerializableDTO):
         self.entry_point = entry_point
         self.description = description
         self.workflow_pes = workflow.get_contained_objects()
-        self.inputDescription = inputDescription
-        self.outputDescription = outputDescription
+        self.inputDescription = _normalize_description(inputDescription)
+        self.outputDescription = _normalize_description(outputDescription)
         self.llmProvider = llmProvider
         self.llmModel = llmModel
-        self.tags = tags
+        self.tags = _normalize_tags(tags)
         self.desc_embedding = np.array_str(encoder.embed_text(self.description))
 
         self.module_source_code = inspect.getsource(module) if module else ""
