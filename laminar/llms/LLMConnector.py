@@ -119,7 +119,6 @@ class LLMConnector:
 
     @staticmethod
     def _compact_candidate(c: dict) -> dict:
-        code_excerpt = "\n".join((c.get("code") or "").strip().splitlines()[:35])
         return {
             "type": c["type"],
             "id": c["id"],
@@ -129,5 +128,4 @@ class LLMConnector:
             "tags": safe_json_loads(c.get("tags_json"), []),
             "workflow_pe_list": safe_json_loads(c.get("pe_list_json"), []) if c["type"] == "workflow" else None,
             "description": c.get("description") or "",
-            "code_excerpt": code_excerpt,
         }

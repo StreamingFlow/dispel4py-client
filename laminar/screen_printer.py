@@ -4,7 +4,6 @@ import shutil
 import textwrap
 import traceback
 
-import tabulate
 from rich import pretty
 from rich.console import Console
 from rich.syntax import Syntax
@@ -45,8 +44,9 @@ def print_status(status):
     console.print(f"[bold green]{status}[/bold green]")
 
 
-def print_error(error):
-    if "LAMINAR_DBG" in os.environ and os.environ["LAMINAR_DBG"].upper() == "ON":
+def print_error(error, _traceback=True):
+    if (_traceback and "LAMINAR_DBG" in os.environ
+            and os.environ["LAMINAR_DBG"].upper() == "ON"):
         console.print(f"{traceback.format_exc()}")
     console.print(f"[bold red]ERR: {error}[/bold red]")
 

@@ -80,6 +80,27 @@ class WebClient:
         except ValueError:
             return None
 
+    @staticmethod
+    def _registrationPayload(response, label: str):
+        """Validate a registration response, preserving genuine conflicts."""
+        try:
+            payload = response.json()
+        except ValueError:
+            payload = None
+
+        if response.status_code == 409:
+            return None
+
+        error = _api_error(payload)
+        if not response.ok or error:
+            detail = error or response.text or response.reason
+            raise LaminarError(
+                f"Failed to register {label} (HTTP {response.status_code}): {detail}"
+            )
+        if not isinstance(payload, dict):
+            raise LaminarError(f"Failed to register {label}: invalid server response")
+        return payload
+
     def registerUser(self, user_data: AuthenticationData):
         payload = self._requestJson(
             "POST", g_vars.URL_REGISTER_USER,
@@ -110,41 +131,47 @@ class WebClient:
             "POST", g_vars.URL_REGISTER_PE.format(self.user_login_id),
             data=json.dumps(pe_payload.to_dict()), headers=g_vars.headers,
         )
-        if not response.ok:
+        payload = self._registrationPayload(response, f"PE {pe_payload.pe_name}")
+        if payload is None:
             return None
 
-        payload = response.json()
-
-        if _api_error(payload):
-            return None
-
-        pe_id = int(payload["peId"])
+        try:
+            pe_id = int(payload["peId"])
+        except (KeyError, TypeError, ValueError) as e:
+            raise LaminarError("PE registration response did not contain a valid peId") from e
         self._indexForSearch(URL_SEARCH_PE, pe_id, pe_payload.pe_name,
                              pe_payload.description, pe_payload.tags)
         return pe_id
 
     def registerWorkflow(self, workflow_payload: WorkflowRegistrationData):
         self.verifyLogin()
-        payload = self._requestJson(
+        response = self._request(
             "POST", g_vars.URL_REGISTER_WORKFLOW.format(self.user_login_id),
             data=json.dumps(workflow_payload.to_dict()), headers=g_vars.headers,
         )
-
-        if _api_error(payload):
+        payload = self._registrationPayload(
+            response, f"workflow {workflow_payload.workflow_name}"
+        )
+        if payload is None:
             return None
 
-        workflow_id = payload["workflowId"]
+        try:
+            workflow_id = int(payload["workflowId"])
+        except (KeyError, TypeError, ValueError) as e:
+            raise LaminarError(
+                "Workflow registration response did not contain a valid workflowId"
+            ) from e
         self._indexForSearch(URL_SEARCH_WORKFLOW, int(workflow_id),
                              workflow_payload.workflow_name,
                              workflow_payload.description, workflow_payload.tags)
         self._linkPEsToWorkflow(workflow_id, workflow_payload.workflow_pes)
 
-        return payload["workflowId"]
+        return workflow_id
 
     def _indexForSearch(self, base_url, obj_id, name, description, tags):
         """Register an object with the full-text-search index (best effort)."""
         tag_str = ",".join(tags) if tags else ""
-        response = self._request("POST", base_url, json={
+        response = self._request("POST", base_url.format(self.user_login_id), json={
             "id": obj_id,
             "name": name,
             "description": description,
@@ -156,17 +183,21 @@ class WebClient:
 
     def _linkPEsToWorkflow(self, workflow_id, workflow_pes):
         """Ensure every PE in the workflow exists and is linked to it."""
-        encoder = self._getEncoder()
         for pe_obj in workflow_pes:
-            get_pe_url = g_vars.URL_GET_PE_NAME.format(self.user_login_id) + pe_obj.name
-            pe_res = self._requestJson("GET", get_pe_url) or {}
+            pe_name = pe_obj.__class__.__name__
+            get_pe_url = g_vars.URL_GET_PE_NAME.format(self.user_login_id) + pe_name
+            pe_res = self._requestJson("GET", get_pe_url)
 
-            if _api_error(pe_res):
-                print_text(pe_res)
+            if not isinstance(pe_res, dict) or _api_error(pe_res) or "peId" not in pe_res:
                 pe_id = self.registerPE(PERegistrationData(
-                    pe=pe_obj, encoder=encoder,
-                    description=f"Auto-registered PE {pe_obj.name}",
+                    pe=pe_obj, encoder=self._getEncoder(),
+                    description=f"Auto-registered PE {pe_name}",
                 ))
+                if pe_id is None:
+                    pe_res = self._requestJson("GET", get_pe_url)
+                    if not isinstance(pe_res, dict) or "peId" not in pe_res:
+                        raise LaminarError(f"Could not resolve registered PE {pe_name}")
+                    pe_id = pe_res["peId"]
             else:
                 pe_id = pe_res["peId"]
 

@@ -391,22 +391,30 @@ class AdvancedSearchCommand:
                                          candidates=shortlist[:12], top_k=top_k)
         results = reranked.get("results", [])
 
-        # Best suggested = the first reranked result mapped back to its shortlist
-        # row; fall back to the top-scored row if rerank returned nothing.
-        suggested = shortlist[0]
-        if results:
-            top = results[0]
+        # Map the LLM response back to trusted shortlist rows in reranked order.
+        ranked = []
+        seen = set()
+        for result in results:
+            try:
+                key = (result["type"], int(result["id"]))
+            except (KeyError, TypeError, ValueError):
+                continue
             for c in shortlist:
-                if c["type"] == top["type"] and c["id"] == int(top["id"]):
-                    suggested = c
+                if (c["type"], c["id"]) == key and key not in seen:
+                    ranked.append(c)
+                    seen.add(key)
                     break
+
+        # Fall back to retrieval order if reranking produced no valid candidates.
+        ranked = ranked or shortlist[:top_k]
+        suggested = ranked[0]
 
         suggested["tags"] = _safe_json_loads(suggested.get("tags_json"), [])
 
         if not silent:
             self._present(results, suggested)
 
-        return shortlist
+        return ranked
 
     def _present(self, results: list, suggested: dict):
 
