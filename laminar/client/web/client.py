@@ -219,6 +219,7 @@ class WebClient:
         response = self._request(
             "POST", g_vars.URL_EXECUTE.format(self.user_login_id),
             data=json.dumps(execution_payload.to_dict()), headers=headers, stream=True,
+            timeout=(10, None),
         )
         if not response.ok:
             print(f"Error connecting to server: [{response.status_code}] {response.reason}")
@@ -459,20 +460,22 @@ class WebClient:
             "score": round(score, 4),
             "description": item.get("description"),
         } for score, item in top]
-        if table:
-            print_text(table, tab=True)
+        print_text(table, tab=True)
 
         return [load_payload(item[code_key]) for _, item in top if item.get(code_key)]
 
     def _searchAST(self, items, query, search_type):
         ast_embeddings = []
         for pe in items:
-            functions = json.loads(pe["astEmbedding"])
+            functions = json.loads(pe.get("astEmbedding") or "[]")
             for func in functions:
                 func["peId"] = pe["peId"]
                 func["peName"] = pe["peName"]
             ast_embeddings += functions
 
+        if not ast_embeddings:
+            print_text([], tab=True)
+            return []
         converted = ConvertPy.ConvertPyToAST(query, False)
         setup_features([ast_embeddings], AROMA_WORKING_DIR)
 
@@ -487,6 +490,9 @@ class WebClient:
     @staticmethod
     def _astPEResult(similar_pes, items):
         formatted = format_ast_pe_results(similar_pes, items)
+        if not formatted:
+            print_text([], tab=True)
+            return []
         df = pd.DataFrame(formatted).sort_values(by="score", ascending=False).head(5)
         print(df[["peId", "peName", "description", "score", "simlarFunc"]])
         return [load_payload(code) for code in df["peCode"]]
@@ -507,6 +513,9 @@ class WebClient:
                     discovered[positions[wf_id]][5] += 1
 
         formatted = format_ast_workflow_results(discovered)
+        if not formatted:
+            print_text([], tab=True)
+            return []
         df = pd.DataFrame(formatted).sort_values(by="occurrences", ascending=False).head(5)
         print(df[["workflowId", "workflowName", "description", "occurrences"]])
         return [load_payload(code) for code in df["workflowCode"]]
