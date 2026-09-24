@@ -1,3 +1,6 @@
+from laminar.generation_validation import inspect_generated
+import argparse
+import base64
 import json
 import queue
 import traceback
@@ -259,7 +262,7 @@ class AdvancedSearchCommand:
 
                 pe_id = pe["peId"]
                 name = pe["peName"]
-                code = pe["peCode"]
+                code = pe.get("sourceCode") or ""
                 desc = pe["description"]
                 tags_json = pe["tags"]
 
@@ -296,7 +299,7 @@ class AdvancedSearchCommand:
             for workflow in wf_rows:
                 wid = workflow["workflowId"]
                 name = workflow["workflowName"]
-                code = workflow["workflowCode"]
+                code = workflow.get("moduleSourceCode") or ""
                 desc = workflow["description"]
                 dblob = workflow["descEmbedding"]
                 tags_json = workflow["tags"]
@@ -435,6 +438,17 @@ class AdvancedSearchCommand:
             print_status("\nSource code:")
             print_code(source)
 
+    @staticmethod
+    def _generation_status(proposal, code_key):
+        issues, placeholders = inspect_generated(proposal.get(code_key, ""))
+        issues = list(dict.fromkeys(issues + (proposal.get("validation_issues") or [])))
+        if issues:
+            print_warning("Unresolved validation issues: " + "; ".join(issues))
+        if placeholders:
+            print_warning("Template: implement these methods before running: " + ", ".join(placeholders))
+        elif not issues:
+            print_status("No placeholders detected. Review and test the generated code before registration.")
+
     def _generate(self, query: str, *, kind: str = "auto", input_type: str = "auto",
                   pe_top_n: int = 40, silent: bool = False):
 
@@ -447,6 +461,7 @@ class AdvancedSearchCommand:
 
             print_status(f"{proposal.get('name')} - {proposal.get('description')}:\n")
             print_code(proposal.get("workflow_code"))
+            self._generation_status(proposal, "workflow_code")
 
             if proposal.get("new_pe"):
                 print_warning("\nNew PEs are required for this workflow:")
@@ -468,6 +483,7 @@ class AdvancedSearchCommand:
         print_warning("Generating a new PE:\n")
         print_status(f"{proposal.get('name')} - {proposal.get('description')}\n")
         print_code(proposal.get("code"))
+        self._generation_status(proposal, "code")
 
         if self._save_or_refine(code=proposal["code"], component_type="pe",
                                 default_name=proposal.get("name", "pe"), silent=silent, ):

@@ -1,5 +1,7 @@
 import json
 
+from laminar.generation_validation import inspect_generated
+
 from laminar.llms.connectors.GeminiConnector import GeminiConnector
 from laminar.llms.connectors.OpenAIConnector import OpenAIConnector
 from laminar.llms.connectors.OpenWebUI import OpenWebUIConnector
@@ -9,6 +11,8 @@ from laminar.screen_printer import print_warning, print_error
 
 
 def safe_json_loads(s: str, default):
+    if isinstance(s, (list, dict)):
+        return s
     try:
         return json.loads(s) if s else default
     except Exception:
@@ -71,7 +75,9 @@ class LLMConnector:
             ok, static_issues = is_valid_workflow_code(prop.get("workflow_code", ""))
             if not ok:
                 found.extend(static_issues)
-            review = self._ask(provider, prompts.evaluate_prompt(query, proposal))
+            reuse_issues, _ = inspect_generated(prop.get("workflow_code", ""), pe_compact, prop.get("uses_pes"))
+            found.extend(reuse_issues)
+            review = self._ask(provider, prompts.evaluate_prompt(query, prop))
             if isinstance(review, dict):
                 found.extend(review.get("issues") or [])
             return found
@@ -82,6 +88,7 @@ class LLMConnector:
         for attempt in range(max_fixes + 1):
             issues = collect_issues(proposal)
             if not issues:
+                proposal["validation_issues"] = []
                 return proposal
             if attempt == max_fixes:
                 break
@@ -99,10 +106,19 @@ class LLMConnector:
             print_error(f"\t • {issue}")
         print_error("Please review the generated code manually.\n")
 
+        proposal["validation_issues"] = issues
         return proposal
 
     def propose_new_component(self, provider: str = "openai", query: str | None = None) -> dict:
-        return self._ask(provider, prompts.new_component_prompt(query))
+        prompt = prompts.new_component_prompt(query)
+        proposal = self._ask(provider, prompt)
+        for attempt in range(3):
+            issues, _ = inspect_generated(proposal.get("code", ""))
+            proposal["validation_issues"] = issues
+            if not issues or attempt == 2:
+                return proposal
+            proposal = self._ask(provider, prompt + "\nFix these static issues:\n" +
+                                 json.dumps(issues) + "\nPrevious proposal:\n" + json.dumps(proposal))
 
     def classify(self, provider: str = "openai", query: str | None = None) -> dict:
         return self._ask(provider, prompts.classify_prompt(query), system_queries=[])
@@ -115,6 +131,7 @@ class LLMConnector:
             "description": c.get("description") or "",
             "tags": safe_json_loads(c.get("tags_json"), []),
             "io": safe_json_loads(c.get("io_json"), {}),
+            "source_code": c.get("code") or "",
         }
 
     @staticmethod

@@ -49,7 +49,9 @@ class SearchCommand:
                 else self.client.searchRegistrySemantic(args["search_term"], args["object"])
             )
 
-            print_text(feedback, tab=True)
+            # Semantic search already renders metadata and returns executable objects.
+            if args["type"] == "literal":
+                print_text(feedback, tab=True)
 
         except argparse.ArgumentError as e:
             print_error(e.message.replace("laminar.py", "semantic_search"))

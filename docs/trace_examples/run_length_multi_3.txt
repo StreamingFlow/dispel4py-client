@@ -1,0 +1,34 @@
+Trace #? | workflow 47
+multi | processes: 3 | engine: default
+Run: 0827e274d892478bbc5bf3459ec6696b
+Engine elapsed: 0.301 s (startup + execution + monitoring export)
+
+PEs ranked by accumulated processing-call time:
+PE                               Calls     Time s     CPU s   RSS MiB
+InputStringPE0                       3   4.56e-04  5.26e-04      28.5
+RunLengthEncodePE1                   3   9.39e-05  9.17e-05      28.5
+CollectEncodedPE2                    3   3.05e-05  2.40e-05      28.4
+
+Most accumulated time: InputStringPE0 (78.6% of PE-call time).
+  Typical call: 2.99e-05 s; p95: 3.73e-04 s.
+  Local process CPU during these calls: 115.1% of one logical CPU.
+Most CPU time: InputStringPE0 (0.001 s).
+Highest observed hosting-process RSS: RunLengthEncodePE1 (28.547 MiB).
+
+Runtime PE instances: 3; idle: 0.
+Most accumulated instance time: InputStringPE0@0 (4.56e-04 s).
+Most instance CPU: InputStringPE0@0 (0.001 s).
+Highest instance hosting-process RSS: RunLengthEncodePE1@1 (28.547 MiB).
+Observed hosting processes: 3 (PE instances can share a process).
+
+Very short workload: timing and CPU rankings can be dominated by instrumentation.
+Use a larger representative input before making performance decisions.
+
+How to read this:
+- PE-call times overlap in parallel runs; their sum is not workflow elapsed time.
+- CPU is local process CPU during successful calls, including its threads.
+- RSS is observed hosting-process memory, not memory owned by a PE.
+  Never sum PE/instance RSS; brief peaks may be missed between samples.
+- Remote LLM/server CPU, GPU memory, queue waits and setup are not PE metrics.
+- PE metrics cover processing calls; separate setup/finalization work is excluded.
+- Compare configurations using the same workflow, inputs and sampling settings.

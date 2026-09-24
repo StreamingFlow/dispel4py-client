@@ -22,6 +22,7 @@ from laminar.clitools.list import ListCommand
 from laminar.clitools.register import RegisterCommand
 from laminar.clitools.remove import RemoveCommand
 from laminar.clitools.run import RunCommand
+from laminar.clitools.trace_run import TraceRunCommand, TraceShowCommand
 from laminar.clitools.search import SearchCommand
 from laminar.clitools.update_description import UpdateDescriptionCommand
 from laminar.llms.LLMConnector import LLMConnector
@@ -44,6 +45,9 @@ _KIND = {
     "search": "inline",
     "code_recommendation": "inline",
     "run": "inline",
+    "trace_run": "inline",
+    "run_traces": "inline",
+    "trace_show": "inline",
     "register": "inline",
     "describe": "inline",
     "update_description": "inline",
@@ -75,6 +79,8 @@ class ShellSession:
         self.register_command: Optional[RegisterCommand] = None
         self.remove_command: Optional[RemoveCommand] = None
         self.run_command: Optional[RunCommand] = None
+        self.trace_run_command: Optional[TraceRunCommand] = None
+        self.trace_show_command: Optional[TraceShowCommand] = None
         self.update_description_command: Optional[UpdateDescriptionCommand] = None
         self.list_command: Optional[ListCommand] = None
         self.advanced_search_command: Optional[AdvancedSearchCommand] = None
@@ -97,6 +103,8 @@ class ShellSession:
             loaded_modules=self.loaded_modules)
         self.remove_command = RemoveCommand(client=self.client)
         self.run_command = RunCommand(client=self.client)
+        self.trace_run_command = TraceRunCommand(client=self.client)
+        self.trace_show_command = TraceShowCommand(client=self.client)
         self.update_description_command = UpdateDescriptionCommand(client=self.client)
         self.advanced_search_command = AdvancedSearchCommand(
             client=self.client, encoder=encoder, llm_connector=self.llmConnector)
@@ -316,6 +324,10 @@ class LaminarShell(App):
         s = self.session
         if name == "search":
             s.search_command.search(rest)
+        elif name in {"trace_run", "run_traces"}:
+            s.trace_run_command.run(rest)
+        elif name == "trace_show":
+            s.trace_show_command.run(rest)
         elif name == "run":
             s.run_command.run(rest)
         elif name == "register":
@@ -360,7 +372,7 @@ class LaminarShell(App):
             args = vars(parser.parse_args(shlex.split(arg)))
             feedback = self.session.client.codeRecommendation(
                 args["code_snippet"], args["search_type"], args["embedding_type"])
-            print_text(feedback)
+            # The search layer renders metadata; preserve returned PE objects for Python callers.
         except argparse.ArgumentError as e:
             print_error(e.message.replace("laminar.py", "code_recommendation"))
 
@@ -370,6 +382,8 @@ class LaminarShell(App):
             s = self.session
             obj = {
                 "search": s.search_command, "run": s.run_command,
+                "trace_run": s.trace_run_command, "run_traces": s.trace_run_command,
+                "trace_show": s.trace_show_command,
                 "register": s.register_command, "remove": s.remove_command,
                 "update_description": s.update_description_command,
                 "list": s.list_command, "advanced_search": s.advanced_search_command,
@@ -390,6 +404,8 @@ class LaminarShell(App):
             ("search", "in-shell", "Literal / semantic registry search"),
             ("code_recommendation", "in-shell", "Find similar code in the registry"),
             ("run", "in-shell", "Execute a registered workflow"),
+            ("trace_run / run_traces", "in-shell", "Monitor and store an execution profile"),
+            ("trace_show", "in-shell", "Read or download stored traces"),
             ("register", "in-shell", "Register a workflow / PE / directory"),
             ("describe", "in-shell", "Show details of a PE or workflow"),
             ("update_description", "in-shell", "Edit a stored description"),
