@@ -12,6 +12,9 @@ PE_AUTHORING_RULES = [
 
     "Always provide the __init__ method.",
 
+    "Implement _process(self, data), never override process(). The framework owns process(). "
+    "Use _preprocess and _postprocess for lifecycle hooks.",
+
     "Never pass arguments to the __init__ method other than self.",
 
     "When using GenericPE, declare every port in __init__ with self._add_input(<PORT>) "
@@ -44,11 +47,11 @@ PE_AUTHORING_RULES = [
     "self.write() calls are allowed as long as each targets a different declared "
     "output port.",
 
-    "HOW TO READ THE INPUT inside the process method depends on the PE type. "
-    "In a GenericPE the process argument is a dict keyed by the PE's input port names; "
+    "HOW TO READ THE INPUT inside the _process method depends on the PE type. "
+    "In a GenericPE the _process argument is a dict keyed by the PE's input port names; "
     "read each value by its port name (e.g. data['input'] or data['A_to_B']). Never "
     "assume a hard-coded key for a GenericPE: index by the input port name you declared "
-    "in __init__. In an IterativePE or ConsumerPE the process argument is the single, "
+    "in __init__. In an IterativePE or ConsumerPE the _process argument is the single, "
     "already-unwrapped input value; use it directly and do NOT index it.",
 
     "EXTERNAL RUNTIME INPUTS (data from outside the workflow) are delivered to the "
@@ -56,7 +59,7 @@ PE_AUTHORING_RULES = [
     "as a JSON structure keyed by the first PE's instance name. For example: "
     "dispel4py simple int_ext_graph.py -d '{\"read\": [{\"input\": \"coordinates.txt\"}]}'. "
     "If the first PE is a GenericPE, read this value as data['input']; if it is an "
-    "IterativePE/ConsumerPE, the value is delivered directly as the process argument.",
+    "IterativePE/ConsumerPE, the value is delivered directly as the _process argument.",
 
     "When sending data to the next PE, prefer objects that serialize cleanly, ideally "
     "JSON-serializable. Stick to Python primitives and lists/tuples/dicts of primitives "
@@ -68,7 +71,7 @@ PE_AUTHORING_RULES = [
     "send it / call the routine once it is complete.",
 
     "For each proposed PE, place the required external imports both at file level and "
-    "inside the process method, with a comment above each in-method import explaining "
+    "inside the _process method, with a comment above each in-method import explaining "
     "what it is needed for.",
 
     "Always include at file level: "
@@ -78,11 +81,11 @@ PE_AUTHORING_RULES = [
 
     "NEW-PE STUBBING RULE (applies ONLY to newly created PEs that contain genuine "
     "business logic; it does NOT apply to reused PEs or to pure-boilerplate PEs such "
-    "as the sink/write PE, which must be fully implemented). To avoid hallucinated "
+    "as pass-through input adapters and collecting/output sinks, which must be fully implemented). To avoid hallucinated "
     "logic, do not write the business logic yourself. Instead set up all dispel4py "
     "boilerplate: in __init__ declare every input and output port; in the process "
     "method include the full I/O wiring (self.write(...) for GenericPE, or return for "
-    "IterativePE/ProducerPE). In the process method, describe the exact input format "
+    "IterativePE/ProducerPE). In the _process method, describe the exact input format "
     "and the expected output format extensively in comments, optionally with a "
     "pseudo-algorithm in comments. Then insert raise NotImplementedError(...) as the "
     "FIRST executable statement, immediately after those comments and BEFORE the "
@@ -96,13 +99,18 @@ WORKFLOW_GRAPH_RULES = [
 
     "You MUST propose a fully WIRED dispel4py workflow SKELETON. 'Wired' means every PE, "
     "port, graph.connect() and the sink are present and consistent. The workflow is "
-    "deliberately NOT runnable: each newly created PE MUST raise NotImplementedError as the "
-    "first statement of its process method. Writing working business-logic bodies is a "
-    "FAILURE, not success.  The ONLY thing allowed to remain "
+    "a template when new business logic is needed. Only newly created business-logic PEs "
+    "raise NotImplementedError first in _process; pass-through input adapters, "
+    "collectors, and sinks MUST be fully implemented. The ONLY thing allowed to remain "
     "unimplemented is the business logic of a newly created PE (see the new-PE "
     "rule below); everything else, including all wiring and the sink, must work.",
 
     "Whenever possible, use the available PEs to compose the workflow.",
+
+    "For a reused PE, copy its supplied source class without changing its behavior, ports, "
+    "or output schema, and include required imports. Do not invent an implementation from "
+    "its description or claim reuse when its source is unavailable. List reused class names "
+    "in uses_pes. Do not import an imaginary available_pes module.",
 
     "The first PE must either be a GenericPE or a ProducerPE.",
 
@@ -157,19 +165,20 @@ EVALUATE_QUALITY_REQUESTED_WORKFLOW_CONTEXT_QUERIES = [
     "and a proposed workflow, and you must decide whether the workflow correctly and "
     "completely answers that query.",
 
-    "IMPORTANT: the proposed code is a TEMPLATE / skeleton. Newly created PEs "
+    "IMPORTANT: the proposed code is a TEMPLATE / skeleton. Newly created business-logic PEs "
     "deliberately do not implement business logic and contain a "
     "raise NotImplementedError(...) placeholder, with the real write()/return left in "
     "place but unreachable. This is intentional and is NOT an issue. Never report the "
     "missing business logic, the NotImplementedError, or the unreachable write/return "
-    "as problems.",
+    "as problems for business-logic templates. Input adapters, collectors and sinks must be runnable; "
+    "report placeholders in those boilerplate PEs as issues.",
 
     "Only report problems that would make the workflow fail to satisfy the user query "
     "or break its structure: a step that does not match what the user asked for, the "
     "wrong PE type, missing or mismatched ports, broken data flow, a missing or "
     "unconnected sink, or a result that would never be returned to the client.",
 
-    "Do NOT report as error types mismatch in not implemented process() methods, "
+    "Do NOT report as error types mismatch in not implemented _process() methods, "
     "as thy should be implemented by the user. Just report if the output or input "
     "port names do not match across Processing elements",
 
@@ -178,8 +187,8 @@ EVALUATE_QUALITY_REQUESTED_WORKFLOW_CONTEXT_QUERIES = [
 
     "This warning: 'The workflow is only a skeleton', is not an error but a wanted feature",
 
-    "If new Processing Elements contains implemented code, this is an issue, as they should raise "
-    "a NotImplementedError(...), since the business logic must be provided by the user.",
+    "New business-logic PEs should raise NotImplementedError; pass-through adapters, collectors "
+    "and sinks are exceptions and must work. Reused PE implementations must be preserved.",
 
     "Return JSON ONLY, with double-quoted keys and strings, in exactly this shape: "
     '{ "issues": ["issue 1", "issue 2", "..."] }. '

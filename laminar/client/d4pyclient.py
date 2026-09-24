@@ -93,12 +93,17 @@ class d4pClient:
 
     def run(self, workflow: Union[str, int, WorkflowGraph], input=None,
             process: g_vars.Process = g_vars.Process.SIMPLE,
-            resources: list[str] = None, verbose: bool = True):
+            resources: list[str] = None, verbose: bool = True, num_processes=None):
         """Execute a Workflow with the client service.
 
         ``workflow`` may be a registry name (str), a registry ID (int) or a
         :class:`WorkflowGraph` to run directly.
         """
+        if num_processes is not None:
+            if type(num_processes) is not int or not 1 <= num_processes <= 256:
+                raise ValueError("num_processes must be between 1 and 256")
+            if process not in (g_vars.Process.MULTI, 2):
+                raise ValueError("num_processes is supported with multiprocessing")
         workflow_id = workflow if isinstance(workflow, int) else None
         workflow_name = workflow if isinstance(workflow, str) else None
         workflow_code = workflow if isinstance(workflow, WorkflowGraph) else None
@@ -110,18 +115,38 @@ class d4pClient:
             input=input,
             resources=resources or [],
             process=process,
+            num_processes=num_processes,
         )
         return self.webclient.run(data, verbose)
 
     def run_multiprocess(self, workflow: Union[str, int, WorkflowGraph], input=None,
-                         resources: list[str] = None, verbose: bool = True):
+                         resources: list[str] = None, verbose: bool = True, num_processes=None):
         """Alternative for ``client.run(process=Process.MULTI)``."""
-        return self.run(workflow, input, g_vars.Process.MULTI, resources, verbose)
+        return self.run(workflow, input, g_vars.Process.MULTI, resources, verbose, num_processes=num_processes)
 
     def run_dynamic(self, workflow: Union[str, int, WorkflowGraph], input=None,
                     resources: list[str] = None, verbose: bool = True):
         """Alternative for ``client.run(process=Process.DYNAMIC)``."""
         return self.run(workflow, input, g_vars.Process.DYNAMIC, resources, verbose)
+
+    def trace_run(self, workflow, **kwargs):
+        """Run monitoring and replace the stored profile for this configuration."""
+        from laminar.trace import trace_run
+        return trace_run(self.webclient, workflow, **kwargs)
+
+    run_traces = trace_run
+
+    def get_traces(self, workflow, **kwargs):
+        from laminar.trace import get_traces
+        return get_traces(self.webclient, workflow, **kwargs)
+
+    def download_trace(self, profile_id, path, **kwargs):
+        from laminar.trace import download_trace
+        return download_trace(self.webclient, profile_id, path, **kwargs)
+
+    def get_trace_iterations(self, profile_id, **kwargs):
+        from laminar.trace import get_iterations
+        return get_iterations(self.webclient, profile_id, **kwargs)
 
     def get_PE(self, pe: Union[str, int], describe: bool = False):
         """Retrieve a PE from the registry."""

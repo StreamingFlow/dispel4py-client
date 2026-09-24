@@ -1,3 +1,5 @@
+> **Local fixes and tracing update:** see [Laminar 3 guide](docs/wiki/Home.md) and [trace API/database queries](docs/TRACE_API.md). These pages describe the coordinated client/server/engine/d4py update.
+
 # Laminar - Serverless dispel4py workflows
 
 ![Laminar Logo](logo.webp)

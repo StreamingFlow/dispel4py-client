@@ -62,7 +62,10 @@ def print_text(text, tab=False):
         text: str, dict, list, or JSON string
         tab: if True, prints as table (expects list of dicts)
     """
-    if tab:
+    if tab and not text:
+        console.print("No results found.")
+        return
+    if tab and isinstance(text, (list, tuple)) and all(isinstance(row, dict) for row in text):
         wrapped_text = wrap_table(text, headers=text[0].keys())
         console.print(tabulate(wrapped_text, headers="keys", tablefmt="fancy_grid"))
         return
@@ -76,7 +79,10 @@ def print_text(text, tab=False):
             # Not JSON, print as plain string
             console.print(f"[bold green]{text}[/bold green]")
     elif isinstance(text, (dict, list)):
-        console.print_json(data=text)
+        try:
+            console.print_json(data=text)
+        except (TypeError, ValueError):
+            console.print(text)
     else:
         console.print(text)
 

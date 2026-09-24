@@ -40,12 +40,13 @@ class SearchData(SerializableDTO):
 
 class ExecutionData(SerializableDTO):
     def __init__(self, *, workflow_id: int, workflow_name: str,
-                 workflow_code: WorkflowGraph, input: any, process, resources: list[str]):
+                 workflow_code: WorkflowGraph, input: any, process, resources: list[str], num_processes=None):
         self.workflow_id = workflow_id
         self.workflow_name = workflow_name
         self.input = get_payload(input)
         self.workflow_code = get_payload(workflow_code)
         self.resources = resources
+        self.num_processes = num_processes
         self.imports = self._collect_imports(workflow_code)
         # Accept either a Process enum member or a raw int.
         self.process = process.value if isinstance(process, Enum) else int(process)
@@ -72,4 +73,5 @@ class ExecutionData(SerializableDTO):
             "resources": self.resources,
             "imports": self.imports,
             "process": self.process,
+            "numProcesses": self.num_processes,
         }
